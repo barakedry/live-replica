@@ -1,0 +1,11 @@
+{
+  "name": "@live-replica/server",
+  "version": "1.0.0",
+  "description": "server for live-replica.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "Barak Edry",
+  "license": "Apache-2.0"
+}

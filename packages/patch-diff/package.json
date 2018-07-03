@@ -1,0 +1,52 @@
+{
+  "name": "@live-replica/patch-diff",
+  "version": "0.1.0",
+  "description": "Emits diff events.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "grunt test",
+    "localtest": "grunt localtest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/barakedry/live-replica"
+  },
+  "keywords": [
+    "patch",
+    "merge",
+    "diff",
+    "delta",
+    "dirty",
+    "checking"
+  ],
+  "author": "Barak Edry",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/barakedry/live-replica/issues"
+  },
+  "homepage": "https://github.com/barakedry/live-replica/diff-patch",
+  "devDependencies": {
+    "blanket": "^1.2.3",
+    "chai": "^3.5.0",
+    "eslint": "^3.19.0",
+    "event-emitter-enhancer": "0.0.62",
+    "grunt": "^0.4.5",
+    "grunt-blanket": "0.0.9",
+    "grunt-cli": "^0.1.13",
+    "grunt-contrib-clean": "^0.7.0",
+    "grunt-contrib-copy": "^0.8.2",
+    "grunt-coveralls": "^1.0.1",
+    "grunt-mocha-test": "^0.12.7",
+    "load-grunt-tasks": "^3.5.2",
+    "mocha": "^2.5.3",
+    "mocha-lcov-reporter": "^1.3.0",
+    "node.extend": "^1.1.6"
+  },
+  "dependencies": {
+    "debuglog": "^1.0.1",
+    "lodash": "^4.17.4"
+  }
+}
