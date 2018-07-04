@@ -46,4 +46,4 @@ class MiddlewareChain {
 
 MiddlewareChain.prototype.use = MiddlewareChain.prototype.add;
 
-module.exports = MiddlewareChain;
+export default MiddlewareChain;

@@ -2,8 +2,7 @@
  * Created by barakedry on 31/03/2017.
  */
 'use strict';
-
-const _ = require('lodash');
+import _ from 'lodash';
 
 const Proxy = {
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
@@ -190,4 +189,4 @@ const Proxy = {
     }
 };
 
-module.exports = Proxy;
+export default Proxy;
