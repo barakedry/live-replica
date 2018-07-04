@@ -3,7 +3,7 @@
  */
 'use strict';
 
-module.exports.create = function create(diffsAsArray) {
+export default function create(diffsAsArray) {
     return {
         hasAdditions: false,
         hasDeletions: false,

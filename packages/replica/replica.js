@@ -27,6 +27,14 @@ class Replica extends PatchDiff {
 
     }
 
+
+    destroy() {
+
+        this.removeAllListeners();
+        this.disconnect();
+
+    }
+
     get data() {
         if (this.options.readonly) {
             return this._data;
@@ -39,3 +47,5 @@ class Replica extends PatchDiff {
         }
     }
 }
+
+export default Replica;

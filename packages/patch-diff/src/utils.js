@@ -3,7 +3,7 @@
  */
 'use strict';
 
-let Utils = {
+const Utils = {
     isValid: function (val) {
         // val === val for cases val is NaN value
         return val === val;
@@ -55,4 +55,4 @@ let Utils = {
     }
 };
 
-module.exports = Utils;
+export default Utils;
