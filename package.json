@@ -25,6 +25,15 @@
     "url": "https://github.com/barakedry/live-replica/issues"
   },
   "homepage": "https://github.com/barakedry/live-replica/",
+  "dependencies": {
+    "events": "latest",
+    "@live-replica/patch-diff": "*",
+    "@live-replica/proxy": "*",
+    "webpack-cli": "^3.0.8"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
   "devDependencies": {
     "blanket": "latest",
     "chai": "latest",
@@ -42,7 +51,8 @@
     "mocha": "latest",
     "mocha-lcov-reporter": "latest",
     "node.extend": "latest",
-    "webpack": "latest"
+    "webpack": "latest",
+    "webpack-cli": "latest"
   },
   "main": "index.js"
 }

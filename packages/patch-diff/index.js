@@ -1,4 +1,5 @@
 /**
  * Created by barakedry on 6/19/15.
  */
-export * from './src/patch-diff';
+import DiffPatch from './src/patch-diff.js';
+export default DiffPatch;
