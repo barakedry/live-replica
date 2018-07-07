@@ -97,4 +97,4 @@ class LiveReplicaServer extends PatchDiff {
     }
 }
 
-module.exports = Server;
+export default LiveReplicaServer;

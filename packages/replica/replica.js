@@ -2,9 +2,13 @@
  * Created by barakedry on 28/04/2018.
  */
 'use strict';
-import PatchDiff from '@live-replica/patch-diff';
-import PatcherProxy from '@live-replica/proxy';
-import LiveReplicaConnection from '@live-replica/socket';
+// import PatchDiff from '@live-replica/patch-diff';
+// import PatcherProxy from '@live-replica/proxy';
+// import LiveReplicaConnection from '@live-replica/socket';
+
+const PatchDiff = require('@live-replica/patch-diff');
+const PatcherProxy = require('@live-replica/proxy');
+const LiveReplicaConnection = require('@live-replica/socket');
 
 class Replica extends PatchDiff {
 
@@ -60,4 +64,5 @@ class Replica extends PatchDiff {
     }
 }
 
-export default Replica;
+// export default Replica;
+module.exports = Replica;

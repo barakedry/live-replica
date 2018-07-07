@@ -1,9 +1,10 @@
 /*global describe: false, it: false */
 'use strict';
 
-var MiddlewareChain = require('../src/middleware-chain');
-var chai = require('chai');
-var assert = chai.assert;
+//import MiddlewareChain from '../src/middleware-chain.js';
+const MiddlewareChain = require('../src/middleware-chain.js');
+const chai = require('chai');
+const assert = chai.assert;
 
 describe('no middlewares', function () {
     const chain = new MiddlewareChain();

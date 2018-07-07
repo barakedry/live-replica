@@ -8,7 +8,6 @@ export const Events = {
     unsubscribe: '$u',
     invokeRPC: '$i',
     apply: '$a',
-    splice: '$s',
     dictionaryUpdate: '$d'
 };
 

@@ -4,11 +4,18 @@
 /* eslint max-params: 'off' */
 'use strict';
 
-import {EventEmitter} from 'events';
-import _ from 'lodash';
-import utils from './utils';
-import DiffTracker from './diff-tracker';
-import debuglog from 'debuglog'
+// import {EventEmitter} from 'events';
+// import _ from 'lodash';
+// import utils from './utils';
+// import DiffTracker from './diff-tracker';
+// import debuglog from 'debuglog'
+// const debug = debuglog('patch-diff');
+
+const {EventEmitter} = require('events');
+const _ = require('lodash');
+const utils = require('./utils');
+const DiffTracker = require('./diff-tracker');
+const debuglog = require('debuglog');
 const debug = debuglog('patch-diff');
 
 class PatchDiff extends EventEmitter {
@@ -457,4 +464,5 @@ class PatchDiff extends EventEmitter {
 PatchDiff.prototype.observe = EventEmitter.prototype.on;
 PatchDiff.prototype.override = PatchDiff.prototype.set;
 
-export default PatchDiff;
+//export default PatchDiff;
+module.exports = PatchDiff;

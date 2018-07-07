@@ -62,7 +62,7 @@ describe('apply-diff', function () {
 
             it('merged object should be the same as expected object', function () {
                 patcher.apply(20, 'string');
-                assert.deepEqual(patcher.object, expectedObject);
+                assert.deepEqual(patcher._data, expectedObject);
             });
 
         });
@@ -80,11 +80,11 @@ describe('apply-diff', function () {
                     number: 'test'
                 });
 
-                assert.equal(patcher.object.string, 'test');
-                assert.equal(patcher.object.boolean, 'test');
-                assert.equal(patcher.object.number, 'test');
-                assert.notEqual(patcher.object.array, 'test');
-                assert.deepEqual(patcher.object.nested, originalObject.nested);
+                assert.equal(patcher._data.string, 'test');
+                assert.equal(patcher._data.boolean, 'test');
+                assert.equal(patcher._data.number, 'test');
+                assert.notEqual(patcher._data.array, 'test');
+                assert.deepEqual(patcher._data.nested, originalObject.nested);
             });
 
         });
@@ -104,8 +104,8 @@ describe('apply-diff', function () {
                 });
 
                 assert.equal(patcher.get('string'), 'test');
-                assert.equal(patcher.object.boolean, false);
-                assert.deepEqual(patcher.object.newobject, {
+                assert.equal(patcher._data.boolean, false);
+                assert.deepEqual(patcher._data.newobject, {
                     test: 'test'
                 });
             });
@@ -138,7 +138,7 @@ describe('apply-diff', function () {
                 //[0, 1, '2', false, {prop: 'val'}]
                 //[0, 1, 'test', false, null, null, 'test2]
 
-                assert.deepEqual(patcher.object.array, [0, 1, 'test', false, , , 'test2']);
+                assert.deepEqual(patcher._data.array, [0, 1, 'test', false, , , 'test2']);
             });
 
         });
@@ -184,7 +184,7 @@ describe('apply-diff', function () {
                 //[0, 1, '2', false, {prop: 'val'}]
                 //[0, 1, 'test', false, null, null, 'test2]
 
-                //expect(patcher.object).property('array').to.deep.equal([0, 1, 'test', false, undefined, undefined, 'test2']);
+                //expect(patcher._data).property('array').to.deep.equal([0, 1, 'test', false, undefined, undefined, 'test2']);
             });
 
         });
@@ -205,12 +205,12 @@ describe('apply-diff', function () {
 
                 patcher.apply(createSmallObject(), 'nested.a.b.c');
 
-                assert.deepEqual(patcher.object, expectedObject);
+                assert.deepEqual(patcher._data, expectedObject);
                 assert.isTrue(generalEvent);
 
                 patcher.apply(createSmallObject(), 'nested.a.b.c');
 
-                assert.deepEqual(patcher.object, expectedObject);
+                assert.deepEqual(patcher._data, expectedObject);
             });
         });
     });
@@ -233,12 +233,12 @@ describe('apply-diff', function () {
 
                 patcher.override(createSmallObject(), 'number');
 
-                assert.deepEqual(patcher.object, expectedObject);
+                assert.deepEqual(patcher._data, expectedObject);
                 assert.isTrue(generalEvent);
 
                 patcher.override(createSmallObject(), 'number');
 
-                assert.deepEqual(patcher.object, expectedObject);
+                assert.deepEqual(patcher._data, expectedObject);
             });
 
             it('override 1 nested object', function () {
@@ -249,7 +249,7 @@ describe('apply-diff', function () {
 
                 patcher.override(createSmallObject(), 'nested.a.b.c');
 
-                assert.deepEqual(patcher.object, expectedObject);
+                assert.deepEqual(patcher._data, expectedObject);
             });
 
             it('override array', function () {
@@ -258,7 +258,7 @@ describe('apply-diff', function () {
 
                 patcher.override(createBaseObject(), '');
 
-                assert.deepEqual(patcher.object, expectedObject);
+                assert.deepEqual(patcher._data, expectedObject);
             });
         });
     });
@@ -281,12 +281,12 @@ describe('apply-diff', function () {
 
                 patcher.remove('number');
 
-                assert.deepEqual(patcher.object, expectedObject);
+                assert.deepEqual(patcher._data, expectedObject);
                 assert.isTrue(generalEvent);
 
                 patcher.remove('number');
 
-                assert.deepEqual(patcher.object, expectedObject);
+                assert.deepEqual(patcher._data, expectedObject);
             });
         });
 
@@ -298,7 +298,7 @@ describe('apply-diff', function () {
 
                 patcher.remove('nested.a.b.c');
 
-                assert.deepEqual(patcher.object, expectedObject);
+                assert.deepEqual(patcher._data, expectedObject);
             });
         });
     });

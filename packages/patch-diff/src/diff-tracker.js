@@ -3,7 +3,7 @@
  */
 'use strict';
 
-export default function create(diffsAsArray) {
+function create(diffsAsArray) {
     return {
         hasAdditions: false,
         hasDeletions: false,
@@ -35,4 +35,6 @@ export default function create(diffsAsArray) {
             }
         }
     };
-};
+}
+
+module.exports = {create};

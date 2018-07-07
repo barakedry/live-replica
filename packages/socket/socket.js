@@ -2,7 +2,7 @@
  * Created by barakedry on 06/07/2018.
  */
 'use strict';
-import {Events as LiveReplicaEvents} from '../common';
+const LiveReplicaEvents = require('../common').Events;
 
 /**
  *  LiveReplicaSocket
@@ -66,3 +66,5 @@ class LiveReplicaSocket {
 }
 
 LiveReplicaSocket.instances = 0;
+
+module.exports = LiveReplicaSocket;
