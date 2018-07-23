@@ -3,9 +3,14 @@
  */
 'use strict';
 
-import PatchDiff from '@live-replica/patch-diff';
-import PatcherProxy from '@live-replica/proxy';
-import Middlewares from './middleware-chain.js';
+// import PatchDiff = require('@live-replica/patch-diff';
+// import PatcherProxy = require('@live-replica/proxy';
+// import Middlewares = require('./middleware-chain.js';
+
+
+const PatchDiff = require('@live-replica/patch-diff');
+const PatcherProxy = require('@live-replica/proxy');
+const Middlewares = require('./middleware-chain.js');
 
 class LiveReplicaServer extends PatchDiff {
 
@@ -97,4 +102,4 @@ class LiveReplicaServer extends PatchDiff {
     }
 }
 
-export default LiveReplicaServer;
+module.exports = LiveReplicaServer;

@@ -1,11 +1,4 @@
-// entry point
-/*
-import Replica from '@live-replica/replica'
-import PatchDiff from '@live-replica/patch-diff'
-import Proxy from '@live-replica/proxy'
-
-export {Replica, PatchDiff, Proxy};
-*/
+'use strict';
 
 const Replica = require('@live-replica/replica');
 const PatchDiff = require('@live-replica/patch-diff');

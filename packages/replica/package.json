@@ -8,7 +8,8 @@
   },
     "dependencies": {
         "@live-replica/patch-diff": "*",
-        "@live-replica/proxy": "*"
+        "@live-replica/proxy": "*",
+        "@live-replica/socket": "*"
     },
   "author": "Barak Edry",
   "license": "Apache-2.0"

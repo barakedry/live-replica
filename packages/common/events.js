@@ -3,11 +3,10 @@
  */
 'use strict';
 
-export const Events = {
+module.exports = {
     subscribe: '$s',
     unsubscribe: '$u',
     invokeRPC: '$i',
     apply: '$a',
     dictionaryUpdate: '$d'
 };
-

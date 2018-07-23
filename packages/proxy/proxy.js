@@ -2,7 +2,7 @@
  * Created by barakedry on 31/03/2017.
  */
 'use strict';
-import _ from 'lodash';
+const _ = require('lodash');
 
 const Proxy = {
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies

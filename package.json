@@ -28,8 +28,7 @@
   "dependencies": {
     "events": "latest",
     "@live-replica/patch-diff": "*",
-    "@live-replica/proxy": "*",
-    "webpack-cli": "^3.0.8"
+    "@live-replica/proxy": "*"
   },
   "workspaces": [
     "packages/*"
@@ -37,22 +36,7 @@
   "devDependencies": {
     "blanket": "latest",
     "chai": "latest",
-    "eslint": "latest",
-    "event-emitter-enhancer": "latest",
-    "grunt": "latest",
-    "grunt-blanket": "latest",
-    "grunt-cli": "latest",
-    "grunt-contrib-clean": "latest",
-    "grunt-contrib-copy": "latest",
-    "grunt-coveralls": "latest",
-    "grunt-mocha-test": "latest",
-    "lerna": "latest",
-    "load-grunt-tasks": "latest",
-    "mocha": "latest",
-    "mocha-lcov-reporter": "latest",
-    "node.extend": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "browserify": "latest"
   },
   "main": "index.js"
 }
