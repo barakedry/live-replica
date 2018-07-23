@@ -1,7 +1,7 @@
 {
   "private": true,
-  "name": "@live-replica/live-replica",
-  "version": "0.1.0",
+  "name": "@live-replica/replica",
+  "version": "0.2.0",
   "description": "an easy to use real-time objects replica syncing",
   "directories": {
     "test": "tests"
@@ -26,17 +26,19 @@
   },
   "homepage": "https://github.com/barakedry/live-replica/",
   "dependencies": {
-    "events": "latest",
-    "@live-replica/patch-diff": "*",
-    "@live-replica/proxy": "*"
+    "events": "latest"
   },
   "workspaces": [
     "packages/*"
   ],
   "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-es2017": "^6.24.1",
+    "babelify": "^8.0.0",
     "blanket": "latest",
-    "chai": "latest",
-    "browserify": "latest"
+    "browserify": "latest",
+    "chai": "latest"
   },
   "main": "index.js"
 }
