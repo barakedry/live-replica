@@ -1,0 +1,16 @@
+{
+  "name": "@live-replica/client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+    "dependencies": {
+        "@live-replica/patch-diff": "*",
+        "@live-replica/proxy": "*",
+        "@live-replica/socket": "*"
+    },
+  "author": "Barak Edry",
+  "license": "Apache-2.0"
+}

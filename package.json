@@ -26,16 +26,20 @@
   },
   "homepage": "https://github.com/barakedry/live-replica/",
   "dependencies": {
-    "events": "latest"
+    "events": "^3.0.0"
   },
   "workspaces": [
     "packages/*"
   ],
   "devDependencies": {
+    "babel-plugin-transform-commonjs-es2015-modules": "^4.0.1",
     "blanket": "latest",
-    "mocha": "latest",
+    "eslint": "latest",
     "chai": "latest",
-    "node.extend": "latest"
+    "mocha": "latest",
+    "node.extend": "latest",
+    "webpack": "^4.16.2",
+    "webpack-cli": "^3.1.0"
   },
   "main": "index.js"
 }

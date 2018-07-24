@@ -31,22 +31,12 @@
     "devDependencies": {
         "blanket": "latest",
         "chai": "latest",
-        "eslint": "latest",
-        "event-emitter-enhancer": "latest",
-        "grunt": "latest",
-        "grunt-blanket": "latest",
-        "grunt-cli": "latest",
-        "grunt-contrib-clean": "latest",
-        "grunt-contrib-copy": "latest",
-        "grunt-coveralls": "latest",
-        "grunt-mocha-test": "latest",
-        "lerna": "latest",
-        "load-grunt-tasks": "latest",
         "mocha": "latest",
         "mocha-lcov-reporter": "latest",
         "node.extend": "latest"
     },
   "dependencies": {
+    "events": "^3.0.0",
     "debuglog": "latest",
     "lodash": "latest"
   }
