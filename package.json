@@ -32,13 +32,10 @@
     "packages/*"
   ],
   "devDependencies": {
-    "babel-core": "^6.26.3",
-    "babel-preset-env": "^1.7.0",
-    "babel-preset-es2017": "^6.24.1",
-    "babelify": "^8.0.0",
     "blanket": "latest",
-    "browserify": "latest",
-    "chai": "latest"
+    "mocha": "latest",
+    "chai": "latest",
+    "node.extend": "latest"
   },
   "main": "index.js"
 }
