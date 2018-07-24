@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "@live-replica/replica",
+  "name": "@live-replica/live-replica",
   "version": "0.2.0",
   "description": "an easy to use real-time objects replica syncing",
   "directories": {
