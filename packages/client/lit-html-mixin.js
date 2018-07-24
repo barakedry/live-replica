@@ -1,5 +1,26 @@
 const Replica = require('@live-replica/replica');
 
+function createDirective(replica, property) {
+
+    const subscribersByPart = new WeakSet();
+
+    const directive = (part) => {
+
+        if (!subscribersByPart.has(part)) {
+
+            const unsub = replica.subscribe((diff) => {
+                if (diff[property]) {
+                    part.setValue(replica.get(property));
+                }
+            });
+
+            subscribersByPart.set(part, unsub);
+        }
+    };
+    directive.__litDirective = true;
+    return directive;
+}
+
 module.exports = function LitHtmlMixin(base) {
     return class extends base {
 
@@ -36,37 +57,27 @@ module.exports = function LitHtmlMixin(base) {
             }
 
             const lastPart = path.lastIndexOf('.');
-            let r, property;
+            let property;
             if (lastPart === -1) {
                 property = path;
-                r = replica;
-
-                if (this.__replicaDirectivesCache.has(replica)) {
-                    this.__replicaDirectivesCache.has(replica)
-                }
 
             } else {
                 property = path.substr(lastPart);
                 path = path.substr(0, lastPart);
-                r = replica.at(path);
+                replica = replica.at(path);
             }
 
+            let replicasDirectives = this.__replicaDirectivesCache.get(replica);
+            if (!replicasDirectives) {
+                replicasDirectives = {};
+                this.__replicaDirectivesCache.set(replica, replicasDirectives);
+            }
 
+            if (!replicasDirectives[property]) {
+                replicasDirectives[property] = createDirective(replica, property);
+            }
 
-
-
-
-            const directive = (part)  => {
-                r.subscribe((diff) => {
-                    if (diff[property]) {
-                        part.setValue(r.get(property));
-                    }
-                });
-            };
-
-            directive.__litDirective = true;
-
-            return directive;
+            return replicasDirectives[property];
         }
 
     };
