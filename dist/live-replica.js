@@ -82,7 +82,7 @@ window["LiveReplica"] =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 3);
+/******/ 	return __webpack_require__(__webpack_require__.s = 4);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -92,7 +92,7 @@ window["LiveReplica"] =
 /**
  * Created by barakedry on 6/19/15.
  */
-module.exports = __webpack_require__(4);
+module.exports = __webpack_require__(5);
 
 /***/ }),
 /* 1 */
@@ -17196,7 +17196,7 @@ module.exports = __webpack_require__(4);
   else {}
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6), __webpack_require__(7)(module)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7), __webpack_require__(8)(module)))
 
 /***/ }),
 /* 2 */
@@ -17403,15 +17403,31 @@ module.exports = Proxy;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
+/**
+ * Created by barakedry on 05/07/2018.
+ */
+
+/*
+import Replica from "./replica";
+export default Replica;
+*/
+module.exports = __webpack_require__(14);
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
 
 
 const PatchDiff = __webpack_require__(0);
 const Proxy = __webpack_require__(2);
-const Replica = __webpack_require__(13);
-module.exports = {Replica, PatchDiff, Proxy};
+const Replica = __webpack_require__(3);
+const LitHtmlMixin = __webpack_require__(18);
+module.exports = {Replica, PatchDiff, Proxy, LitHtmlMixin};
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17428,11 +17444,11 @@ module.exports = {Replica, PatchDiff, Proxy};
 // import debuglog from 'debuglog'
 // const debug = debuglog('patch-diff');
 
-const {EventEmitter} = __webpack_require__(5);
+const {EventEmitter} = __webpack_require__(6);
 const _ = __webpack_require__(1);
-const utils = __webpack_require__(8);
-const DiffTracker = __webpack_require__(9);
-const debuglog = __webpack_require__(10);
+const utils = __webpack_require__(9);
+const DiffTracker = __webpack_require__(10);
+const debuglog = __webpack_require__(11);
 const debug = debuglog('patch-diff');
 
 class PatchDiff extends EventEmitter {
@@ -17886,7 +17902,7 @@ module.exports = PatchDiff;
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -18194,7 +18210,7 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports) {
 
 var g;
@@ -18220,7 +18236,7 @@ module.exports = g;
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
@@ -18248,7 +18264,7 @@ module.exports = function(module) {
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18313,7 +18329,7 @@ const Utils = {
 module.exports = Utils;
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18359,10 +18375,10 @@ function create(diffsAsArray) {
 module.exports = {create};
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var util = __webpack_require__(12);
+/* WEBPACK VAR INJECTION */(function(process) {var util = __webpack_require__(13);
 
 module.exports = (util && util.debuglog) || debuglog;
 
@@ -18385,10 +18401,10 @@ function debuglog(set) {
   return debugs[set];
 };
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(11)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(12)))
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -18578,25 +18594,10 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
-
-/***/ }),
-/* 13 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Created by barakedry on 05/07/2018.
- */
-
-/*
-import Replica from "./replica";
-export default Replica;
-*/
-module.exports = __webpack_require__(14);
 
 /***/ }),
 /* 14 */
@@ -18617,13 +18618,15 @@ const LiveReplicaConnection = __webpack_require__(15);
 
 class Replica extends PatchDiff {
 
-    constructor(remotePath, options = {}) {
-        super();
-        this.remotePath = remotePath;
-        this.options = Object.assign({
+    constructor(remotePath, options = {dataObject: {}}) {
+
+        options = Object.assign({
             readonly: true,
             subscribeRemoteOnCreate: !!options.connection
         }, options);
+
+        super(options.dataObject || {}, options);
+        this.remotePath = remotePath;
 
         if (this.options.readonly === false) {
             this.proxies = new WeakMap();
@@ -18777,6 +18780,72 @@ module.exports = {
     apply: '$a',
     dictionaryUpdate: '$d'
 };
+
+/***/ }),
+/* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Replica = __webpack_require__(3);
+
+module.exports = function LitHtmlMixin(base) {
+    return class extends base {
+
+        liveReplica(pathOrBaseReplica) {
+            let replica;
+            if (typeof pathOrBaseReplica === 'string') {
+                replica = new Replica(pathOrBaseReplica);
+            } else {
+                replica = pathOrBaseReplica;
+            }
+
+            if (!this.__replicas) {
+                this.__replicas = [];
+            }
+
+            this.__replicas.push(replica);
+
+            return replica;
+        }
+
+        disconnectedCallback() {
+            super.disconnectedCallback();
+            if (this.__replicas) {
+                this.__replicas.forEach((replica) => {
+                    replica.disconnect();
+                });
+            }
+        };
+
+        $LR (replica, path) {
+
+            const lastPart = path.lastIndexOf('.');
+            let r, property;
+            if (lastPart === -1) {
+                property = path;
+                r = replica;
+            } else {
+                property = path.substr(lastPart);
+                path = path.substr(0, lastPart);
+                r = replica.at(path);
+            }
+
+
+            const directive = (part)  => {
+                r.subscribe((diff) => {
+                    if (diff[property]) {
+                        part.setValue(r.get(property));
+                    }
+                });
+            };
+
+            directive.__litDirective = true;
+
+            return directive;
+        }
+
+    };
+};
+
 
 /***/ })
 /******/ ]);

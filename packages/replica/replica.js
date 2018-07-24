@@ -12,13 +12,15 @@ const LiveReplicaConnection = require('@live-replica/socket');
 
 class Replica extends PatchDiff {
 
-    constructor(remotePath, options = {}) {
-        super();
-        this.remotePath = remotePath;
-        this.options = Object.assign({
+    constructor(remotePath, options = {dataObject: {}}) {
+
+        options = Object.assign({
             readonly: true,
             subscribeRemoteOnCreate: !!options.connection
         }, options);
+
+        super(options.dataObject || {}, options);
+        this.remotePath = remotePath;
 
         if (this.options.readonly === false) {
             this.proxies = new WeakMap();
