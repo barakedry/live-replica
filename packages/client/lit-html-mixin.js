@@ -1,5 +1,17 @@
 const Replica = require('@live-replica/replica');
 
+function extractBasePathAndProperty(path) {
+    const lastPart = path.lastIndexOf('.');
+    if (lastPart === -1) {
+        return {property: path, path: ''};
+    }
+
+    let property = path.substr(lastPart + 1);
+    path = path.substr(0, lastPart);
+    return {path, property};
+}
+
+
 function createDirective(replica, property) {
 
     const subscribersByPart = new WeakMap();
@@ -29,14 +41,10 @@ function lr(replica, path) {
         this.__replicaDirectivesCache = new WeakMap();
     }
 
-    const lastPart = path.lastIndexOf('.');
     let property;
-    if (lastPart === -1) {
-        property = path;
+    ({path, property} = extractBasePathAndProperty(path));
 
-    } else {
-        property = path.substr(lastPart + 1);
-        path = path.substr(0, lastPart);
+    if (path) {
         replica = replica.at(path);
     }
 
@@ -62,12 +70,29 @@ lr.get = function  (pathOrBaseReplica) {
     }
 
     if (!this.__replicas) {
-        this.__replicas = [];
+        this.__replicas = new Map();
     }
 
-    this.__replicas.push(replica);
+    const data = replica.data;
+    this.__replicas.set(data, replica);
+    return data;
+};
 
-    return replica;
+lr.replicaByData = function (data) {
+    return this.__replicas.get(data);
+};
+
+lr.watch = function (data, path, cb) {
+    let property;
+    let element = this;
+    ({path, property} = extractBasePathAndProperty(path));
+    const replica = this.__replicas.get(data);
+    replica.subscribe(function (diff) {
+        if (cb) {
+            cb.call(element, diff);
+        }
+        element._render();
+    });
 };
 
 module.exports = function LitHtmlMixin(base) {
@@ -77,7 +102,8 @@ module.exports = function LitHtmlMixin(base) {
             super();
             this.lr = lr.bind(this);
             this.lr.get = lr.get.bind(this);
-            // this.lr.watch = lr.watch.bind(this);
+            this.lr.watch = lr.watch.bind(this);
+            this.lr.replicaByData = lr.replicaByData.bind(this);
         }
 
         disconnectedCallback() {

@@ -54,15 +54,11 @@ class Replica extends PatchDiff {
     }
 
     get data() {
-        if (this.options.readonly) {
-            return this._data;
-        } else {
-            if (!this.proxies.has(this)) {
-                const proxy = new PatcherProxy(this);
-                this.proxies.set(this, proxy);
-            }
-            return this.proxies.get(this);
+        if (!this.proxies.has(this)) {
+            const proxy = PatcherProxy.create(this, '', this, this.options.readonly);
+            this.proxies.set(this, proxy);
         }
+        return this.proxies.get(this);
     }
 }
 

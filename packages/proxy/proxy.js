@@ -6,27 +6,44 @@ const _ = require('lodash');
 
 const Proxy = {
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
-    create(patcher, path, root) {
+    create(patcher, path, root, readonly) {
         let patcherRef = patcher.get(path);
 
         if (!patcherRef || typeof patcherRef !== 'object') {
             throw new Error('no object at path', path);
         }
 
-        let proxy = new Proxy(patcherRef, {
+        const handlers =  {
             get: (target, name) => {
-                return this.handleGet(proxy, target, name);
-            },
-            set: (target, name, newval) => {
-                return this.handleSet(proxy, target, name, newval);
+                return this.handleGet(proxy, target, name, readonly);
             },
             has: (target, name) => {
                 return Boolean(this.handleSet(proxy, target, name));
-            },
-            deleteProperty: (target, name) => {
-                return this.handleDelete(proxy, target, name);
             }
-        });
+        };
+
+
+        if (readonly) {
+            handlers.set = (proxy, target, name) => {
+                throw new Error(`trying to set a value for property ${name} on a read only object`)
+            };
+
+            handlers.deleteProperty = (proxy, target, name) => {
+                throw new Error(`trying to delete  property ${name} on a read only object `)
+            };
+
+        } else {
+            handlers.set = (target, name, newval) => {
+                return this.handleSet(proxy, target, name, newval);
+            };
+
+            handlers.deleteProperty = (target, name) => {
+                return this.handleDelete(proxy, target, name);
+            };
+        }
+
+
+        let proxy = new Proxy(patcherRef, handlers);
 
         let properties = {
             patcher,
@@ -68,20 +85,20 @@ const Proxy = {
         return key;
     },
 
-    getOrCreateChildProxyForKey(parent, key) {
+    getOrCreateChildProxyForKey(parent, key, readonly) {
         let praentProperties = this.proxyProperties.get(parent);
 
         if (praentProperties.childs[key]) {
             return praentProperties.childs[key];
         }
 
-        let childProxy = this.create(praentProperties.patcher, this.getPath(parent, key), this.getRoot(parent));
+        let childProxy = this.create(praentProperties.patcher, this.getPath(parent, key), this.getRoot(parent), readonly);
         praentProperties.childs[key] = childProxy;
 
         return childProxy;
     },
 
-    handleGet(proxy, target, name) {
+    handleGet(proxy, target, name, readonly) {
         let properties = this.proxyProperties.get(proxy);
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
@@ -104,7 +121,7 @@ const Proxy = {
         if (realValue) {
             // if real value is an object we must return accessor proxy
             if (typeof realValue === 'object') {
-                return this.getOrCreateChildProxyForKey(proxy, name);
+                return this.getOrCreateChildProxyForKey(proxy, name, readonly);
             }
 
             return realValue;

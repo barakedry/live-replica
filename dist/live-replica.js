@@ -17211,27 +17211,44 @@ const _ = __webpack_require__(1);
 
 const Proxy = {
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
-    create(patcher, path, root) {
+    create(patcher, path, root, readonly) {
         let patcherRef = patcher.get(path);
 
         if (!patcherRef || typeof patcherRef !== 'object') {
             throw new Error('no object at path', path);
         }
 
-        let proxy = new Proxy(patcherRef, {
+        const handlers =  {
             get: (target, name) => {
-                return this.handleGet(proxy, target, name);
-            },
-            set: (target, name, newval) => {
-                return this.handleSet(proxy, target, name, newval);
+                return this.handleGet(proxy, target, name, readonly);
             },
             has: (target, name) => {
                 return Boolean(this.handleSet(proxy, target, name));
-            },
-            deleteProperty: (target, name) => {
-                return this.handleDelete(proxy, target, name);
             }
-        });
+        };
+
+
+        if (readonly) {
+            handlers.set = (proxy, target, name) => {
+                throw new Error(`trying to set a value for property ${name} on a read only object`)
+            };
+
+            handlers.deleteProperty = (proxy, target, name) => {
+                throw new Error(`trying to delete  property ${name} on a read only object `)
+            };
+
+        } else {
+            handlers.set = (target, name, newval) => {
+                return this.handleSet(proxy, target, name, newval);
+            };
+
+            handlers.deleteProperty = (target, name) => {
+                return this.handleDelete(proxy, target, name);
+            };
+        }
+
+
+        let proxy = new Proxy(patcherRef, handlers);
 
         let properties = {
             patcher,
@@ -17273,20 +17290,20 @@ const Proxy = {
         return key;
     },
 
-    getOrCreateChildProxyForKey(parent, key) {
+    getOrCreateChildProxyForKey(parent, key, readonly) {
         let praentProperties = this.proxyProperties.get(parent);
 
         if (praentProperties.childs[key]) {
             return praentProperties.childs[key];
         }
 
-        let childProxy = this.create(praentProperties.patcher, this.getPath(parent, key), this.getRoot(parent));
+        let childProxy = this.create(praentProperties.patcher, this.getPath(parent, key), this.getRoot(parent), readonly);
         praentProperties.childs[key] = childProxy;
 
         return childProxy;
     },
 
-    handleGet(proxy, target, name) {
+    handleGet(proxy, target, name, readonly) {
         let properties = this.proxyProperties.get(proxy);
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
@@ -17309,7 +17326,7 @@ const Proxy = {
         if (realValue) {
             // if real value is an object we must return accessor proxy
             if (typeof realValue === 'object') {
-                return this.getOrCreateChildProxyForKey(proxy, name);
+                return this.getOrCreateChildProxyForKey(proxy, name, readonly);
             }
 
             return realValue;
@@ -18660,15 +18677,11 @@ class Replica extends PatchDiff {
     }
 
     get data() {
-        if (this.options.readonly) {
-            return this._data;
-        } else {
-            if (!this.proxies.has(this)) {
-                const proxy = new PatcherProxy(this);
-                this.proxies.set(this, proxy);
-            }
-            return this.proxies.get(this);
+        if (!this.proxies.has(this)) {
+            const proxy = PatcherProxy.create(this, '', this, this.options.readonly);
+            this.proxies.set(this, proxy);
         }
+        return this.proxies.get(this);
     }
 }
 
@@ -18787,6 +18800,18 @@ module.exports = {
 
 const Replica = __webpack_require__(3);
 
+function extractBasePathAndProperty(path) {
+    const lastPart = path.lastIndexOf('.');
+    if (lastPart === -1) {
+        return {property: path, path: ''};
+    }
+
+    let property = path.substr(lastPart + 1);
+    path = path.substr(0, lastPart);
+    return {path, property};
+}
+
+
 function createDirective(replica, property) {
 
     const subscribersByPart = new WeakMap();
@@ -18816,14 +18841,10 @@ function lr(replica, path) {
         this.__replicaDirectivesCache = new WeakMap();
     }
 
-    const lastPart = path.lastIndexOf('.');
     let property;
-    if (lastPart === -1) {
-        property = path;
+    ({path, property} = extractBasePathAndProperty(path));
 
-    } else {
-        property = path.substr(lastPart + 1);
-        path = path.substr(0, lastPart);
+    if (path) {
         replica = replica.at(path);
     }
 
@@ -18849,12 +18870,29 @@ lr.get = function  (pathOrBaseReplica) {
     }
 
     if (!this.__replicas) {
-        this.__replicas = [];
+        this.__replicas = new Map();
     }
 
-    this.__replicas.push(replica);
+    const data = replica.data;
+    this.__replicas.set(data, replica);
+    return data;
+};
 
-    return replica;
+lr.replicaByData = function (data) {
+    return this.__replicas.get(data);
+};
+
+lr.watch = function (data, path, cb) {
+    let property;
+    let element = this;
+    ({path, property} = extractBasePathAndProperty(path));
+    const replica = this.__replicas.get(data);
+    replica.subscribe(function (diff) {
+        if (cb) {
+            cb.call(element, diff);
+        }
+        element._render();
+    });
 };
 
 module.exports = function LitHtmlMixin(base) {
@@ -18864,7 +18902,8 @@ module.exports = function LitHtmlMixin(base) {
             super();
             this.lr = lr.bind(this);
             this.lr.get = lr.get.bind(this);
-            // this.lr.watch = lr.watch.bind(this);
+            this.lr.watch = lr.watch.bind(this);
+            this.lr.replicaByData = lr.replicaByData.bind(this);
         }
 
         disconnectedCallback() {
