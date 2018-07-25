@@ -4,7 +4,7 @@
 'use strict';
 const _ = require('lodash');
 
-const Proxy = {
+const PatcherProxy = {
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
     create(patcher, path, root, readonly) {
         let patcherRef = patcher.get(path);
@@ -13,7 +13,7 @@ const Proxy = {
             throw new Error('no object at path', path);
         }
 
-        const handlers =  {
+        const handlers = {
             get: (target, name) => {
                 return this.handleGet(proxy, target, name, readonly);
             },
@@ -24,12 +24,12 @@ const Proxy = {
 
 
         if (readonly) {
-            handlers.set = (proxy, target, name) => {
-                throw new Error(`trying to set a value for property ${name} on a read only object`)
+            handlers.set = (target, name) => {
+                throw new Error(`trying to set a value for property "${name}" on a read only object`)
             };
 
-            handlers.deleteProperty = (proxy, target, name) => {
-                throw new Error(`trying to delete  property ${name} on a read only object `)
+            handlers.deleteProperty = (target, name) => {
+                throw new Error(`trying to delete  property "${name}" on a read only object `)
             };
 
         } else {
@@ -207,4 +207,4 @@ const Proxy = {
 };
 
 // export default Proxy;
-module.exports = Proxy;
+module.exports = PatcherProxy;

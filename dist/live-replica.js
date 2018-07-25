@@ -17209,7 +17209,7 @@ module.exports = __webpack_require__(5);
 
 const _ = __webpack_require__(1);
 
-const Proxy = {
+const PatcherProxy = {
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
     create(patcher, path, root, readonly) {
         let patcherRef = patcher.get(path);
@@ -17218,7 +17218,7 @@ const Proxy = {
             throw new Error('no object at path', path);
         }
 
-        const handlers =  {
+        const handlers = {
             get: (target, name) => {
                 return this.handleGet(proxy, target, name, readonly);
             },
@@ -17229,12 +17229,12 @@ const Proxy = {
 
 
         if (readonly) {
-            handlers.set = (proxy, target, name) => {
-                throw new Error(`trying to set a value for property ${name} on a read only object`)
+            handlers.set = (target, name) => {
+                throw new Error(`trying to set a value for property "${name}" on a read only object`)
             };
 
-            handlers.deleteProperty = (proxy, target, name) => {
-                throw new Error(`trying to delete  property ${name} on a read only object `)
+            handlers.deleteProperty = (target, name) => {
+                throw new Error(`trying to delete  property "${name}" on a read only object `)
             };
 
         } else {
@@ -17412,7 +17412,7 @@ const Proxy = {
 };
 
 // export default Proxy;
-module.exports = Proxy;
+module.exports = PatcherProxy;
 
 
 /***/ }),
@@ -18644,10 +18644,7 @@ class Replica extends PatchDiff {
 
         super(options.dataObject || {}, options);
         this.remotePath = remotePath;
-
-        if (this.options.readonly === false) {
-            this.proxies = new WeakMap();
-        }
+        this.proxies = new WeakMap();
 
         if (this.options.connectOnCreate) {
             this.connect(this.options.connection)
@@ -18678,7 +18675,7 @@ class Replica extends PatchDiff {
 
     get data() {
         if (!this.proxies.has(this)) {
-            const proxy = PatcherProxy.create(this, '', this, this.options.readonly);
+            const proxy = PatcherProxy.create(this, '', null, this.options.readonly);
             this.proxies.set(this, proxy);
         }
         return this.proxies.get(this);
@@ -18836,7 +18833,10 @@ function createDirective(replica, property) {
     return directive;
 }
 
-function lr(replica, path) {
+function lr(data, path) {
+
+    let replica = lr.replicaByData.call(this, data);
+
     if (!this.__replicaDirectivesCache) {
         this.__replicaDirectivesCache = new WeakMap();
     }
@@ -18861,7 +18861,7 @@ function lr(replica, path) {
     return replicasDirectives[property];
 }
 
-lr.get = function  (pathOrBaseReplica) {
+lr.attach = function  (pathOrBaseReplica) {
     let replica;
     if (typeof pathOrBaseReplica === 'string') {
         replica = new Replica(pathOrBaseReplica);
@@ -18901,7 +18901,7 @@ module.exports = function LitHtmlMixin(base) {
         constructor() {
             super();
             this.lr = lr.bind(this);
-            this.lr.get = lr.get.bind(this);
+            this.lr.attach = lr.attach.bind(this);
             this.lr.watch = lr.watch.bind(this);
             this.lr.replicaByData = lr.replicaByData.bind(this);
         }

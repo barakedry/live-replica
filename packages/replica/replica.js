@@ -21,10 +21,7 @@ class Replica extends PatchDiff {
 
         super(options.dataObject || {}, options);
         this.remotePath = remotePath;
-
-        if (this.options.readonly === false) {
-            this.proxies = new WeakMap();
-        }
+        this.proxies = new WeakMap();
 
         if (this.options.connectOnCreate) {
             this.connect(this.options.connection)
@@ -55,7 +52,7 @@ class Replica extends PatchDiff {
 
     get data() {
         if (!this.proxies.has(this)) {
-            const proxy = PatcherProxy.create(this, '', this, this.options.readonly);
+            const proxy = PatcherProxy.create(this, '', null, this.options.readonly);
             this.proxies.set(this, proxy);
         }
         return this.proxies.get(this);
