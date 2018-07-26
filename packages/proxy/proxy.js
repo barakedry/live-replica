@@ -4,6 +4,11 @@
 'use strict';
 const _ = require('lodash');
 
+let arrayMutationMethods = {};
+['copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'].forEach((method) => {
+    arrayMutationMethods[method] = true;
+});
+
 const PatcherProxy = {
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
     create(patcher, path, root, readonly) {
@@ -48,6 +53,8 @@ const PatcherProxy = {
         let properties = {
             patcher,
             path,
+            isArray: Array.isArray(patcherRef),
+            arrayMethods: {},
             childs: {}
         };
 
@@ -65,10 +72,75 @@ const PatcherProxy = {
                 return [changes, overrides];
             };
         }
-
+        
         this.proxyProperties.set(proxy, properties);
 
         return proxy;
+    },
+
+    createArrayMethod(proxy, array, methodName, readonly) {
+
+        const proxyServices = this;
+        const root = this.getRoot(proxy);
+        switch (methodName) {
+            case 'push': {
+                return function push(...items) {
+                    proxyServices.commit(root, true);
+                    let index = array.length;
+                    proxyServices.handleSplice(proxy, index, 0, items);
+                    return index + items.length;
+                };
+            }
+            case 'unshift': {
+                return function unshift(...items) {
+                    proxyServices.commit(root, true);
+                    let index = array.length;
+                    proxyServices.handleSplice(proxy, index, 0, items);
+                    return index + items.length;
+                };
+            }
+            case 'splice': {
+                return function splice(index, toRemove, ...items) {
+                    proxyServices.commit(root, true);
+                    return proxyServices.handleSplice(proxy, toRemove, items);
+                };
+            }
+            case 'pop': {
+                return function pop() {
+                    proxyServices.commit(root, true);
+                    const index = array.length;
+                    const removed = this.handleGet(proxy, array, index, readonly);
+                    proxyServices.handleSplice(index, 1);
+                    return removed;
+                };
+            }
+            case 'shift': {
+                return function pop() {
+                    if (!array.length) {
+                        return undefined;
+                    }
+
+                    proxyServices.commit(root, true);
+                    const index = 0;
+                    const removed = proxyServices.handleGet(proxy, array, index, readonly);
+                    proxyServices.handleSplice(index, 1);
+                    return removed;
+                };
+            }
+            // mutating methods that are not supported
+            default: {
+                throw Error(`${methodName}() is not supported by LiveReplica proxy`);
+            }
+
+        }
+    },
+
+    getOrCreateArrayMethod(proxy, array, name, readonly) {
+        const properties = this.proxyProperties.get(proxy);
+        if (!properties.arrayMethods[name]) {
+            properties.arrayMethods[name] = this.createArrayMethod(proxy, array, name, readonly);
+        }
+        return properties.arrayMethods[name];
     },
 
     getRoot (proxy) {
@@ -79,7 +151,11 @@ const PatcherProxy = {
         let properties = this.proxyProperties.get(proxy);
 
         if (properties.path) {
-            return [properties.path, key].join('.');
+            if (key) {
+                return [properties.path, key].join('.');
+            } else {
+                return properties.path;
+            }
         }
 
         return key;
@@ -99,7 +175,13 @@ const PatcherProxy = {
     },
 
     handleGet(proxy, target, name, readonly) {
+
         let properties = this.proxyProperties.get(proxy);
+
+        if (properties.isArray && arrayMutationMethods[name]) {
+            return this.getOrCreateArrayMethod(proxy, target, name, readonly);
+        }
+        
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
         let deleteValue = properties.patcher.options.deleteKeyword;
@@ -135,6 +217,19 @@ const PatcherProxy = {
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
         if (typeof newval === 'object' && typeof target[name] === 'object') {
+
+            // trying to assign a proxy for some reason
+            if (this.proxyProperties.has(newval)) {
+                // trying to assign the same proxy object
+                const p = this.proxyProperties.get(newval).patcher;
+
+                if (newval === p.get()) {
+                    return; // do nothing
+                } else {
+                    throw Error(`trying to assign an object that already exists to property ${name} assignment of cyclic references`);
+                }
+            }
+
             this.proxyProperties.get(root).overrides[fullPath] = true;
         }
 
@@ -144,7 +239,7 @@ const PatcherProxy = {
         }
 
         _.set(this.proxyProperties.get(root).changes, fullPath, newval);
-        this.patchChanges(root);
+        this.commit(root);
 
         return true;
     },
@@ -166,42 +261,51 @@ const PatcherProxy = {
             delete properties.childs[name];
         }
 
-        this.patchChanges(root);
+        this.commit(root);
 
         return true;
     },
 
-    handleSplice(proxy) {
-        let properties = this.proxyProperties.get(proxy);
-        let root = this.getRoot(proxy);
-        let fullPath = properties.path;
-        let value = _.get(this.proxyProperties.get(root).changes, fullPath);
-        if (value) {
-            if (Array.isArray(value)) {
-                return value;
-            }
-        }
-    },
 
-    patchChanges(proxy) {
-        this.defer(proxy, () => {
+    handleSplice(proxy, index, itemsToRemove, itemsToAdd) {
+        let properties = this.proxyProperties.get(proxy);
+        let patcher = properties.patcher;
+        patcher.splice(this.getPath(proxy), index, itemsToRemove, ...itemsToAdd);
+
+    },
+    
+    commit(proxy, immediate = false) {
+
+        const flush = () => {
             let properties = this.proxyProperties.get(proxy);
+
+            if (properties.nextChangeTimeout) {
+                clearTimeout(properties.nextChangeTimeout);
+                properties.nextChangeTimeout = 0;
+            }
+
             let patcher = properties.patcher;
             let [patch, overrides] = properties.pullChanges();
             let options = {
                 overrides
             };
             patcher.apply(patch, null, options);
-        });
+        };
+
+        if (immediate) {
+            flush();
+        } else {
+            this.defer(proxy, flush);
+        }
     },
 
     defer(proxy, cb) {
+        // defer more
         let properties = this.proxyProperties.get(proxy);
         if (properties.nextChangeTimeout) {
             clearTimeout(properties.nextChangeTimeout);
             properties.nextChangeTimeout = 0;
         }
-
         properties.nextChangeTimeout = setTimeout(cb, 0);
     }
 };

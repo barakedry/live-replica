@@ -86,15 +86,21 @@ lr.replicaByData = function (data) {
 };
 
 lr.watch = function (data, path, cb) {
-    let property;
+
     let element = this;
+    let replica = this.__replicas.get(data);
+    let property;
     ({path, property} = extractBasePathAndProperty(path));
-    const replica = this.__replicas.get(data);
+
+    if (path) {
+        replica = replica.at(path);
+    }
     replica.subscribe(function (diff) {
         if (cb) {
             cb.call(element, diff);
         }
-        element._render();
+
+        element._render(element);
     });
 };
 

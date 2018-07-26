@@ -86,6 +86,11 @@ class PatchDiff extends EventEmitter {
         this._applyObject(this._data, utils.wrapByPath(this.options.deleteKeyword, path), '', this.options, 0);
     }
 
+    splice(path, index, itemsToRemove, ...itemsToAdd) {
+        path = utils.concatPath(this._path, path);
+        this._applyObject(this._data, utils.wrapByPath({[this.options.spliceKeyword]: {index, itemsToRemove, itemsToAdd}}, path), '', this.options, 0);
+    }
+
     get(path, callback) {
 
         if (typeof path === 'function') {
@@ -126,15 +131,6 @@ class PatchDiff extends EventEmitter {
         }
 
         return retVal;
-    }
-
-
-    splice(path, index, itemsToRemove, ...itemsToAdd) {
-        path = utils.concatPath(this._path, path);
-        const diff = this._splice(path, index, itemsToRemove, ...itemsToAdd);
-        this._emitFrom(path, diff);
-
-        return diff.deleted;
     }
 
     on(path, fn) {
@@ -254,13 +250,18 @@ class PatchDiff extends EventEmitter {
             isPatchValueObject = false;
 
         patchValue = patch[key];
-
-        // splice
-        if (key === this.options.spliceKeyword) {
-            return this._splice(path, patchValue.index, patchValue.itemsToRemove || 0, ...(patchValue.itemsToAdd || []));
-        }
-
         srcKey = key;
+
+        // splice treat as primitive
+        if (key === this.options.spliceKeyword) {
+            appliedValue = this._splice(path, patchValue.index, patchValue.itemsToRemove || 0, ...(patchValue.itemsToAdd || []));
+            target[srcKey] = patchValue;
+
+            levelDiffs.hasUpdates = true;
+            levelDiffs.hasDifferences = true;
+            levelDiffs.differences[key] = appliedValue;
+            return levelDiffs;
+        }
 
         if (_.isFunction(patchValue)) {
             appliedValue = utils.SERIALIZABLE_FUNCTION;
@@ -401,7 +402,7 @@ class PatchDiff extends EventEmitter {
             return { deleted: [] };
         }
         const deleted = target.splice(index, itemsToRemove, ...itemsToAdd);
-        const diff = { [this.options.spliceKeyword]: { index, itemsToRemove, itemsToAdd, deleted } };
+        const diff = { index, itemsToRemove, itemsToAdd, deleted };
 
         return diff;
     }

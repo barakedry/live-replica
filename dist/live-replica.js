@@ -17209,6 +17209,11 @@ module.exports = __webpack_require__(5);
 
 const _ = __webpack_require__(1);
 
+let arrayMutationMethods = {};
+['copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'].forEach((method) => {
+    arrayMutationMethods[method] = true;
+});
+
 const PatcherProxy = {
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
     create(patcher, path, root, readonly) {
@@ -17253,6 +17258,8 @@ const PatcherProxy = {
         let properties = {
             patcher,
             path,
+            isArray: Array.isArray(patcherRef),
+            arrayMethods: {},
             childs: {}
         };
 
@@ -17270,10 +17277,75 @@ const PatcherProxy = {
                 return [changes, overrides];
             };
         }
-
+        
         this.proxyProperties.set(proxy, properties);
 
         return proxy;
+    },
+
+    createArrayMethod(proxy, array, methodName, readonly) {
+
+        const proxyServices = this;
+        const root = this.getRoot(proxy);
+        switch (methodName) {
+            case 'push': {
+                return function push(...items) {
+                    proxyServices.commit(root, true);
+                    let index = array.length;
+                    proxyServices.handleSplice(proxy, index, 0, items);
+                    return index + items.length;
+                };
+            }
+            case 'unshift': {
+                return function unshift(...items) {
+                    proxyServices.commit(root, true);
+                    let index = array.length;
+                    proxyServices.handleSplice(proxy, index, 0, items);
+                    return index + items.length;
+                };
+            }
+            case 'splice': {
+                return function splice(index, toRemove, ...items) {
+                    proxyServices.commit(root, true);
+                    return proxyServices.handleSplice(proxy, toRemove, items);
+                };
+            }
+            case 'pop': {
+                return function pop() {
+                    proxyServices.commit(root, true);
+                    const index = array.length;
+                    const removed = this.handleGet(proxy, array, index, readonly);
+                    proxyServices.handleSplice(index, 1);
+                    return removed;
+                };
+            }
+            case 'shift': {
+                return function pop() {
+                    if (!array.length) {
+                        return undefined;
+                    }
+
+                    proxyServices.commit(root, true);
+                    const index = 0;
+                    const removed = proxyServices.handleGet(proxy, array, index, readonly);
+                    proxyServices.handleSplice(index, 1);
+                    return removed;
+                };
+            }
+            // mutating methods that are not supported
+            default: {
+                throw Error(`${methodName}() is not supported by LiveReplica proxy`);
+            }
+
+        }
+    },
+
+    getOrCreateArrayMethod(proxy, array, name, readonly) {
+        const properties = this.proxyProperties.get(proxy);
+        if (!properties.arrayMethods[name]) {
+            properties.arrayMethods[name] = this.createArrayMethod(proxy, array, name, readonly);
+        }
+        return properties.arrayMethods[name];
     },
 
     getRoot (proxy) {
@@ -17284,7 +17356,11 @@ const PatcherProxy = {
         let properties = this.proxyProperties.get(proxy);
 
         if (properties.path) {
-            return [properties.path, key].join('.');
+            if (key) {
+                return [properties.path, key].join('.');
+            } else {
+                return properties.path;
+            }
         }
 
         return key;
@@ -17304,7 +17380,13 @@ const PatcherProxy = {
     },
 
     handleGet(proxy, target, name, readonly) {
+
         let properties = this.proxyProperties.get(proxy);
+
+        if (properties.isArray && arrayMutationMethods[name]) {
+            return this.getOrCreateArrayMethod(proxy, target, name, readonly);
+        }
+        
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
         let deleteValue = properties.patcher.options.deleteKeyword;
@@ -17340,6 +17422,19 @@ const PatcherProxy = {
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
         if (typeof newval === 'object' && typeof target[name] === 'object') {
+
+            // trying to assign a proxy for some reason
+            if (this.proxyProperties.has(newval)) {
+                // trying to assign the same proxy object
+                const p = this.proxyProperties.get(newval).patcher;
+
+                if (newval === p.get()) {
+                    return; // do nothing
+                } else {
+                    throw Error(`trying to assign an object that already exists to property ${name} assignment of cyclic references`);
+                }
+            }
+
             this.proxyProperties.get(root).overrides[fullPath] = true;
         }
 
@@ -17349,7 +17444,7 @@ const PatcherProxy = {
         }
 
         _.set(this.proxyProperties.get(root).changes, fullPath, newval);
-        this.patchChanges(root);
+        this.commit(root);
 
         return true;
     },
@@ -17371,42 +17466,51 @@ const PatcherProxy = {
             delete properties.childs[name];
         }
 
-        this.patchChanges(root);
+        this.commit(root);
 
         return true;
     },
 
-    handleSplice(proxy) {
-        let properties = this.proxyProperties.get(proxy);
-        let root = this.getRoot(proxy);
-        let fullPath = properties.path;
-        let value = _.get(this.proxyProperties.get(root).changes, fullPath);
-        if (value) {
-            if (Array.isArray(value)) {
-                return value;
-            }
-        }
-    },
 
-    patchChanges(proxy) {
-        this.defer(proxy, () => {
+    handleSplice(proxy, index, itemsToRemove, itemsToAdd) {
+        let properties = this.proxyProperties.get(proxy);
+        let patcher = properties.patcher;
+        patcher.splice(this.getPath(proxy), index, itemsToRemove, ...itemsToAdd);
+
+    },
+    
+    commit(proxy, immediate = false) {
+
+        const flush = () => {
             let properties = this.proxyProperties.get(proxy);
+
+            if (properties.nextChangeTimeout) {
+                clearTimeout(properties.nextChangeTimeout);
+                properties.nextChangeTimeout = 0;
+            }
+
             let patcher = properties.patcher;
             let [patch, overrides] = properties.pullChanges();
             let options = {
                 overrides
             };
             patcher.apply(patch, null, options);
-        });
+        };
+
+        if (immediate) {
+            flush();
+        } else {
+            this.defer(proxy, flush);
+        }
     },
 
     defer(proxy, cb) {
+        // defer more
         let properties = this.proxyProperties.get(proxy);
         if (properties.nextChangeTimeout) {
             clearTimeout(properties.nextChangeTimeout);
             properties.nextChangeTimeout = 0;
         }
-
         properties.nextChangeTimeout = setTimeout(cb, 0);
     }
 };
@@ -17536,6 +17640,11 @@ class PatchDiff extends EventEmitter {
         this._applyObject(this._data, utils.wrapByPath(this.options.deleteKeyword, path), '', this.options, 0);
     }
 
+    splice(path, index, itemsToRemove, ...itemsToAdd) {
+        path = utils.concatPath(this._path, path);
+        this._applyObject(this._data, utils.wrapByPath({[this.options.spliceKeyword]: {index, itemsToRemove, itemsToAdd}}, path), '', this.options, 0);
+    }
+
     get(path, callback) {
 
         if (typeof path === 'function') {
@@ -17576,15 +17685,6 @@ class PatchDiff extends EventEmitter {
         }
 
         return retVal;
-    }
-
-
-    splice(path, index, itemsToRemove, ...itemsToAdd) {
-        path = utils.concatPath(this._path, path);
-        const diff = this._splice(path, index, itemsToRemove, ...itemsToAdd);
-        this._emitFrom(path, diff);
-
-        return diff.deleted;
     }
 
     on(path, fn) {
@@ -17704,13 +17804,18 @@ class PatchDiff extends EventEmitter {
             isPatchValueObject = false;
 
         patchValue = patch[key];
-
-        // splice
-        if (key === this.options.spliceKeyword) {
-            return this._splice(path, patchValue.index, patchValue.itemsToRemove || 0, ...(patchValue.itemsToAdd || []));
-        }
-
         srcKey = key;
+
+        // splice treat as primitive
+        if (key === this.options.spliceKeyword) {
+            appliedValue = this._splice(path, patchValue.index, patchValue.itemsToRemove || 0, ...(patchValue.itemsToAdd || []));
+            target[srcKey] = patchValue;
+
+            levelDiffs.hasUpdates = true;
+            levelDiffs.hasDifferences = true;
+            levelDiffs.differences[key] = appliedValue;
+            return levelDiffs;
+        }
 
         if (_.isFunction(patchValue)) {
             appliedValue = utils.SERIALIZABLE_FUNCTION;
@@ -17851,7 +17956,7 @@ class PatchDiff extends EventEmitter {
             return { deleted: [] };
         }
         const deleted = target.splice(index, itemsToRemove, ...itemsToAdd);
-        const diff = { [this.options.spliceKeyword]: { index, itemsToRemove, itemsToAdd, deleted } };
+        const diff = { index, itemsToRemove, itemsToAdd, deleted };
 
         return diff;
     }
@@ -18883,15 +18988,21 @@ lr.replicaByData = function (data) {
 };
 
 lr.watch = function (data, path, cb) {
-    let property;
+
     let element = this;
+    let replica = this.__replicas.get(data);
+    let property;
     ({path, property} = extractBasePathAndProperty(path));
-    const replica = this.__replicas.get(data);
+
+    if (path) {
+        replica = replica.at(path);
+    }
     replica.subscribe(function (diff) {
         if (cb) {
             cb.call(element, diff);
         }
-        element._render();
+
+        element._render(element);
     });
 };
 
