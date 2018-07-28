@@ -18,12 +18,14 @@ const PatcherProxy = {
             throw new Error('no object at path', path);
         }
 
+        let proxy;
+
         const handlers = {
             get: (target, name) => {
                 return this.handleGet(proxy, target, name, readonly);
             },
             has: (target, name) => {
-                return Boolean(this.handleSet(proxy, target, name));
+                return Boolean(this.handleGet(proxy, target, name));
             }
         };
 
@@ -48,7 +50,7 @@ const PatcherProxy = {
         }
 
 
-        let proxy = new Proxy(patcherRef, handlers);
+        proxy = new Proxy(patcherRef, handlers);
 
         let properties = {
             patcher,
@@ -63,12 +65,13 @@ const PatcherProxy = {
         } else {
             properties.changes = {};
             properties.overrides = {};
+            properties.dirty = false;
             properties.pullChanges = function pullChanges() {
                 let changes = this.changes;
                 let overrides = this.overrides;
                 this.changes = {};
                 this.overrides = {};
-
+                this.dirty = false;
                 return [changes, overrides];
             };
         }
@@ -129,7 +132,19 @@ const PatcherProxy = {
             }
             // mutating methods that are not supported
             default: {
-                throw Error(`${methodName}() is not supported by LiveReplica proxy`);
+
+                return function arrayMutatingFunction() {
+                    proxyServices.commit(root, true);
+                    const copy = array.slice();
+                    copy[methodName].call(copy, ...arguments);
+                    copy.forEach((item, index) => {
+                       proxy[index] = item;
+                    });
+                    return proxy;
+                };
+
+
+                //throw Error(`${methodName}() is not supported by LiveReplica proxy`);
             }
 
         }
@@ -162,14 +177,14 @@ const PatcherProxy = {
     },
 
     getOrCreateChildProxyForKey(parent, key, readonly) {
-        let praentProperties = this.proxyProperties.get(parent);
+        let parentProperties = this.proxyProperties.get(parent);
 
-        if (praentProperties.childs[key]) {
-            return praentProperties.childs[key];
+        if (parentProperties.childs[key]) {
+            return parentProperties.childs[key];
         }
 
-        let childProxy = this.create(praentProperties.patcher, this.getPath(parent, key), this.getRoot(parent), readonly);
-        praentProperties.childs[key] = childProxy;
+        let childProxy = this.create(parentProperties.patcher, this.getPath(parent, key), this.getRoot(parent), readonly);
+        parentProperties.childs[key] = childProxy;
 
         return childProxy;
     },
@@ -238,6 +253,7 @@ const PatcherProxy = {
             delete properties.childs[name];
         }
 
+        this.proxyProperties.get(root).dirty = true;
         _.set(this.proxyProperties.get(root).changes, fullPath, newval);
         this.commit(root);
 
@@ -250,6 +266,7 @@ const PatcherProxy = {
         let fullPath = this.getPath(proxy, name);
         let rootChangeTracker = this.proxyProperties.get(root).changes;
 
+        rootChangeTracker.dirty = true;
         if (target[name]) {
             _.set(rootChangeTracker, fullPath, properties.patcher.options.deleteKeyword);
         } else {
@@ -275,10 +292,11 @@ const PatcherProxy = {
     },
     
     commit(proxy, immediate = false) {
+        let properties = this.proxyProperties.get(proxy);
+
+        if (!properties.dirty) {  return; }
 
         const flush = () => {
-            let properties = this.proxyProperties.get(proxy);
-
             if (properties.nextChangeTimeout) {
                 clearTimeout(properties.nextChangeTimeout);
                 properties.nextChangeTimeout = 0;
