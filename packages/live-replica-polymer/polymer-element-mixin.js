@@ -17,7 +17,7 @@ function debouncer(fn, time) {
 
 function createAttachToProperty(element) {
 
-    function attachToProperty(replica, property, replicaPath) {
+    function attachToProperty(property, replica, replicaPath) {
 
         let unwatchers = [];
 

@@ -32,12 +32,14 @@ function elementUtilities(element) {
                 replica = replica.at(path);
             }
             replica.subscribe(function (diff) {
+                if (!diff[property]) { return; }
+
                 if (cb) {
-                    cb.call(element, diff);
+                    cb.call(element, diff, replica.get(property));
                 }
 
                 if (typeof render === 'function') {
-                    render(diff);
+                    render(diff, replica.get(property));
                 }
             });
         },

@@ -19012,8 +19012,8 @@ module.exports = function LitElementMixin(base) {
 
         constructor() {
             super();
-            this.liveReplica.render = (diff) => {
-                this._render(diff);
+            this.liveReplica.render = (diff, data) => {
+                this._render(data);
             };
 
             this.liveReplica.directive = getDirective.bind(this.liveReplica);
@@ -19061,12 +19061,14 @@ function elementUtilities(element) {
                 replica = replica.at(path);
             }
             replica.subscribe(function (diff) {
+                if (!diff[property]) { return; }
+
                 if (cb) {
-                    cb.call(element, diff);
+                    cb.call(element, diff, replica.get(property));
                 }
 
                 if (typeof render === 'function') {
-                    render(diff);
+                    render(diff, replica.get(property));
                 }
             });
         },
@@ -19118,7 +19120,7 @@ function debouncer(fn, time) {
 
 function createAttachToProperty(element) {
 
-    function attachToProperty(replica, property, replicaPath) {
+    function attachToProperty(property, replica, replicaPath) {
 
         let unwatchers = [];
 
