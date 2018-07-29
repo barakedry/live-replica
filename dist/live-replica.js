@@ -82,7 +82,7 @@ window["LiveReplica"] =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 4);
+/******/ 	return __webpack_require__(__webpack_require__.s = 5);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -92,7 +92,7 @@ window["LiveReplica"] =
 /**
  * Created by barakedry on 6/19/15.
  */
-module.exports = __webpack_require__(5);
+module.exports = __webpack_require__(6);
 
 /***/ }),
 /* 1 */
@@ -17196,7 +17196,7 @@ module.exports = __webpack_require__(5);
   else {}
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7), __webpack_require__(8)(module)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(8), __webpack_require__(9)(module)))
 
 /***/ }),
 /* 2 */
@@ -17223,12 +17223,14 @@ const PatcherProxy = {
             throw new Error('no object at path', path);
         }
 
+        let proxy;
+
         const handlers = {
             get: (target, name) => {
                 return this.handleGet(proxy, target, name, readonly);
             },
             has: (target, name) => {
-                return Boolean(this.handleSet(proxy, target, name));
+                return Boolean(this.handleGet(proxy, target, name));
             }
         };
 
@@ -17253,7 +17255,7 @@ const PatcherProxy = {
         }
 
 
-        let proxy = new Proxy(patcherRef, handlers);
+        proxy = new Proxy(patcherRef, handlers);
 
         let properties = {
             patcher,
@@ -17268,12 +17270,13 @@ const PatcherProxy = {
         } else {
             properties.changes = {};
             properties.overrides = {};
+            properties.dirty = false;
             properties.pullChanges = function pullChanges() {
                 let changes = this.changes;
                 let overrides = this.overrides;
                 this.changes = {};
                 this.overrides = {};
-
+                this.dirty = false;
                 return [changes, overrides];
             };
         }
@@ -17286,7 +17289,25 @@ const PatcherProxy = {
     createArrayMethod(proxy, array, methodName, readonly) {
 
         const proxyServices = this;
+        const props = this.proxyProperties.get(proxy);
         const root = this.getRoot(proxy);
+
+        function createArrayMutatingMethod() {
+            return function arrayMutatingMethod() {
+                proxyServices.commit(root, true);
+                const copy = array.slice();
+                copy[methodName].call(copy, ...arguments);
+                copy.forEach((item, index) => {
+                    proxy[index] = item;
+                });
+                return proxy;
+            }
+        }
+
+        if (props.patcher.disableSplices) {
+            return createArrayMutatingMethod();
+        }
+
         switch (methodName) {
             case 'push': {
                 return function push(...items) {
@@ -17334,7 +17355,8 @@ const PatcherProxy = {
             }
             // mutating methods that are not supported
             default: {
-                throw Error(`${methodName}() is not supported by LiveReplica proxy`);
+                return createArrayMutatingMethod();
+                //throw Error(`${methodName}() is not supported by LiveReplica proxy`);
             }
 
         }
@@ -17367,14 +17389,14 @@ const PatcherProxy = {
     },
 
     getOrCreateChildProxyForKey(parent, key, readonly) {
-        let praentProperties = this.proxyProperties.get(parent);
+        let parentProperties = this.proxyProperties.get(parent);
 
-        if (praentProperties.childs[key]) {
-            return praentProperties.childs[key];
+        if (parentProperties.childs[key]) {
+            return parentProperties.childs[key];
         }
 
-        let childProxy = this.create(praentProperties.patcher, this.getPath(parent, key), this.getRoot(parent), readonly);
-        praentProperties.childs[key] = childProxy;
+        let childProxy = this.create(parentProperties.patcher, this.getPath(parent, key), this.getRoot(parent), readonly);
+        parentProperties.childs[key] = childProxy;
 
         return childProxy;
     },
@@ -17443,6 +17465,7 @@ const PatcherProxy = {
             delete properties.childs[name];
         }
 
+        this.proxyProperties.get(root).dirty = true;
         _.set(this.proxyProperties.get(root).changes, fullPath, newval);
         this.commit(root);
 
@@ -17455,6 +17478,7 @@ const PatcherProxy = {
         let fullPath = this.getPath(proxy, name);
         let rootChangeTracker = this.proxyProperties.get(root).changes;
 
+        rootChangeTracker.dirty = true;
         if (target[name]) {
             _.set(rootChangeTracker, fullPath, properties.patcher.options.deleteKeyword);
         } else {
@@ -17480,10 +17504,11 @@ const PatcherProxy = {
     },
     
     commit(proxy, immediate = false) {
+        let properties = this.proxyProperties.get(proxy);
+
+        if (!properties.dirty) {  return; }
 
         const flush = () => {
-            let properties = this.proxyProperties.get(proxy);
-
             if (properties.nextChangeTimeout) {
                 clearTimeout(properties.nextChangeTimeout);
                 properties.nextChangeTimeout = 0;
@@ -17532,10 +17557,27 @@ module.exports = PatcherProxy;
 import Replica from "./replica";
 export default Replica;
 */
-module.exports = __webpack_require__(14);
+module.exports = __webpack_require__(15);
 
 /***/ }),
 /* 4 */
+/***/ (function(module, exports) {
+
+module.exports = {
+    extractBasePathAndProperty(path) {
+        const lastPart = path.lastIndexOf('.');
+        if (lastPart === -1) {
+            return {property: path, path: ''};
+        }
+
+        let property = path.substr(lastPart + 1);
+        path = path.substr(0, lastPart);
+        return {path, property};
+    }
+};
+
+/***/ }),
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17544,11 +17586,12 @@ module.exports = __webpack_require__(14);
 const PatchDiff = __webpack_require__(0);
 const Proxy = __webpack_require__(2);
 const Replica = __webpack_require__(3);
-const LitHtmlMixin = __webpack_require__(18);
-module.exports = {Replica, PatchDiff, Proxy, LitHtmlMixin};
+const {PolymerElementMixin, LitElementMixin} = __webpack_require__(19);
+
+module.exports = {Replica, PatchDiff, Proxy, LitElementMixin, PolymerElementMixin};
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17565,11 +17608,11 @@ module.exports = {Replica, PatchDiff, Proxy, LitHtmlMixin};
 // import debuglog from 'debuglog'
 // const debug = debuglog('patch-diff');
 
-const {EventEmitter} = __webpack_require__(6);
+const {EventEmitter} = __webpack_require__(7);
 const _ = __webpack_require__(1);
-const utils = __webpack_require__(9);
-const DiffTracker = __webpack_require__(10);
-const debuglog = __webpack_require__(11);
+const utils = __webpack_require__(10);
+const DiffTracker = __webpack_require__(11);
+const debuglog = __webpack_require__(12);
 const debug = debuglog('patch-diff');
 
 class PatchDiff extends EventEmitter {
@@ -18024,7 +18067,7 @@ module.exports = PatchDiff;
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -18332,7 +18375,7 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports) {
 
 var g;
@@ -18358,7 +18401,7 @@ module.exports = g;
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
@@ -18386,7 +18429,7 @@ module.exports = function(module) {
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18451,7 +18494,7 @@ const Utils = {
 module.exports = Utils;
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18497,10 +18540,10 @@ function create(diffsAsArray) {
 module.exports = {create};
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var util = __webpack_require__(13);
+/* WEBPACK VAR INJECTION */(function(process) {var util = __webpack_require__(14);
 
 module.exports = (util && util.debuglog) || debuglog;
 
@@ -18523,10 +18566,10 @@ function debuglog(set) {
   return debugs[set];
 };
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(12)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(13)))
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -18716,13 +18759,13 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18736,7 +18779,7 @@ process.umask = function() { return 0; };
 
 const PatchDiff = __webpack_require__(0);
 const PatcherProxy = __webpack_require__(2);
-const LiveReplicaConnection = __webpack_require__(15);
+const LiveReplicaConnection = __webpack_require__(16);
 
 class Replica extends PatchDiff {
 
@@ -18791,7 +18834,7 @@ class Replica extends PatchDiff {
 module.exports = Replica;
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18799,7 +18842,7 @@ module.exports = Replica;
  * Created by barakedry on 06/07/2018.
  */
 
-const LiveReplicaEvents = __webpack_require__(16).Events;
+const LiveReplicaEvents = __webpack_require__(17).Events;
 
 /**
  *  LiveReplicaSocket
@@ -18867,7 +18910,7 @@ LiveReplicaSocket.instances = 0;
 module.exports = LiveReplicaSocket;
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18876,10 +18919,10 @@ module.exports = LiveReplicaSocket;
  */
 
 //export * from './events';
-module.exports = __webpack_require__(17);
+module.exports = __webpack_require__(18);
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18897,22 +18940,20 @@ module.exports = {
 };
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Replica = __webpack_require__(3);
+module.exports = {
+    LitElementMixin: __webpack_require__(20),
+    PolymerElementMixin: __webpack_require__(22),
+};
 
-function extractBasePathAndProperty(path) {
-    const lastPart = path.lastIndexOf('.');
-    if (lastPart === -1) {
-        return {property: path, path: ''};
-    }
+/***/ }),
+/* 20 */
+/***/ (function(module, exports, __webpack_require__) {
 
-    let property = path.substr(lastPart + 1);
-    path = path.substr(0, lastPart);
-    return {path, property};
-}
-
+const utils = __webpack_require__(4);
+const PolymerBaseMixin = __webpack_require__(21);
 
 function createDirective(replica, property) {
 
@@ -18938,16 +18979,15 @@ function createDirective(replica, property) {
     return directive;
 }
 
-function lr(data, path) {
-
-    let replica = lr.replicaByData.call(this, data);
+function getDirective(data, path) {
+    let replica = this.replicaByData.call(this, data);
 
     if (!this.__replicaDirectivesCache) {
         this.__replicaDirectivesCache = new WeakMap();
     }
 
     let property;
-    ({path, property} = extractBasePathAndProperty(path));
+    ({path, property} = utils.extractBasePathAndProperty(path));
 
     if (path) {
         replica = replica.at(path);
@@ -18966,60 +19006,252 @@ function lr(data, path) {
     return replicasDirectives[property];
 }
 
-lr.attach = function  (pathOrBaseReplica) {
-    let replica;
-    if (typeof pathOrBaseReplica === 'string') {
-        replica = new Replica(pathOrBaseReplica);
-    } else {
-        replica = pathOrBaseReplica;
-    }
 
-    if (!this.__replicas) {
-        this.__replicas = new Map();
-    }
+module.exports = function LitElementMixin(base) {
+    return class extends PolymerBaseMixin(base) {
 
-    const data = replica.data;
-    this.__replicas.set(data, replica);
-    return data;
-};
+        constructor() {
+            super();
+            this.liveReplica.render = (diff) => {
+                this._render(diff);
+            };
 
-lr.replicaByData = function (data) {
-    return this.__replicas.get(data);
-};
-
-lr.watch = function (data, path, cb) {
-
-    let element = this;
-    let replica = this.__replicas.get(data);
-    let property;
-    ({path, property} = extractBasePathAndProperty(path));
-
-    if (path) {
-        replica = replica.at(path);
-    }
-    replica.subscribe(function (diff) {
-        if (cb) {
-            cb.call(element, diff);
+            this.liveReplica.directive = getDirective.bind(this.liveReplica);
         }
 
-        element._render(element);
-    });
+    };
 };
 
-module.exports = function LitHtmlMixin(base) {
+
+/***/ }),
+/* 21 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Replica = __webpack_require__(3);
+const utils = __webpack_require__(4);
+
+function elementUtilities(element) {
+    return {
+        __replicas: new Map(),
+
+        attach(pathOrBaseReplica) {
+            let replica;
+            if (typeof pathOrBaseReplica === 'string') {
+                replica = new Replica(pathOrBaseReplica);
+            } else {
+                replica = pathOrBaseReplica;
+            }
+
+            const data = replica.data;
+            this.__replicas.set(data, replica);
+            return data;
+        },
+
+        replicaByData(data) {
+            return this.__replicas.get(data);
+        },
+
+        watch(data, path, cb) {
+            let replica = this.__replicas.get(data);
+            let render = this.render;
+            let property;
+            ({path, property} = utils.extractBasePathAndProperty(path));
+
+            if (path) {
+                replica = replica.at(path);
+            }
+            replica.subscribe(function (diff) {
+                if (cb) {
+                    cb.call(element, diff);
+                }
+
+                if (typeof render === 'function') {
+                    render(diff);
+                }
+            });
+        },
+
+        clearAll() {
+
+        }
+    };
+}
+
+
+module.exports = function PolymerBaseMixin(base) {
     return class extends base {
 
         constructor() {
             super();
-            this.lr = lr.bind(this);
-            this.lr.attach = lr.attach.bind(this);
-            this.lr.watch = lr.watch.bind(this);
-            this.lr.replicaByData = lr.replicaByData.bind(this);
+            this.liveReplica = elementUtilities(this);
         }
 
         disconnectedCallback() {
             super.disconnectedCallback();
+            this.liveReplica.clearAll();
         };
+    };
+};
+
+
+
+/***/ }),
+/* 22 */
+/***/ (function(module, exports) {
+
+function debouncer(fn, time) {
+    let debounceClearer;
+
+    return function () {
+        let args = arguments;
+        if (debounceClearer) {
+            clearTimeout(debounceClearer);
+            debounceClearer = 0;
+        }
+
+        debounceClearer = setTimeout(() => {
+            fn.apply(this, args);
+            debounceClearer = 0;
+        }, time);
+    }
+}
+
+function createAttachToProperty(element) {
+
+    function attachToProperty(replica, property, replicaPath) {
+
+        let unwatchers = [];
+
+        const createWatcherForPropertyEffects = debouncer( () => {
+
+            let paths = (element.__templateInfo.propertyEffects[property] || []).concat(element.__observeEffects[property] || []);
+            let replicaPathsToTemplatePaths = {};
+
+            for (let i = 0; i < paths.length; i++) {
+                let templatePath = paths[i].trigger.name;
+
+                if (templatePath.indexOf(property) === 0) {
+
+                    let observablePath = templatePath.substr(property.length + 1);
+                    let lastDotIndex = observablePath.lastIndexOf('.');
+                    let replicaWatchPath = observablePath.substring(0, lastDotIndex);
+                    let key = observablePath.substring(lastDotIndex + 1);
+
+                    if (replicaWatchPath) {
+                        replicaWatchPath = [replicaPath, replicaWatchPath].join('.');
+                    } else {
+                        replicaWatchPath = replicaPath;
+                    }
+
+                    if (replicaWatchPath) {
+                        if (!replicaPathsToTemplatePaths[replicaWatchPath]) {
+                            replicaPathsToTemplatePaths[replicaWatchPath] = {};
+                        }
+
+                        replicaPathsToTemplatePaths[replicaWatchPath][key] = templatePath;
+                    }
+                }
+            }
+
+            let replicaPaths = Object.keys(replicaPathsToTemplatePaths);
+            for (let i = 0; i < replicaPaths.length; i++) {
+                let path = replicaPaths[i];
+                let templatePaths = replicaPathsToTemplatePaths[path];
+                let watcher;
+
+                if (path) {
+                    let isArray = {};
+                    watcher = (diff) => {
+                        let keys = Object.keys(diff);
+                        for (let i = 0; i < keys.length; i++) {
+                            if (templatePaths[keys[i]]) {
+                                const templatePath = templatePaths[keys[i]];
+                                if (!isArray.hasOwnProperty(templatePath) && element.get(templatePath)) {
+                                    isArray[templatePath] = Array.isArray(element.get(templatePath));
+                                }
+
+                                if (isArray[templatePath]) {
+                                    element.notifySplices(templatePath);
+                                } else {
+                                    element.notifyPath(templatePath);
+                                }
+
+                            }
+                        }
+                    };
+                }
+
+                let unsubscribe = replica.subscribe(path, watcher);
+                unwatchers.push(unsubscribe);
+            }
+
+            Polymer.RenderStatus.afterNextRender(element, createWatcherForPropertyEffects);
+
+            if (replicaPaths.length === 0 && !replicaPath) {
+                let unsubscribe = replica.subscribe((diff) => {
+                    let keys = Object.keys(diff);
+                    for (let i = 0; i < keys.length; i++) {
+                        let key = keys[i];
+                        element.notifyPath(property);
+                    }
+                });
+                unwatchers.push(unsubscribe);
+            }
+
+        }, 5);
+
+        element[property] = replica.data;
+
+        if (!this._replicaUnsubscribes) {
+            this._replicaUnsubscribes = [];
+        }
+
+        const unsub = () => {
+            unwatchers.forEach(function(f){ f(); });
+            unwatchers = [];
+            let i = this._replicaUnsubscribes.indexOf(unsub);
+            this._replicaUnsubscribes.splice(i ,1);
+        };
+
+        this._replicaUnsubscribes.push(unsub);
+
+        return unsub;
+    }
+
+
+}
+
+module.exports = function PolymerElementMixin(base) {
+    return class extends PolymerBaseMixin(base) {
+
+        constructor() {
+            super();
+            const element = this;
+            const watch = this.liveReplica.watch;
+            this.liveReplica.watch = function(data, path, cb) {
+                watch.call(this.liveReplica, data, path, (diff) => {
+                    if (cb) {
+                        cb.call(element, diff);
+                    }
+                    //element._render(element);
+                });
+            };
+
+            this.liveReplica.attachToProperty = createAttachToProperty(element);
+        }
+
+        disconnectedCallback() {
+            super.disconnectedCallback();
+            if (this.liveReplica._replicaUnsubscribes) {
+                this.liveReplica._replicaUnsubscribes.forEach((f) => {
+                    f();
+                    f.unsubscribed = true;
+                });
+
+                this.liveReplica._replicaUnsubscribes = [];
+            }
+        }
+
     };
 };
 

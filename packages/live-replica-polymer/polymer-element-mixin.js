@@ -15,14 +15,15 @@ function debouncer(fn, time) {
     }
 }
 
-module.exports = {
-    attachToProperty(replica, property, replicaPath, onReady, debug) {
+function createAttachToProperty(element) {
+
+    function attachToProperty(replica, property, replicaPath) {
 
         let unwatchers = [];
 
         const createWatcherForPropertyEffects = debouncer( () => {
 
-            let paths = (this.__templateInfo.propertyEffects[property] || []).concat(this.__observeEffects[property] || []);
+            let paths = (element.__templateInfo.propertyEffects[property] || []).concat(element.__observeEffects[property] || []);
             let replicaPathsToTemplatePaths = {};
 
             for (let i = 0; i < paths.length; i++) {
@@ -64,14 +65,14 @@ module.exports = {
                         for (let i = 0; i < keys.length; i++) {
                             if (templatePaths[keys[i]]) {
                                 const templatePath = templatePaths[keys[i]];
-                                if (!isArray.hasOwnProperty(templatePath) && this.get(templatePath)) {
-                                    isArray[templatePath] = Array.isArray(this.get(templatePath));
+                                if (!isArray.hasOwnProperty(templatePath) && element.get(templatePath)) {
+                                    isArray[templatePath] = Array.isArray(element.get(templatePath));
                                 }
 
                                 if (isArray[templatePath]) {
-                                    this.notifySplices(templatePath);
+                                    element.notifySplices(templatePath);
                                 } else {
-                                    this.notifyPath(templatePath);
+                                    element.notifyPath(templatePath);
                                 }
 
                             }
@@ -83,12 +84,14 @@ module.exports = {
                 unwatchers.push(unsubscribe);
             }
 
+            Polymer.RenderStatus.afterNextRender(element, createWatcherForPropertyEffects);
+
             if (replicaPaths.length === 0 && !replicaPath) {
                 let unsubscribe = replica.subscribe((diff) => {
                     let keys = Object.keys(diff);
                     for (let i = 0; i < keys.length; i++) {
                         let key = keys[i];
-                        this.notifyPath(property);
+                        element.notifyPath(property);
                     }
                 });
                 unwatchers.push(unsubscribe);
@@ -96,9 +99,7 @@ module.exports = {
 
         }, 5);
 
-        Polymer.RenderStatus.afterNextRender(this, createWatcherForPropertyEffects);
-
-        this[property] = replica.data;
+        element[property] = replica.data;
 
         if (!this._replicaUnsubscribes) {
             this._replicaUnsubscribes = [];
@@ -114,17 +115,41 @@ module.exports = {
         this._replicaUnsubscribes.push(unsub);
 
         return unsub;
-    },
-
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        if (this._replicaUnsubscribes) {
-            this._replicaUnsubscribes.forEach((f) => {
-                f();
-                f.unsubscribed = true;
-            });
-
-            this._replicaUnsubscribes = [];
-        }
     }
+
+
+}
+
+module.exports = function PolymerElementMixin(base) {
+    return class extends PolymerBaseMixin(base) {
+
+        constructor() {
+            super();
+            const element = this;
+            const watch = this.liveReplica.watch;
+            this.liveReplica.watch = function(data, path, cb) {
+                watch.call(this.liveReplica, data, path, (diff) => {
+                    if (cb) {
+                        cb.call(element, diff);
+                    }
+                    //element._render(element);
+                });
+            };
+
+            this.liveReplica.attachToProperty = createAttachToProperty(element);
+        }
+
+        disconnectedCallback() {
+            super.disconnectedCallback();
+            if (this.liveReplica._replicaUnsubscribes) {
+                this.liveReplica._replicaUnsubscribes.forEach((f) => {
+                    f();
+                    f.unsubscribed = true;
+                });
+
+                this.liveReplica._replicaUnsubscribes = [];
+            }
+        }
+
+    };
 };

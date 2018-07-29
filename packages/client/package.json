@@ -9,8 +9,11 @@
     "dependencies": {
         "@live-replica/patch-diff": "*",
         "@live-replica/proxy": "*",
-        "@live-replica/socket": "*"
+        "@live-replica/socket": "*",
+        "@live-replica/live-replica-polymer": "*"
     },
   "author": "Barak Edry",
   "license": "Apache-2.0"
 }
+
+

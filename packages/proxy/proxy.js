@@ -84,7 +84,25 @@ const PatcherProxy = {
     createArrayMethod(proxy, array, methodName, readonly) {
 
         const proxyServices = this;
+        const props = this.proxyProperties.get(proxy);
         const root = this.getRoot(proxy);
+
+        function createArrayMutatingMethod() {
+            return function arrayMutatingMethod() {
+                proxyServices.commit(root, true);
+                const copy = array.slice();
+                copy[methodName].call(copy, ...arguments);
+                copy.forEach((item, index) => {
+                    proxy[index] = item;
+                });
+                return proxy;
+            }
+        }
+
+        if (props.patcher.disableSplices) {
+            return createArrayMutatingMethod();
+        }
+
         switch (methodName) {
             case 'push': {
                 return function push(...items) {
@@ -132,18 +150,7 @@ const PatcherProxy = {
             }
             // mutating methods that are not supported
             default: {
-
-                return function arrayMutatingFunction() {
-                    proxyServices.commit(root, true);
-                    const copy = array.slice();
-                    copy[methodName].call(copy, ...arguments);
-                    copy.forEach((item, index) => {
-                       proxy[index] = item;
-                    });
-                    return proxy;
-                };
-
-
+                return createArrayMutatingMethod();
                 //throw Error(`${methodName}() is not supported by LiveReplica proxy`);
             }
 
