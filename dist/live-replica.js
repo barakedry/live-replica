@@ -82,20 +82,37 @@ window["LiveReplica"] =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 5);
+/******/ 	return __webpack_require__(__webpack_require__.s = 6);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, exports) {
+
+module.exports = {
+    extractBasePathAndProperty(path) {
+        const lastPart = path.lastIndexOf('.');
+        if (lastPart === -1) {
+            return {property: path, path: ''};
+        }
+
+        let property = path.substr(lastPart + 1);
+        path = path.substr(0, lastPart);
+        return {path, property};
+    }
+};
+
+/***/ }),
+/* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
  * Created by barakedry on 6/19/15.
  */
-module.exports = __webpack_require__(6);
+module.exports = __webpack_require__(7);
 
 /***/ }),
-/* 1 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, module) {var __WEBPACK_AMD_DEFINE_RESULT__;/**
@@ -17196,10 +17213,10 @@ module.exports = __webpack_require__(6);
   else {}
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(8), __webpack_require__(9)(module)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(9), __webpack_require__(10)(module)))
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17207,7 +17224,7 @@ module.exports = __webpack_require__(6);
  * Created by barakedry on 31/03/2017.
  */
 
-const _ = __webpack_require__(1);
+const _ = __webpack_require__(2);
 
 let arrayMutationMethods = {};
 ['copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'].forEach((method) => {
@@ -17545,7 +17562,7 @@ module.exports = PatcherProxy;
 
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17557,41 +17574,98 @@ module.exports = PatcherProxy;
 import Replica from "./replica";
 export default Replica;
 */
-module.exports = __webpack_require__(15);
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports) {
-
-module.exports = {
-    extractBasePathAndProperty(path) {
-        const lastPart = path.lastIndexOf('.');
-        if (lastPart === -1) {
-            return {property: path, path: ''};
-        }
-
-        let property = path.substr(lastPart + 1);
-        path = path.substr(0, lastPart);
-        return {path, property};
-    }
-};
+module.exports = __webpack_require__(16);
 
 /***/ }),
 /* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
+const Replica = __webpack_require__(4);
+const utils = __webpack_require__(0);
+
+function elementUtilities(element) {
+    return {
+        __replicas: new Map(),
+
+        attach(pathOrBaseReplica) {
+            let replica;
+            if (typeof pathOrBaseReplica === 'string') {
+                replica = new Replica(pathOrBaseReplica);
+            } else {
+                replica = pathOrBaseReplica;
+            }
+
+            const data = replica.data;
+            this.__replicas.set(data, replica);
+            return data;
+        },
+
+        replicaByData(data) {
+            return this.__replicas.get(data);
+        },
+
+        watch(data, path, cb) {
+            let replica = this.__replicas.get(data);
+            let render = this.render;
+            let property;
+            ({path, property} = utils.extractBasePathAndProperty(path));
+
+            if (path) {
+                replica = replica.at(path);
+            }
+            replica.subscribe(function (diff) {
+                if (!diff[property]) { return; }
+
+                if (cb) {
+                    cb.call(element, diff, replica.get(property));
+                }
+
+                if (typeof render === 'function') {
+                    render(diff, replica.get(property));
+                }
+            });
+        },
+
+        clearAll() {
+
+        }
+    };
+}
+
+
+module.exports = function PolymerBaseMixin(base) {
+    return class extends base {
+
+        constructor() {
+            super();
+            this.liveReplica = elementUtilities(this);
+        }
+
+        disconnectedCallback() {
+            super.disconnectedCallback();
+            this.liveReplica.clearAll();
+        };
+    };
+};
+
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
 "use strict";
 
 
-const PatchDiff = __webpack_require__(0);
-const Proxy = __webpack_require__(2);
-const Replica = __webpack_require__(3);
-const {PolymerElementMixin, LitElementMixin} = __webpack_require__(19);
+const PatchDiff = __webpack_require__(1);
+const Proxy = __webpack_require__(3);
+const Replica = __webpack_require__(4);
+const {PolymerElementMixin, LitElementMixin} = __webpack_require__(20);
 
 module.exports = {Replica, PatchDiff, Proxy, LitElementMixin, PolymerElementMixin};
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17608,11 +17682,11 @@ module.exports = {Replica, PatchDiff, Proxy, LitElementMixin, PolymerElementMixi
 // import debuglog from 'debuglog'
 // const debug = debuglog('patch-diff');
 
-const {EventEmitter} = __webpack_require__(7);
-const _ = __webpack_require__(1);
-const utils = __webpack_require__(10);
-const DiffTracker = __webpack_require__(11);
-const debuglog = __webpack_require__(12);
+const {EventEmitter} = __webpack_require__(8);
+const _ = __webpack_require__(2);
+const utils = __webpack_require__(11);
+const DiffTracker = __webpack_require__(12);
+const debuglog = __webpack_require__(13);
 const debug = debuglog('patch-diff');
 
 class PatchDiff extends EventEmitter {
@@ -18067,7 +18141,7 @@ module.exports = PatchDiff;
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -18375,7 +18449,7 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports) {
 
 var g;
@@ -18401,7 +18475,7 @@ module.exports = g;
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
@@ -18429,7 +18503,7 @@ module.exports = function(module) {
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18494,7 +18568,7 @@ const Utils = {
 module.exports = Utils;
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18540,10 +18614,10 @@ function create(diffsAsArray) {
 module.exports = {create};
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var util = __webpack_require__(14);
+/* WEBPACK VAR INJECTION */(function(process) {var util = __webpack_require__(15);
 
 module.exports = (util && util.debuglog) || debuglog;
 
@@ -18566,10 +18640,10 @@ function debuglog(set) {
   return debugs[set];
 };
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(13)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(14)))
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -18759,13 +18833,13 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18777,9 +18851,9 @@ process.umask = function() { return 0; };
 // import PatcherProxy from '@live-replica/proxy';
 // import LiveReplicaConnection from '@live-replica/socket';
 
-const PatchDiff = __webpack_require__(0);
-const PatcherProxy = __webpack_require__(2);
-const LiveReplicaConnection = __webpack_require__(16);
+const PatchDiff = __webpack_require__(1);
+const PatcherProxy = __webpack_require__(3);
+const LiveReplicaConnection = __webpack_require__(17);
 
 class Replica extends PatchDiff {
 
@@ -18834,7 +18908,7 @@ class Replica extends PatchDiff {
 module.exports = Replica;
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18842,7 +18916,7 @@ module.exports = Replica;
  * Created by barakedry on 06/07/2018.
  */
 
-const LiveReplicaEvents = __webpack_require__(17).Events;
+const LiveReplicaEvents = __webpack_require__(18).Events;
 
 /**
  *  LiveReplicaSocket
@@ -18910,7 +18984,7 @@ LiveReplicaSocket.instances = 0;
 module.exports = LiveReplicaSocket;
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18919,10 +18993,10 @@ module.exports = LiveReplicaSocket;
  */
 
 //export * from './events';
-module.exports = __webpack_require__(18);
+module.exports = __webpack_require__(19);
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18940,20 +19014,20 @@ module.exports = {
 };
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = {
-    LitElementMixin: __webpack_require__(20),
+    LitElementMixin: __webpack_require__(21),
     PolymerElementMixin: __webpack_require__(22),
 };
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const utils = __webpack_require__(4);
-const PolymerBaseMixin = __webpack_require__(21);
+const utils = __webpack_require__(0);
+const PolymerBaseMixin = __webpack_require__(5);
 
 function createDirective(replica, property) {
 
@@ -19024,83 +19098,11 @@ module.exports = function LitElementMixin(base) {
 
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Replica = __webpack_require__(3);
-const utils = __webpack_require__(4);
-
-function elementUtilities(element) {
-    return {
-        __replicas: new Map(),
-
-        attach(pathOrBaseReplica) {
-            let replica;
-            if (typeof pathOrBaseReplica === 'string') {
-                replica = new Replica(pathOrBaseReplica);
-            } else {
-                replica = pathOrBaseReplica;
-            }
-
-            const data = replica.data;
-            this.__replicas.set(data, replica);
-            return data;
-        },
-
-        replicaByData(data) {
-            return this.__replicas.get(data);
-        },
-
-        watch(data, path, cb) {
-            let replica = this.__replicas.get(data);
-            let render = this.render;
-            let property;
-            ({path, property} = utils.extractBasePathAndProperty(path));
-
-            if (path) {
-                replica = replica.at(path);
-            }
-            replica.subscribe(function (diff) {
-                if (!diff[property]) { return; }
-
-                if (cb) {
-                    cb.call(element, diff, replica.get(property));
-                }
-
-                if (typeof render === 'function') {
-                    render(diff, replica.get(property));
-                }
-            });
-        },
-
-        clearAll() {
-
-        }
-    };
-}
-
-
-module.exports = function PolymerBaseMixin(base) {
-    return class extends base {
-
-        constructor() {
-            super();
-            this.liveReplica = elementUtilities(this);
-        }
-
-        disconnectedCallback() {
-            super.disconnectedCallback();
-            this.liveReplica.clearAll();
-        };
-    };
-};
-
-
-
-/***/ }),
-/* 22 */
-/***/ (function(module, exports) {
-
+const PolymerBaseMixin = __webpack_require__(5);
+const utils = __webpack_require__(0);
 function debouncer(fn, time) {
     let debounceClearer;
 
@@ -19120,13 +19122,15 @@ function debouncer(fn, time) {
 
 function createAttachToProperty(element) {
 
-    function attachToProperty(property, replica, replicaPath) {
+    return function attachToProperty(property, replica) {
+
+        const data = this.attach(replica);
 
         let unwatchers = [];
 
         const createWatcherForPropertyEffects = debouncer( () => {
 
-            let paths = (element.__templateInfo.propertyEffects[property] || []).concat(element.__observeEffects[property] || []);
+            let paths = (element.__templateInfo.propertyEffects[property] || []).concat((element.__observeEffects && element.__observeEffects[property]) || []);
             let replicaPathsToTemplatePaths = {};
 
             for (let i = 0; i < paths.length; i++) {
@@ -19135,15 +19139,8 @@ function createAttachToProperty(element) {
                 if (templatePath.indexOf(property) === 0) {
 
                     let observablePath = templatePath.substr(property.length + 1);
-                    let lastDotIndex = observablePath.lastIndexOf('.');
-                    let replicaWatchPath = observablePath.substring(0, lastDotIndex);
-                    let key = observablePath.substring(lastDotIndex + 1);
 
-                    if (replicaWatchPath) {
-                        replicaWatchPath = [replicaPath, replicaWatchPath].join('.');
-                    } else {
-                        replicaWatchPath = replicaPath;
-                    }
+                    let {path: replicaWatchPath, property: key} = utils.extractBasePathAndProperty(observablePath);
 
                     if (replicaWatchPath) {
                         if (!replicaPathsToTemplatePaths[replicaWatchPath]) {
@@ -19187,8 +19184,6 @@ function createAttachToProperty(element) {
                 unwatchers.push(unsubscribe);
             }
 
-            Polymer.RenderStatus.afterNextRender(element, createWatcherForPropertyEffects);
-
             if (replicaPaths.length === 0 && !replicaPath) {
                 let unsubscribe = replica.subscribe((diff) => {
                     let keys = Object.keys(diff);
@@ -19202,7 +19197,9 @@ function createAttachToProperty(element) {
 
         }, 5);
 
-        element[property] = replica.data;
+        //afterNextRender(element, createWatcherForPropertyEffects);
+        createWatcherForPropertyEffects();
+        element[property] = data;
 
         if (!this._replicaUnsubscribes) {
             this._replicaUnsubscribes = [];
@@ -19229,16 +19226,6 @@ module.exports = function PolymerElementMixin(base) {
         constructor() {
             super();
             const element = this;
-            const watch = this.liveReplica.watch;
-            this.liveReplica.watch = function(data, path, cb) {
-                watch.call(this.liveReplica, data, path, (diff) => {
-                    if (cb) {
-                        cb.call(element, diff);
-                    }
-                    //element._render(element);
-                });
-            };
-
             this.liveReplica.attachToProperty = createAttachToProperty(element);
         }
 

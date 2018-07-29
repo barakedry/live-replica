@@ -1,3 +1,5 @@
+const PolymerBaseMixin = require('./polymer-mixin');
+const utils = require('./utils');
 function debouncer(fn, time) {
     let debounceClearer;
 
@@ -17,13 +19,15 @@ function debouncer(fn, time) {
 
 function createAttachToProperty(element) {
 
-    function attachToProperty(property, replica, replicaPath) {
+    return function attachToProperty(property, replica) {
+
+        const data = this.attach(replica);
 
         let unwatchers = [];
 
         const createWatcherForPropertyEffects = debouncer( () => {
 
-            let paths = (element.__templateInfo.propertyEffects[property] || []).concat(element.__observeEffects[property] || []);
+            let paths = (element.__templateInfo.propertyEffects[property] || []).concat((element.__observeEffects && element.__observeEffects[property]) || []);
             let replicaPathsToTemplatePaths = {};
 
             for (let i = 0; i < paths.length; i++) {
@@ -32,15 +36,8 @@ function createAttachToProperty(element) {
                 if (templatePath.indexOf(property) === 0) {
 
                     let observablePath = templatePath.substr(property.length + 1);
-                    let lastDotIndex = observablePath.lastIndexOf('.');
-                    let replicaWatchPath = observablePath.substring(0, lastDotIndex);
-                    let key = observablePath.substring(lastDotIndex + 1);
 
-                    if (replicaWatchPath) {
-                        replicaWatchPath = [replicaPath, replicaWatchPath].join('.');
-                    } else {
-                        replicaWatchPath = replicaPath;
-                    }
+                    let {path: replicaWatchPath, property: key} = utils.extractBasePathAndProperty(observablePath);
 
                     if (replicaWatchPath) {
                         if (!replicaPathsToTemplatePaths[replicaWatchPath]) {
@@ -84,8 +81,6 @@ function createAttachToProperty(element) {
                 unwatchers.push(unsubscribe);
             }
 
-            Polymer.RenderStatus.afterNextRender(element, createWatcherForPropertyEffects);
-
             if (replicaPaths.length === 0 && !replicaPath) {
                 let unsubscribe = replica.subscribe((diff) => {
                     let keys = Object.keys(diff);
@@ -99,7 +94,9 @@ function createAttachToProperty(element) {
 
         }, 5);
 
-        element[property] = replica.data;
+        //afterNextRender(element, createWatcherForPropertyEffects);
+        createWatcherForPropertyEffects();
+        element[property] = data;
 
         if (!this._replicaUnsubscribes) {
             this._replicaUnsubscribes = [];
@@ -126,16 +123,6 @@ module.exports = function PolymerElementMixin(base) {
         constructor() {
             super();
             const element = this;
-            const watch = this.liveReplica.watch;
-            this.liveReplica.watch = function(data, path, cb) {
-                watch.call(this.liveReplica, data, path, (diff) => {
-                    if (cb) {
-                        cb.call(element, diff);
-                    }
-                    //element._render(element);
-                });
-            };
-
             this.liveReplica.attachToProperty = createAttachToProperty(element);
         }
 
