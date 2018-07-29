@@ -99,7 +99,7 @@ const PatcherProxy = {
             }
         }
 
-        if (props.patcher.disableSplices) {
+        if (props.patcher.options.disableSplices) {
             return createArrayMutatingMethod();
         }
 
