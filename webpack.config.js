@@ -7,7 +7,7 @@ module.exports = {
         filename: 'live-replica.js',
         path: path.resolve(__dirname, 'dist'),
         library: 'LiveReplica',
-        libraryTarget: "global"
+        libraryTarget: "var"
     },
     optimization: {
         minimize: false
