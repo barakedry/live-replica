@@ -19142,7 +19142,7 @@ function createAttachToProperty(element) {
 
                     let {path: replicaWatchPath, property: key} = utils.extractBasePathAndProperty(observablePath);
 
-                    if (replicaWatchPath) {
+                    if (replicaWatchPath || key) {
                         if (!replicaPathsToTemplatePaths[replicaWatchPath]) {
                             replicaPathsToTemplatePaths[replicaWatchPath] = {};
                         }
@@ -19158,27 +19158,25 @@ function createAttachToProperty(element) {
                 let templatePaths = replicaPathsToTemplatePaths[path];
                 let watcher;
 
-                if (path) {
-                    let isArray = {};
-                    watcher = (diff) => {
-                        let keys = Object.keys(diff);
-                        for (let i = 0; i < keys.length; i++) {
-                            if (templatePaths[keys[i]]) {
-                                const templatePath = templatePaths[keys[i]];
-                                if (!isArray.hasOwnProperty(templatePath) && element.get(templatePath)) {
-                                    isArray[templatePath] = Array.isArray(element.get(templatePath));
-                                }
-
-                                if (isArray[templatePath]) {
-                                    element.notifySplices(templatePath);
-                                } else {
-                                    element.notifyPath(templatePath);
-                                }
-
+                let isArray = {};
+                watcher = (diff) => {
+                    let keys = Object.keys(diff);
+                    for (let i = 0; i < keys.length; i++) {
+                        if (templatePaths[keys[i]]) {
+                            const templatePath = templatePaths[keys[i]];
+                            if (!isArray.hasOwnProperty(templatePath) && element.get(templatePath)) {
+                                isArray[templatePath] = Array.isArray(element.get(templatePath));
                             }
+
+                            if (isArray[templatePath]) {
+                                element.notifySplices(templatePath);
+                            } else {
+                                element.notifyPath(templatePath);
+                            }
+
                         }
-                    };
-                }
+                    }
+                };
 
                 let unsubscribe = replica.subscribe(path, watcher);
                 unwatchers.push(unsubscribe);
