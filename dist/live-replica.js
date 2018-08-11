@@ -82,38 +82,20 @@ var LiveReplica =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 10);
+/******/ 	return __webpack_require__(__webpack_require__.s = 12);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
-/**
- * Created by barakedry on 06/07/2018.
- */
-
-
-module.exports = {
-    subscribe: '$s',
-    unsubscribe: '$u',
-    invokeRPC: '$i',
-    apply: '$a',
-    dictionaryUpdate: '$d'
-};
-
-/***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
 /**
  * Created by barakedry on 6/19/15.
  */
-module.exports = __webpack_require__(11);
+module.exports = __webpack_require__(13);
 
 /***/ }),
-/* 2 */
+/* 1 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -421,7 +403,7 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 3 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -765,6 +747,34 @@ const PatcherProxy = {
 // export default Proxy;
 module.exports = PatcherProxy;
 
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Created by barakedry on 06/07/2018.
+ */
+
+
+const LiveReplicaEvents = {
+    subscribe: '$s',
+    unsubscribe: '$u',
+    invokeRPC: '$i',
+    apply: '$a',
+    dictionaryUpdate: '$d'
+};
+
+const names = Object.keys(LiveReplicaEvents);
+names.forEach((key) => {
+    const value = LiveReplicaEvents[key];
+    LiveReplicaEvents[value] = key;
+});
+
+module.exports = function eventName(event) {
+    return LiveReplicaEvents[event] || event;
+};
 
 /***/ }),
 /* 4 */
@@ -17885,7 +17895,7 @@ module.exports = {
   else {}
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6), __webpack_require__(12)(module)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6), __webpack_require__(7)(module)))
 
 /***/ }),
 /* 6 */
@@ -17915,6 +17925,34 @@ module.exports = g;
 
 /***/ }),
 /* 7 */
+/***/ (function(module, exports) {
+
+module.exports = function(module) {
+	if (!module.webpackPolyfill) {
+		module.deprecate = function() {};
+		module.paths = [];
+		// module.parent = undefined by default
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
+			enumerable: true,
+			get: function() {
+				return module.l;
+			}
+		});
+		Object.defineProperty(module, "id", {
+			enumerable: true,
+			get: function() {
+				return module.i;
+			}
+		});
+		module.webpackPolyfill = 1;
+	}
+	return module;
+};
+
+
+/***/ }),
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17926,10 +17964,10 @@ module.exports = g;
 import Replica from "./replica";
 export default Replica;
 */
-module.exports = __webpack_require__(18);
+module.exports = __webpack_require__(19);
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17937,7 +17975,7 @@ module.exports = __webpack_require__(18);
  * Created by barakedry on 06/07/2018.
  */
 
-const LiveReplicaEvents = __webpack_require__(0);
+const eventName = __webpack_require__(3);
 
 /**
  *  LiveReplicaSocket
@@ -17948,22 +17986,16 @@ class LiveReplicaSocket {
         this._instance = LiveReplicaSocket.instances++;
     }
 
-    eventName(event) {
-        let eventName = LiveReplicaEvents[event] || event;
-        return `${eventName}.${this._instance}`;
-    }
-
     send(event, payload, ack) {
-        const eventName = this.eventName(event);
-        this._socketSend(eventName, payload, ack);
+        this._socketSend(eventName(event), payload, ack);
     }
 
     on(event, fn) {
-        this._addSocketEventListener(this.eventName(event), fn)
+        this._addSocketEventListener(eventName(event), fn)
     }
 
     off(event, fn) {
-        this._removeSocketEventListener(this.eventName(event), fn)
+        this._removeSocketEventListener(eventName(event), fn)
     }
 
     /**
@@ -18007,10 +18039,128 @@ LiveReplicaSocket.instances = 0;
 module.exports = LiveReplicaSocket;
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Replica = __webpack_require__(7);
+"use strict";
+/**
+ * Created by barakedry on 02/06/2018.
+ */
+
+const PatchDiff = __webpack_require__(0);
+const PatcherProxy = __webpack_require__(2);
+const Middlewares = __webpack_require__(20);
+
+class LiveReplicaServer extends PatchDiff {
+
+    constructor(options) {
+        super();
+
+        this.options = Object.assign({
+        }, options);
+
+
+        this.middlewares = new Middlewares();
+    }
+
+    onConnect(connection) {
+        connection.on('subscribe', (clientRequest, ack) => {
+            const {id, path, allowRPC, allowWrite} = clientRequest;
+
+            const subscribeRequest = {
+                id,
+                connection,
+                ack,
+                path,
+                allowRPC,
+                allowWrite
+            };
+
+            this.onSubscribeRequest(subscribeRequest);
+        });
+    }
+
+    onSubscribeRequest(subscribeRequest) {
+        this.emit('subscribe-request', subscribeRequest);
+
+        subscribeRequest = Object.assign({
+            allowWrite: false,
+            allowRPC: false
+        }, subscribeRequest);
+
+        let reject = function(rejectReason) {
+            subscribeRequest.ack({rejectReason});
+        };
+
+        this.middlewares.start(subscribeRequest, reject, (request) => {
+            this.emit('subscribe', request);
+
+            subscribeRequest.ack({success: true});
+
+            this.subscribeClient(request);
+        });
+    }
+
+    subscribeClient(request) {
+        const path = request.path;
+        const clientSubset = this.at(path);
+
+        let ownerChange = false;
+        clientSubset.subscribe((data) => {
+            if (!ownerChange) {
+                request.socket.send(data.differences);
+            }
+
+            ownerChange = false;
+        });
+
+        if (request.allowWrite) {
+            request.socket.on('apply', (payload) => {
+                ownerChange = true;
+                clientSubset.apply(payload);
+            });
+        }
+
+        if (request.allowRPC) {
+        }
+
+        const onUnsubscribe = () => {
+            request.socket.removeListener('unsubscribe', onUnsubscribe);
+            request.socket.removeListener('disconnect', onUnsubscribe);
+            this.emit('unsubscribe', request);
+        };
+
+
+        request.socket.once('unsubscribe', onUnsubscribe);
+        request.socket.once('disconnect', onUnsubscribe);
+    }
+
+    use(fn) {
+        this.middlewares.use(fn);
+    }
+
+    get data() {
+        if (this.options.readonly) {
+            return this._data;
+        } else {
+            if (!this.proxies.has(this)) {
+                const proxy = new PatcherProxy(this);
+                this.proxies.set(this, proxy);
+            }
+            return this.proxies.get(this);
+        }
+    }
+}
+
+LiveReplicaServer.middlewares = __webpack_require__(21);
+
+module.exports = LiveReplicaServer;
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Replica = __webpack_require__(8);
 const utils = __webpack_require__(4);
 
 function elementUtilities(element) {
@@ -18081,23 +18231,24 @@ module.exports = function PolymerBaseMixin(base) {
 
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-const PatchDiff = __webpack_require__(1);
-const Proxy = __webpack_require__(3);
-const Replica = __webpack_require__(7);
-const WorkerServer = __webpack_require__(19);
-const WorkerSocket = __webpack_require__(22);
-const {PolymerElementMixin, LitElementMixin} = __webpack_require__(23);
+const PatchDiff = __webpack_require__(0);
+const Proxy = __webpack_require__(2);
+const Replica = __webpack_require__(8);
+const ReplicaServer = __webpack_require__(10);
+const WorkerServer = __webpack_require__(22);
+const WorkerSocket = __webpack_require__(23);
+const {PolymerElementMixin, LitElementMixin} = __webpack_require__(24);
 
-module.exports = {Replica, PatchDiff, Proxy, WorkerServer, WorkerSocket, LitElementMixin, PolymerElementMixin};
+module.exports = {Replica, ReplicaServer, PatchDiff, Proxy, WorkerServer, WorkerSocket, LitElementMixin, PolymerElementMixin};
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18114,11 +18265,11 @@ module.exports = {Replica, PatchDiff, Proxy, WorkerServer, WorkerSocket, LitElem
 // import debuglog from 'debuglog'
 // const debug = debuglog('patch-diff');
 
-const {EventEmitter} = __webpack_require__(2);
+const {EventEmitter} = __webpack_require__(1);
 const _ = __webpack_require__(5);
-const utils = __webpack_require__(13);
-const DiffTracker = __webpack_require__(14);
-const debuglog = __webpack_require__(15);
+const utils = __webpack_require__(14);
+const DiffTracker = __webpack_require__(15);
+const debuglog = __webpack_require__(16);
 const debug = debuglog('patch-diff');
 
 class PatchDiff extends EventEmitter {
@@ -18573,35 +18724,7 @@ module.exports = PatchDiff;
 
 
 /***/ }),
-/* 12 */
-/***/ (function(module, exports) {
-
-module.exports = function(module) {
-	if (!module.webpackPolyfill) {
-		module.deprecate = function() {};
-		module.paths = [];
-		// module.parent = undefined by default
-		if (!module.children) module.children = [];
-		Object.defineProperty(module, "loaded", {
-			enumerable: true,
-			get: function() {
-				return module.l;
-			}
-		});
-		Object.defineProperty(module, "id", {
-			enumerable: true,
-			get: function() {
-				return module.i;
-			}
-		});
-		module.webpackPolyfill = 1;
-	}
-	return module;
-};
-
-
-/***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18666,7 +18789,7 @@ const Utils = {
 module.exports = Utils;
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18712,10 +18835,10 @@ function create(diffsAsArray) {
 module.exports = {create};
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var util = __webpack_require__(17);
+/* WEBPACK VAR INJECTION */(function(process) {var util = __webpack_require__(18);
 
 module.exports = (util && util.debuglog) || debuglog;
 
@@ -18738,10 +18861,10 @@ function debuglog(set) {
   return debugs[set];
 };
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(16)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(17)))
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -18931,13 +19054,13 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18949,9 +19072,9 @@ process.umask = function() { return 0; };
 // import PatcherProxy from '@live-replica/proxy';
 // import LiveReplicaConnection from '@live-replica/socket';
 
-const PatchDiff = __webpack_require__(1);
-const PatcherProxy = __webpack_require__(3);
-const LiveReplicaConnection = __webpack_require__(8);
+const PatchDiff = __webpack_require__(0);
+const PatcherProxy = __webpack_require__(2);
+const LiveReplicaConnection = __webpack_require__(9);
 
 class Replica extends PatchDiff {
 
@@ -19006,198 +19129,7 @@ class Replica extends PatchDiff {
 module.exports = Replica;
 
 /***/ }),
-/* 19 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(global) {/**
- * Created by barakedry on 06/07/2018.
- */
-
-const LiveReplicaEvents = __webpack_require__(0);
-const { EventEmitter }  = __webpack_require__(2);
-const LiveReplicaServer = __webpack_require__(20);
-
-
-class Socket extends EventEmitter {
-    constructor() {
-        this.messageFromMaster = ({data}) => {
-            if (data.liveReplica) {
-                const {event, payload, ack} = data.liveReplica;
-                this.emit(event, payload, ack);
-            }
-        };
-
-        global.addEventListener('onMessage', this.messageFromMaster);
-    }
-
-    eventName(event) {
-        return LiveReplicaEvents[event] || event;
-    }
-
-    send(event, payload) {
-        event = this.eventName(event);
-        global.postMessage({
-            liveReplica: {
-                event,
-                payload
-            }
-        });
-    }
-
-
-    emit(eventName, ...args) {
-        eventName = this.eventName(eventName);
-        const callArgs = [eventName].concat(args);
-        super.emit.apply(this, callArgs);
-    }
-
-    addEventListener(eventName, handler) {
-        eventName = this.eventName(eventName);
-        super.addEventListener(eventName, handler);
-    }
-
-    removeEventListener(eventName, handler) {
-        eventName = this.eventName(eventName);
-        super.removeEventListener(eventName, handler);
-    }
-
-}
-
-/**
- *  LiveReplicaWorkerSocket
- */
-class LiveReplicaWorkerServer extends LiveReplicaServer {
-    constructor() {
-        if (typeof onmessage !== 'function') {
-            throw new Error('LiveReplicaWorkerServer can be initiated only inside a web worker')
-        }
-        super();
-
-        this._soleSocket = new Socket();
-        this.onConnect(this._soleSocket)
-    }
-
-}
-
-module.exports = LiveReplicaWorkerServer;
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6)))
-
-/***/ }),
 /* 20 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Created by barakedry on 02/06/2018.
- */
-
-
-// import PatchDiff = require('@live-replica/patch-diff';
-// import PatcherProxy = require('@live-replica/proxy';
-// import Middlewares = require('./middleware-chain.js';
-
-
-const PatchDiff = __webpack_require__(1);
-const PatcherProxy = __webpack_require__(3);
-const Middlewares = __webpack_require__(21);
-const LiveReplicaEvents = __webpack_require__(0);
-
-class LiveReplicaServer extends PatchDiff {
-
-    constructor(options) {
-        super();
-
-        this.options = Object.assign({
-        }, options);
-
-
-        this.middlewares = new Middlewares();
-    }
-
-    onConnect(connection) {
-        connection.on('subscribe', (clientRequest, ack) => {
-            const {id, path, allowRPC, allowWrite} = clientRequest;
-
-            const subscribeRequest = {
-                id,
-                socket,
-                ack,
-                path,
-                allowRPC,
-                allowWrite
-            };
-
-            this.onSubscribeRequest(subscribeRequest);
-        });
-    }
-
-    onSubscribeRequest(subscribeRequest) {
-        this.emit('subscribe-request', subscribeRequest);
-
-        subscribeRequest = Object.assign({
-            allowWrite: false,
-            allowRPC: false
-        }, subscribeRequest);
-
-        let reject = function(rejectReason) {
-            subscribeRequest.ack({rejectReason});
-        };
-
-        this.middlewares.run(subscribeRequest, reject, (request) => {
-            this.emit('subscribe', request);
-
-            subscribeRequest.ack({success: true});
-
-            this.subscribeClient(request);
-        });
-    }
-
-    subscribeClient(request) {
-        const path = request.path;
-        const clientSubset = this.at(path);
-
-        let ownerChange = false;
-        clientSubset.subscribe((data) => {
-            if (!ownerChange) {
-                request.socket.send(data.differences);
-            }
-
-            ownerChange = false;
-        });
-
-        if (request.allowWrite) {
-            request.socket.on('apply', (payload) => {
-                ownerChange = true;
-                clientSubset.apply(payload);
-            });
-        }
-
-        if (request.allowRPC) {
-        }
-    }
-
-    use(fn) {
-        this.middlewares.use(fn);
-    }
-
-    get data() {
-        if (this.options.readonly) {
-            return this._data;
-        } else {
-            if (!this.proxies.has(this)) {
-                const proxy = new PatcherProxy(this);
-                this.proxies.set(this, proxy);
-            }
-            return this.proxies.get(this);
-        }
-    }
-}
-
-module.exports = LiveReplicaServer;
-
-/***/ }),
-/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19253,7 +19185,135 @@ MiddlewareChain.prototype.use = MiddlewareChain.prototype.add;
 module.exports = MiddlewareChain;
 
 /***/ }),
+/* 21 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(module) {/**
+ * Created by barakedry on 12/08/2018.
+ */
+
+
+module.exporst = {
+    oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback) {
+
+        if (typeof path === 'function') {
+            lastSubscriptionCallback = firstSubscriptionCallback;
+            firstSubscriptionCallback = path;
+            path = undefined;
+        }
+
+        let subscribed = 0;
+        return function onSubscribe(request, reject, approve) {
+            const server = this;
+
+            if (path && unsubscriberRequest.path !== path) {
+                return approve();
+            }
+
+
+            if (subscribed === 0) {
+
+                server.on('unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
+                    if (!path || unsubscriberRequest.path === path) {
+                        subscribed--;
+
+                        if (subscribed <= 0) {
+                            subscribed = 0;
+                            server.removeEventListener('unsubscribe', onUnsubscribe);
+                            if (lastSubscriptionCallback) {
+                                lastSubscriptionCallback.call(server, unsubscriberRequest);
+                            }
+
+                        }
+                    }
+                });
+
+                firstSubscriptionCallback.call(server, unsubscriberRequest);
+            }
+
+            subscribed++;
+            approve();
+        };
+    }
+};
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7)(module)))
+
+/***/ }),
 /* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(global) {/**
+ * Created by barakedry on 06/07/2018.
+ */
+
+const eventName = __webpack_require__(3);
+const { EventEmitter }  = __webpack_require__(1);
+const LiveReplicaServer = __webpack_require__(10);
+
+class Socket extends EventEmitter {
+    constructor() {
+        super();
+        this.messageFromMaster = ({data}) => {
+            if (data.liveReplica) {
+                const {event, payload, ack} = data.liveReplica;
+                this.emit(event, payload, ack);
+            }
+        };
+
+        global.addEventListener('message', this.messageFromMaster);
+    }
+
+
+    send(event, payload) {
+        event = eventName(event);
+        global.postMessage({
+            liveReplica: {
+                event,
+                payload
+            }
+        });
+    }
+
+
+    emit(event, ...args) {
+        event = eventName(event);
+        const callArgs = [event].concat(args);
+        super.emit.apply(this, callArgs);
+    }
+
+    addEventListener(event, handler) {
+        super.addEventListener(eventName(event), handler);
+    }
+
+    removeEventListener(event, handler) {
+        super.removeEventListener(eventName(event), handler);
+    }
+
+}
+
+/**
+ *  LiveReplicaWorkerSocket
+ */
+class LiveReplicaWorkerServer extends LiveReplicaServer {
+    constructor() {
+        if (typeof onmessage !== 'function') {
+            throw new Error('LiveReplicaWorkerServer can be initiated only inside a web worker')
+        }
+        super();
+
+        this._soleSocket = new Socket();
+        this.onConnect(this._soleSocket)
+    }
+
+}
+
+module.exports = LiveReplicaWorkerServer;
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6)))
+
+/***/ }),
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19261,9 +19321,9 @@ module.exports = MiddlewareChain;
  * Created by barakedry on 06/07/2018.
  */
 
-const LiveReplicaEvents = __webpack_require__(0);
-const Events = __webpack_require__(2);
-const LiveReplicaSocket = __webpack_require__(8);
+const LiveReplicaEvents = __webpack_require__(3);
+const Events = __webpack_require__(1);
+const LiveReplicaSocket = __webpack_require__(9);
 
 /**
  *  LiveReplicaWorkerSocket
@@ -19310,11 +19370,11 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
             }
         };
 
-        this.worker.addEventListener('onmessage', this.onWorkerMessage);
+        this.worker.addEventListener('message', this.onWorkerMessage);
     }
 
     disconnect() {
-        this.worker.removeEventListener('onmessage', this.onWorkerMessage);
+        this.worker.removeEventListener('message', this.onWorkerMessage);
         delete this.socket;
     }
 
@@ -19324,20 +19384,20 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
 module.exports = LiveReplicaWorkerSocket;
 
 /***/ }),
-/* 23 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = {
-    LitElementMixin: __webpack_require__(24),
-    PolymerElementMixin: __webpack_require__(25),
-};
-
-/***/ }),
 /* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
+module.exports = {
+    LitElementMixin: __webpack_require__(25),
+    PolymerElementMixin: __webpack_require__(26),
+};
+
+/***/ }),
+/* 25 */
+/***/ (function(module, exports, __webpack_require__) {
+
 const utils = __webpack_require__(4);
-const PolymerBaseMixin = __webpack_require__(9);
+const PolymerBaseMixin = __webpack_require__(11);
 
 function createDirective(replica, property) {
 
@@ -19408,10 +19468,10 @@ module.exports = function LitElementMixin(base) {
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const PolymerBaseMixin = __webpack_require__(9);
+const PolymerBaseMixin = __webpack_require__(11);
 const utils = __webpack_require__(4);
 function debouncer(fn, time) {
     let debounceClearer;

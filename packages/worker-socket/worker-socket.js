@@ -51,11 +51,11 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
             }
         };
 
-        this.worker.addEventListener('onmessage', this.onWorkerMessage);
+        this.worker.addEventListener('message', this.onWorkerMessage);
     }
 
     disconnect() {
-        this.worker.removeEventListener('onmessage', this.onWorkerMessage);
+        this.worker.removeEventListener('message', this.onWorkerMessage);
         delete this.socket;
     }
 

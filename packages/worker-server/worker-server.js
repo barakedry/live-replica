@@ -2,13 +2,13 @@
  * Created by barakedry on 06/07/2018.
  */
 'use strict';
-const LiveReplicaEvents = require('../common/events');
+const eventName = require('../common/events');
 const { EventEmitter }  = require('events');
 const LiveReplicaServer = require('@live-replica/server');
 
-
 class Socket extends EventEmitter {
     constructor() {
+        super();
         this.messageFromMaster = ({data}) => {
             if (data.liveReplica) {
                 const {event, payload, ack} = data.liveReplica;
@@ -16,15 +16,12 @@ class Socket extends EventEmitter {
             }
         };
 
-        global.addEventListener('onMessage', this.messageFromMaster);
+        global.addEventListener('message', this.messageFromMaster);
     }
 
-    eventName(event) {
-        return LiveReplicaEvents[event] || event;
-    }
 
     send(event, payload) {
-        event = this.eventName(event);
+        event = eventName(event);
         global.postMessage({
             liveReplica: {
                 event,
@@ -34,20 +31,18 @@ class Socket extends EventEmitter {
     }
 
 
-    emit(eventName, ...args) {
-        eventName = this.eventName(eventName);
-        const callArgs = [eventName].concat(args);
+    emit(event, ...args) {
+        event = eventName(event);
+        const callArgs = [event].concat(args);
         super.emit.apply(this, callArgs);
     }
 
-    addEventListener(eventName, handler) {
-        eventName = this.eventName(eventName);
-        super.addEventListener(eventName, handler);
+    addEventListener(event, handler) {
+        super.addEventListener(eventName(event), handler);
     }
 
-    removeEventListener(eventName, handler) {
-        eventName = this.eventName(eventName);
-        super.removeEventListener(eventName, handler);
+    removeEventListener(event, handler) {
+        super.removeEventListener(eventName(event), handler);
     }
 
 }

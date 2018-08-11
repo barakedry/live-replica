@@ -2,7 +2,7 @@
  * Created by barakedry on 06/07/2018.
  */
 'use strict';
-const LiveReplicaEvents = require('../common/events');
+const eventName = require('../common/events');
 
 /**
  *  LiveReplicaSocket
@@ -13,22 +13,16 @@ class LiveReplicaSocket {
         this._instance = LiveReplicaSocket.instances++;
     }
 
-    eventName(event) {
-        let eventName = LiveReplicaEvents[event] || event;
-        return `${eventName}.${this._instance}`;
-    }
-
     send(event, payload, ack) {
-        const eventName = this.eventName(event);
-        this._socketSend(eventName, payload, ack);
+        this._socketSend(eventName(event), payload, ack);
     }
 
     on(event, fn) {
-        this._addSocketEventListener(this.eventName(event), fn)
+        this._addSocketEventListener(eventName(event), fn)
     }
 
     off(event, fn) {
-        this._removeSocketEventListener(this.eventName(event), fn)
+        this._removeSocketEventListener(eventName(event), fn)
     }
 
     /**

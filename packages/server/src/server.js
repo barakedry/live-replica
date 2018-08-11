@@ -2,16 +2,9 @@
  * Created by barakedry on 02/06/2018.
  */
 'use strict';
-
-// import PatchDiff = require('@live-replica/patch-diff';
-// import PatcherProxy = require('@live-replica/proxy';
-// import Middlewares = require('./middleware-chain.js';
-
-
 const PatchDiff = require('@live-replica/patch-diff');
 const PatcherProxy = require('@live-replica/proxy');
 const Middlewares = require('./middleware-chain.js');
-const LiveReplicaEvents = require('../../common/events');
 
 class LiveReplicaServer extends PatchDiff {
 
@@ -31,7 +24,7 @@ class LiveReplicaServer extends PatchDiff {
 
             const subscribeRequest = {
                 id,
-                socket,
+                connection,
                 ack,
                 path,
                 allowRPC,
@@ -54,7 +47,7 @@ class LiveReplicaServer extends PatchDiff {
             subscribeRequest.ack({rejectReason});
         };
 
-        this.middlewares.run(subscribeRequest, reject, (request) => {
+        this.middlewares.start(subscribeRequest, reject, (request) => {
             this.emit('subscribe', request);
 
             subscribeRequest.ack({success: true});
@@ -85,6 +78,16 @@ class LiveReplicaServer extends PatchDiff {
 
         if (request.allowRPC) {
         }
+
+        const onUnsubscribe = () => {
+            request.socket.removeListener('unsubscribe', onUnsubscribe);
+            request.socket.removeListener('disconnect', onUnsubscribe);
+            this.emit('unsubscribe', request);
+        };
+
+
+        request.socket.once('unsubscribe', onUnsubscribe);
+        request.socket.once('disconnect', onUnsubscribe);
     }
 
     use(fn) {
@@ -103,5 +106,7 @@ class LiveReplicaServer extends PatchDiff {
         }
     }
 }
+
+LiveReplicaServer.middlewares = require('./middlewares');
 
 module.exports = LiveReplicaServer;
