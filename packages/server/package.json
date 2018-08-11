@@ -2,7 +2,7 @@
   "name": "@live-replica/server",
   "version": "1.0.0",
   "description": "server for live-replica.js",
-  "main": "index.js",
+  "main": "src/server.js",
   "scripts": {
     "test": "test"
   },

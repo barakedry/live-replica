@@ -2,7 +2,7 @@
  * Created by barakedry on 06/07/2018.
  */
 'use strict';
-const LiveReplicaEvents = require('../common').Events;
+const LiveReplicaEvents = require('../common/events');
 const Events = require('events');
 const LiveReplicaSocket = require('@live-replica/socket');
 
@@ -11,30 +11,55 @@ const LiveReplicaSocket = require('@live-replica/socket');
  */
 class LiveReplicaWorkerSocket extends LiveReplicaSocket {
 
-
-    addSocketEventListener(eventName, fn) {
-        this._socket.on(eventName, fn);
+    constructor() {
+        super();
     }
 
-    removeSocketEventListener(eventName, fn) {
-        this._socket.removeEventListener(eventName, fn);
+    _addSocketEventListener(eventName, fn) {
+
     }
 
-    socketSend(eventName, payload, ack) {
-        this._socket.send(eventName, payload, ack);
+    _removeSocketEventListener(eventName, fn) {
     }
 
-    connect() {
-        if (!this.isConnected()) {
-            this._socket.connect();
+    _socketSend(event, payload, ack) {
+
+        if (!this.worker) {
+            throw new Error('worker does not exists');
         }
+
+        const message = {
+            liveReplica: {
+                event,
+                payload
+            }
+        };
+
+        this.worker.postMessage(message);
+    }
+
+    get baseSocket() {
+        return this.worker;
+    }
+
+    connect(worker) {
+        this.worker = worker;
+        this.onWorkerMessage = ({data}) => {
+            if (data.liveReplica) {
+                const {event, payload} = data.liveReplica;
+                this.emit(event, payload);
+            }
+        };
+
+        this.worker.addEventListener('onmessage', this.onWorkerMessage);
     }
 
     disconnect() {
-        this._socket.disconnect();
+        this.worker.removeEventListener('onmessage', this.onWorkerMessage);
+        delete this.socket;
     }
 
-    isConnected() { return false; }
+    isConnected() { return !!this.socket; }
 }
 
 module.exports = LiveReplicaWorkerSocket;

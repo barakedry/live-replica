@@ -11,6 +11,7 @@
 const PatchDiff = require('@live-replica/patch-diff');
 const PatcherProxy = require('@live-replica/proxy');
 const Middlewares = require('./middleware-chain.js');
+const LiveReplicaEvents = require('../../common/events');
 
 class LiveReplicaServer extends PatchDiff {
 
@@ -24,11 +25,12 @@ class LiveReplicaServer extends PatchDiff {
         this.middlewares = new Middlewares();
     }
 
-    onConnect(socket) {
+    onConnect(connection) {
         connection.on('subscribe', (clientRequest, ack) => {
-            const {path, allowRPC, allowWrite} = clientRequest;
+            const {id, path, allowRPC, allowWrite} = clientRequest;
 
             const subscribeRequest = {
+                id,
                 socket,
                 ack,
                 path,

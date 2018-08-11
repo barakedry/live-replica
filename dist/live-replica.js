@@ -82,11 +82,692 @@ var LiveReplica =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ 	return __webpack_require__(__webpack_require__.s = 10);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Created by barakedry on 06/07/2018.
+ */
+
+
+module.exports = {
+    subscribe: '$s',
+    unsubscribe: '$u',
+    invokeRPC: '$i',
+    apply: '$a',
+    dictionaryUpdate: '$d'
+};
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/**
+ * Created by barakedry on 6/19/15.
+ */
+module.exports = __webpack_require__(11);
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports) {
+
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+function EventEmitter() {
+  this._events = this._events || {};
+  this._maxListeners = this._maxListeners || undefined;
+}
+module.exports = EventEmitter;
+
+// Backwards-compat with node 0.10.x
+EventEmitter.EventEmitter = EventEmitter;
+
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined;
+
+// By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+EventEmitter.defaultMaxListeners = 10;
+
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+EventEmitter.prototype.setMaxListeners = function(n) {
+  if (!isNumber(n) || n < 0 || isNaN(n))
+    throw TypeError('n must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+EventEmitter.prototype.emit = function(type) {
+  var er, handler, len, args, i, listeners;
+
+  if (!this._events)
+    this._events = {};
+
+  // If there is no 'error' event listener then throw.
+  if (type === 'error') {
+    if (!this._events.error ||
+        (isObject(this._events.error) && !this._events.error.length)) {
+      er = arguments[1];
+      if (er instanceof Error) {
+        throw er; // Unhandled 'error' event
+      } else {
+        // At least give some kind of context to the user
+        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+        err.context = er;
+        throw err;
+      }
+    }
+  }
+
+  handler = this._events[type];
+
+  if (isUndefined(handler))
+    return false;
+
+  if (isFunction(handler)) {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        args = Array.prototype.slice.call(arguments, 1);
+        handler.apply(this, args);
+    }
+  } else if (isObject(handler)) {
+    args = Array.prototype.slice.call(arguments, 1);
+    listeners = handler.slice();
+    len = listeners.length;
+    for (i = 0; i < len; i++)
+      listeners[i].apply(this, args);
+  }
+
+  return true;
+};
+
+EventEmitter.prototype.addListener = function(type, listener) {
+  var m;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events)
+    this._events = {};
+
+  // To avoid recursion in the case that type === "newListener"! Before
+  // adding it to the listeners, first emit "newListener".
+  if (this._events.newListener)
+    this.emit('newListener', type,
+              isFunction(listener.listener) ?
+              listener.listener : listener);
+
+  if (!this._events[type])
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  else if (isObject(this._events[type]))
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+  else
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+
+  // Check for listener leak
+  if (isObject(this._events[type]) && !this._events[type].warned) {
+    if (!isUndefined(this._maxListeners)) {
+      m = this._maxListeners;
+    } else {
+      m = EventEmitter.defaultMaxListeners;
+    }
+
+    if (m && m > 0 && this._events[type].length > m) {
+      this._events[type].warned = true;
+      console.error('(node) warning: possible EventEmitter memory ' +
+                    'leak detected. %d listeners added. ' +
+                    'Use emitter.setMaxListeners() to increase limit.',
+                    this._events[type].length);
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
+    }
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener) {
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  var fired = false;
+
+  function g() {
+    this.removeListener(type, g);
+
+    if (!fired) {
+      fired = true;
+      listener.apply(this, arguments);
+    }
+  }
+
+  g.listener = listener;
+  this.on(type, g);
+
+  return this;
+};
+
+// emits a 'removeListener' event iff the listener was removed
+EventEmitter.prototype.removeListener = function(type, listener) {
+  var list, position, length, i;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events || !this._events[type])
+    return this;
+
+  list = this._events[type];
+  length = list.length;
+  position = -1;
+
+  if (list === listener ||
+      (isFunction(list.listener) && list.listener === listener)) {
+    delete this._events[type];
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+
+  } else if (isObject(list)) {
+    for (i = length; i-- > 0;) {
+      if (list[i] === listener ||
+          (list[i].listener && list[i].listener === listener)) {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0)
+      return this;
+
+    if (list.length === 1) {
+      list.length = 0;
+      delete this._events[type];
+    } else {
+      list.splice(position, 1);
+    }
+
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  var key, listeners;
+
+  if (!this._events)
+    return this;
+
+  // not listening for removeListener, no need to emit
+  if (!this._events.removeListener) {
+    if (arguments.length === 0)
+      this._events = {};
+    else if (this._events[type])
+      delete this._events[type];
+    return this;
+  }
+
+  // emit removeListener for all listeners on all events
+  if (arguments.length === 0) {
+    for (key in this._events) {
+      if (key === 'removeListener') continue;
+      this.removeAllListeners(key);
+    }
+    this.removeAllListeners('removeListener');
+    this._events = {};
+    return this;
+  }
+
+  listeners = this._events[type];
+
+  if (isFunction(listeners)) {
+    this.removeListener(type, listeners);
+  } else if (listeners) {
+    // LIFO order
+    while (listeners.length)
+      this.removeListener(type, listeners[listeners.length - 1]);
+  }
+  delete this._events[type];
+
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  var ret;
+  if (!this._events || !this._events[type])
+    ret = [];
+  else if (isFunction(this._events[type]))
+    ret = [this._events[type]];
+  else
+    ret = this._events[type].slice();
+  return ret;
+};
+
+EventEmitter.prototype.listenerCount = function(type) {
+  if (this._events) {
+    var evlistener = this._events[type];
+
+    if (isFunction(evlistener))
+      return 1;
+    else if (evlistener)
+      return evlistener.length;
+  }
+  return 0;
+};
+
+EventEmitter.listenerCount = function(emitter, type) {
+  return emitter.listenerCount(type);
+};
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Created by barakedry on 31/03/2017.
+ */
+
+const _ = __webpack_require__(5);
+
+let arrayMutationMethods = {};
+['copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'].forEach((method) => {
+    arrayMutationMethods[method] = true;
+});
+
+const PatcherProxy = {
+    proxyProperties: new WeakMap(), // meta tracking properties for the proxies
+    create(patcher, path, root, readonly) {
+        let patcherRef = patcher.get(path);
+
+        if (!patcherRef || typeof patcherRef !== 'object') {
+            throw new Error('no object at path', path);
+        }
+
+        let proxy;
+
+        const handlers = {
+            get: (target, name) => {
+                return this.handleGet(proxy, target, name, readonly);
+            },
+            has: (target, name) => {
+                return Boolean(this.handleGet(proxy, target, name));
+            }
+        };
+
+
+        if (readonly) {
+            handlers.set = (target, name) => {
+                throw new Error(`trying to set a value for property "${name}" on a read only object`)
+            };
+
+            handlers.deleteProperty = (target, name) => {
+                throw new Error(`trying to delete  property "${name}" on a read only object `)
+            };
+
+        } else {
+            handlers.set = (target, name, newval) => {
+                return this.handleSet(proxy, target, name, newval);
+            };
+
+            handlers.deleteProperty = (target, name) => {
+                return this.handleDelete(proxy, target, name);
+            };
+        }
+
+
+        proxy = new Proxy(patcherRef, handlers);
+
+        let properties = {
+            patcher,
+            path,
+            isArray: Array.isArray(patcherRef),
+            arrayMethods: {},
+            childs: {}
+        };
+
+        if (root) {
+            properties.root = root;
+        } else {
+            properties.changes = {};
+            properties.overrides = {};
+            properties.dirty = false;
+            properties.pullChanges = function pullChanges() {
+                let changes = this.changes;
+                let overrides = this.overrides;
+                this.changes = {};
+                this.overrides = {};
+                this.dirty = false;
+                return [changes, overrides];
+            };
+        }
+        
+        this.proxyProperties.set(proxy, properties);
+
+        return proxy;
+    },
+
+    createArrayMethod(proxy, array, methodName, readonly) {
+
+        const proxyServices = this;
+        const props = this.proxyProperties.get(proxy);
+        const root = this.getRoot(proxy);
+
+        function createArrayMutatingMethod() {
+            return function arrayMutatingMethod() {
+                proxyServices.commit(root, true);
+                const copy = array.slice();
+                copy[methodName].call(copy, ...arguments);
+                copy.forEach((item, index) => {
+                    proxy[index] = item;
+                });
+                return proxy;
+            }
+        }
+
+        if (props.patcher.options.disableSplices) {
+            return createArrayMutatingMethod();
+        }
+
+        switch (methodName) {
+            case 'push': {
+                return function push(...items) {
+                    proxyServices.commit(root, true);
+                    let index = array.length;
+                    proxyServices.handleSplice(proxy, index, 0, items);
+                    return index + items.length;
+                };
+            }
+            case 'unshift': {
+                return function unshift(...items) {
+                    proxyServices.commit(root, true);
+                    let index = array.length;
+                    proxyServices.handleSplice(proxy, index, 0, items);
+                    return index + items.length;
+                };
+            }
+            case 'splice': {
+                return function splice(index, toRemove, ...items) {
+                    proxyServices.commit(root, true);
+                    return proxyServices.handleSplice(proxy, toRemove, items);
+                };
+            }
+            case 'pop': {
+                return function pop() {
+                    proxyServices.commit(root, true);
+                    const index = array.length;
+                    const removed = this.handleGet(proxy, array, index, readonly);
+                    proxyServices.handleSplice(index, 1);
+                    return removed;
+                };
+            }
+            case 'shift': {
+                return function pop() {
+                    if (!array.length) {
+                        return undefined;
+                    }
+
+                    proxyServices.commit(root, true);
+                    const index = 0;
+                    const removed = proxyServices.handleGet(proxy, array, index, readonly);
+                    proxyServices.handleSplice(index, 1);
+                    return removed;
+                };
+            }
+            // mutating methods that are not supported
+            default: {
+                return createArrayMutatingMethod();
+                //throw Error(`${methodName}() is not supported by LiveReplica proxy`);
+            }
+
+        }
+    },
+
+    getOrCreateArrayMethod(proxy, array, name, readonly) {
+        const properties = this.proxyProperties.get(proxy);
+        if (!properties.arrayMethods[name]) {
+            properties.arrayMethods[name] = this.createArrayMethod(proxy, array, name, readonly);
+        }
+        return properties.arrayMethods[name];
+    },
+
+    getRoot (proxy) {
+        return this.proxyProperties.get(proxy).root || proxy;
+    },
+
+    getPath(proxy, key) {
+        let properties = this.proxyProperties.get(proxy);
+
+        if (properties.path) {
+            if (key) {
+                return [properties.path, key].join('.');
+            } else {
+                return properties.path;
+            }
+        }
+
+        return key;
+    },
+
+    getOrCreateChildProxyForKey(parent, key, readonly) {
+        let parentProperties = this.proxyProperties.get(parent);
+
+        if (parentProperties.childs[key]) {
+            return parentProperties.childs[key];
+        }
+
+        let childProxy = this.create(parentProperties.patcher, this.getPath(parent, key), this.getRoot(parent), readonly);
+        parentProperties.childs[key] = childProxy;
+
+        return childProxy;
+    },
+
+    handleGet(proxy, target, name, readonly) {
+
+        let properties = this.proxyProperties.get(proxy);
+
+        if (properties.isArray && arrayMutationMethods[name]) {
+            return this.getOrCreateArrayMethod(proxy, target, name, readonly);
+        }
+        
+        let root = this.getRoot(proxy);
+        let fullPath = this.getPath(proxy, name);
+        let deleteValue = properties.patcher.options.deleteKeyword;
+        let value = _.get(this.proxyProperties.get(root).changes, fullPath);
+
+        if (properties.childs[name]) {
+            return properties.childs[name];
+        }
+
+        if (value) {
+            if (deleteValue === value) {
+                return undefined;
+            }
+
+            return value;
+        }
+
+        let realValue = target[name];
+        if (realValue) {
+            // if real value is an object we must return accessor proxy
+            if (typeof realValue === 'object') {
+                return this.getOrCreateChildProxyForKey(proxy, name, readonly);
+            }
+
+            return realValue;
+        }
+
+        return undefined;
+    },
+
+    handleSet(proxy, target, name, newval) {
+        let properties = this.proxyProperties.get(proxy);
+        let root = this.getRoot(proxy);
+        let fullPath = this.getPath(proxy, name);
+        if (typeof newval === 'object' && typeof target[name] === 'object') {
+
+            // trying to assign a proxy for some reason
+            if (this.proxyProperties.has(newval)) {
+                // trying to assign the same proxy object
+                const p = this.proxyProperties.get(newval).patcher;
+
+                if (newval === p.get()) {
+                    return; // do nothing
+                } else {
+                    throw Error(`trying to assign an object that already exists to property ${name} assignment of cyclic references`);
+                }
+            }
+
+            this.proxyProperties.get(root).overrides[fullPath] = true;
+        }
+
+        if (properties.childs[name]) {
+            this.proxyProperties.delete(properties.childs[name]);
+            delete properties.childs[name];
+        }
+
+        this.proxyProperties.get(root).dirty = true;
+        _.set(this.proxyProperties.get(root).changes, fullPath, newval);
+        this.commit(root);
+
+        return true;
+    },
+
+    handleDelete(proxy, target, name) {
+        let properties = this.proxyProperties.get(proxy);
+        let root = this.getRoot(proxy);
+        let fullPath = this.getPath(proxy, name);
+        let rootChangeTracker = this.proxyProperties.get(root).changes;
+
+        rootChangeTracker.dirty = true;
+        if (target[name]) {
+            _.set(rootChangeTracker, fullPath, properties.patcher.options.deleteKeyword);
+        } else {
+            _.unset(rootChangeTracker, fullPath);
+        }
+
+        if (properties.childs[name]) {
+            this.proxyProperties.delete(properties.childs[name]);
+            delete properties.childs[name];
+        }
+
+        this.commit(root);
+
+        return true;
+    },
+
+
+    handleSplice(proxy, index, itemsToRemove, itemsToAdd) {
+        let properties = this.proxyProperties.get(proxy);
+        let patcher = properties.patcher;
+        patcher.splice(this.getPath(proxy), index, itemsToRemove, ...itemsToAdd);
+
+    },
+    
+    commit(proxy, immediate = false) {
+        let properties = this.proxyProperties.get(proxy);
+
+        if (!properties.dirty) {  return; }
+
+        const flush = () => {
+            if (properties.nextChangeTimeout) {
+                clearTimeout(properties.nextChangeTimeout);
+                properties.nextChangeTimeout = 0;
+            }
+
+            let patcher = properties.patcher;
+            let [patch, overrides] = properties.pullChanges();
+            let options = {
+                overrides
+            };
+            patcher.apply(patch, null, options);
+        };
+
+        if (immediate) {
+            flush();
+        } else {
+            this.defer(proxy, flush);
+        }
+    },
+
+    defer(proxy, cb) {
+        // defer more
+        let properties = this.proxyProperties.get(proxy);
+        if (properties.nextChangeTimeout) {
+            clearTimeout(properties.nextChangeTimeout);
+            properties.nextChangeTimeout = 0;
+        }
+        properties.nextChangeTimeout = setTimeout(cb, 0);
+    }
+};
+
+// export default Proxy;
+module.exports = PatcherProxy;
+
+
+/***/ }),
+/* 4 */
 /***/ (function(module, exports) {
 
 module.exports = {
@@ -103,16 +784,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/**
- * Created by barakedry on 6/19/15.
- */
-module.exports = __webpack_require__(7);
-
-/***/ }),
-/* 2 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, module) {var __WEBPACK_AMD_DEFINE_RESULT__;/**
@@ -17213,356 +17885,36 @@ module.exports = __webpack_require__(7);
   else {}
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(9), __webpack_require__(10)(module)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6), __webpack_require__(12)(module)))
 
 /***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
+/* 6 */
+/***/ (function(module, exports) {
 
-"use strict";
-/**
- * Created by barakedry on 31/03/2017.
- */
+var g;
 
-const _ = __webpack_require__(2);
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
 
-let arrayMutationMethods = {};
-['copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'].forEach((method) => {
-    arrayMutationMethods[method] = true;
-});
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1, eval)("this");
+} catch (e) {
+	// This works if the window reference is available
+	if (typeof window === "object") g = window;
+}
 
-const PatcherProxy = {
-    proxyProperties: new WeakMap(), // meta tracking properties for the proxies
-    create(patcher, path, root, readonly) {
-        let patcherRef = patcher.get(path);
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
 
-        if (!patcherRef || typeof patcherRef !== 'object') {
-            throw new Error('no object at path', path);
-        }
-
-        let proxy;
-
-        const handlers = {
-            get: (target, name) => {
-                return this.handleGet(proxy, target, name, readonly);
-            },
-            has: (target, name) => {
-                return Boolean(this.handleGet(proxy, target, name));
-            }
-        };
-
-
-        if (readonly) {
-            handlers.set = (target, name) => {
-                throw new Error(`trying to set a value for property "${name}" on a read only object`)
-            };
-
-            handlers.deleteProperty = (target, name) => {
-                throw new Error(`trying to delete  property "${name}" on a read only object `)
-            };
-
-        } else {
-            handlers.set = (target, name, newval) => {
-                return this.handleSet(proxy, target, name, newval);
-            };
-
-            handlers.deleteProperty = (target, name) => {
-                return this.handleDelete(proxy, target, name);
-            };
-        }
-
-
-        proxy = new Proxy(patcherRef, handlers);
-
-        let properties = {
-            patcher,
-            path,
-            isArray: Array.isArray(patcherRef),
-            arrayMethods: {},
-            childs: {}
-        };
-
-        if (root) {
-            properties.root = root;
-        } else {
-            properties.changes = {};
-            properties.overrides = {};
-            properties.dirty = false;
-            properties.pullChanges = function pullChanges() {
-                let changes = this.changes;
-                let overrides = this.overrides;
-                this.changes = {};
-                this.overrides = {};
-                this.dirty = false;
-                return [changes, overrides];
-            };
-        }
-        
-        this.proxyProperties.set(proxy, properties);
-
-        return proxy;
-    },
-
-    createArrayMethod(proxy, array, methodName, readonly) {
-
-        const proxyServices = this;
-        const props = this.proxyProperties.get(proxy);
-        const root = this.getRoot(proxy);
-
-        function createArrayMutatingMethod() {
-            return function arrayMutatingMethod() {
-                proxyServices.commit(root, true);
-                const copy = array.slice();
-                copy[methodName].call(copy, ...arguments);
-                copy.forEach((item, index) => {
-                    proxy[index] = item;
-                });
-                return proxy;
-            }
-        }
-
-        if (props.patcher.options.disableSplices) {
-            return createArrayMutatingMethod();
-        }
-
-        switch (methodName) {
-            case 'push': {
-                return function push(...items) {
-                    proxyServices.commit(root, true);
-                    let index = array.length;
-                    proxyServices.handleSplice(proxy, index, 0, items);
-                    return index + items.length;
-                };
-            }
-            case 'unshift': {
-                return function unshift(...items) {
-                    proxyServices.commit(root, true);
-                    let index = array.length;
-                    proxyServices.handleSplice(proxy, index, 0, items);
-                    return index + items.length;
-                };
-            }
-            case 'splice': {
-                return function splice(index, toRemove, ...items) {
-                    proxyServices.commit(root, true);
-                    return proxyServices.handleSplice(proxy, toRemove, items);
-                };
-            }
-            case 'pop': {
-                return function pop() {
-                    proxyServices.commit(root, true);
-                    const index = array.length;
-                    const removed = this.handleGet(proxy, array, index, readonly);
-                    proxyServices.handleSplice(index, 1);
-                    return removed;
-                };
-            }
-            case 'shift': {
-                return function pop() {
-                    if (!array.length) {
-                        return undefined;
-                    }
-
-                    proxyServices.commit(root, true);
-                    const index = 0;
-                    const removed = proxyServices.handleGet(proxy, array, index, readonly);
-                    proxyServices.handleSplice(index, 1);
-                    return removed;
-                };
-            }
-            // mutating methods that are not supported
-            default: {
-                return createArrayMutatingMethod();
-                //throw Error(`${methodName}() is not supported by LiveReplica proxy`);
-            }
-
-        }
-    },
-
-    getOrCreateArrayMethod(proxy, array, name, readonly) {
-        const properties = this.proxyProperties.get(proxy);
-        if (!properties.arrayMethods[name]) {
-            properties.arrayMethods[name] = this.createArrayMethod(proxy, array, name, readonly);
-        }
-        return properties.arrayMethods[name];
-    },
-
-    getRoot (proxy) {
-        return this.proxyProperties.get(proxy).root || proxy;
-    },
-
-    getPath(proxy, key) {
-        let properties = this.proxyProperties.get(proxy);
-
-        if (properties.path) {
-            if (key) {
-                return [properties.path, key].join('.');
-            } else {
-                return properties.path;
-            }
-        }
-
-        return key;
-    },
-
-    getOrCreateChildProxyForKey(parent, key, readonly) {
-        let parentProperties = this.proxyProperties.get(parent);
-
-        if (parentProperties.childs[key]) {
-            return parentProperties.childs[key];
-        }
-
-        let childProxy = this.create(parentProperties.patcher, this.getPath(parent, key), this.getRoot(parent), readonly);
-        parentProperties.childs[key] = childProxy;
-
-        return childProxy;
-    },
-
-    handleGet(proxy, target, name, readonly) {
-
-        let properties = this.proxyProperties.get(proxy);
-
-        if (properties.isArray && arrayMutationMethods[name]) {
-            return this.getOrCreateArrayMethod(proxy, target, name, readonly);
-        }
-        
-        let root = this.getRoot(proxy);
-        let fullPath = this.getPath(proxy, name);
-        let deleteValue = properties.patcher.options.deleteKeyword;
-        let value = _.get(this.proxyProperties.get(root).changes, fullPath);
-
-        if (properties.childs[name]) {
-            return properties.childs[name];
-        }
-
-        if (value) {
-            if (deleteValue === value) {
-                return undefined;
-            }
-
-            return value;
-        }
-
-        let realValue = target[name];
-        if (realValue) {
-            // if real value is an object we must return accessor proxy
-            if (typeof realValue === 'object') {
-                return this.getOrCreateChildProxyForKey(proxy, name, readonly);
-            }
-
-            return realValue;
-        }
-
-        return undefined;
-    },
-
-    handleSet(proxy, target, name, newval) {
-        let properties = this.proxyProperties.get(proxy);
-        let root = this.getRoot(proxy);
-        let fullPath = this.getPath(proxy, name);
-        if (typeof newval === 'object' && typeof target[name] === 'object') {
-
-            // trying to assign a proxy for some reason
-            if (this.proxyProperties.has(newval)) {
-                // trying to assign the same proxy object
-                const p = this.proxyProperties.get(newval).patcher;
-
-                if (newval === p.get()) {
-                    return; // do nothing
-                } else {
-                    throw Error(`trying to assign an object that already exists to property ${name} assignment of cyclic references`);
-                }
-            }
-
-            this.proxyProperties.get(root).overrides[fullPath] = true;
-        }
-
-        if (properties.childs[name]) {
-            this.proxyProperties.delete(properties.childs[name]);
-            delete properties.childs[name];
-        }
-
-        this.proxyProperties.get(root).dirty = true;
-        _.set(this.proxyProperties.get(root).changes, fullPath, newval);
-        this.commit(root);
-
-        return true;
-    },
-
-    handleDelete(proxy, target, name) {
-        let properties = this.proxyProperties.get(proxy);
-        let root = this.getRoot(proxy);
-        let fullPath = this.getPath(proxy, name);
-        let rootChangeTracker = this.proxyProperties.get(root).changes;
-
-        rootChangeTracker.dirty = true;
-        if (target[name]) {
-            _.set(rootChangeTracker, fullPath, properties.patcher.options.deleteKeyword);
-        } else {
-            _.unset(rootChangeTracker, fullPath);
-        }
-
-        if (properties.childs[name]) {
-            this.proxyProperties.delete(properties.childs[name]);
-            delete properties.childs[name];
-        }
-
-        this.commit(root);
-
-        return true;
-    },
-
-
-    handleSplice(proxy, index, itemsToRemove, itemsToAdd) {
-        let properties = this.proxyProperties.get(proxy);
-        let patcher = properties.patcher;
-        patcher.splice(this.getPath(proxy), index, itemsToRemove, ...itemsToAdd);
-
-    },
-    
-    commit(proxy, immediate = false) {
-        let properties = this.proxyProperties.get(proxy);
-
-        if (!properties.dirty) {  return; }
-
-        const flush = () => {
-            if (properties.nextChangeTimeout) {
-                clearTimeout(properties.nextChangeTimeout);
-                properties.nextChangeTimeout = 0;
-            }
-
-            let patcher = properties.patcher;
-            let [patch, overrides] = properties.pullChanges();
-            let options = {
-                overrides
-            };
-            patcher.apply(patch, null, options);
-        };
-
-        if (immediate) {
-            flush();
-        } else {
-            this.defer(proxy, flush);
-        }
-    },
-
-    defer(proxy, cb) {
-        // defer more
-        let properties = this.proxyProperties.get(proxy);
-        if (properties.nextChangeTimeout) {
-            clearTimeout(properties.nextChangeTimeout);
-            properties.nextChangeTimeout = 0;
-        }
-        properties.nextChangeTimeout = setTimeout(cb, 0);
-    }
-};
-
-// export default Proxy;
-module.exports = PatcherProxy;
+module.exports = g;
 
 
 /***/ }),
-/* 4 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17574,14 +17926,92 @@ module.exports = PatcherProxy;
 import Replica from "./replica";
 export default Replica;
 */
-module.exports = __webpack_require__(16);
+module.exports = __webpack_require__(18);
 
 /***/ }),
-/* 5 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Replica = __webpack_require__(4);
-const utils = __webpack_require__(0);
+"use strict";
+/**
+ * Created by barakedry on 06/07/2018.
+ */
+
+const LiveReplicaEvents = __webpack_require__(0);
+
+/**
+ *  LiveReplicaSocket
+ */
+class LiveReplicaSocket {
+
+    constructor(baseSocket) {
+        this._instance = LiveReplicaSocket.instances++;
+    }
+
+    eventName(event) {
+        let eventName = LiveReplicaEvents[event] || event;
+        return `${eventName}.${this._instance}`;
+    }
+
+    send(event, payload, ack) {
+        const eventName = this.eventName(event);
+        this._socketSend(eventName, payload, ack);
+    }
+
+    on(event, fn) {
+        this._addSocketEventListener(this.eventName(event), fn)
+    }
+
+    off(event, fn) {
+        this._removeSocketEventListener(this.eventName(event), fn)
+    }
+
+    /**
+     * Overrides
+     */
+
+    get baseSocket() {
+        return this._socket;
+    }
+
+    _addSocketEventListener(eventName, fn) {
+        this._socket.on(eventName, fn);
+    }
+
+    _removeSocketEventListener(eventName, fn) {
+        this._socket.removeEventListener(eventName, fn);
+    }
+
+    _socketSend(eventName, payload, ack) {
+        this._socket.send(eventName, payload, ack);
+    }
+
+    connect(baseSocket) {
+
+        this._socket = baseSocket;
+
+        if (!this.isConnected()) {
+            this._socket.connect();
+        }
+    }
+
+    disconnect() {
+        this._socket.disconnect();
+    }
+
+    isConnected() { return false; }
+}
+
+LiveReplicaSocket.instances = 0;
+
+module.exports = LiveReplicaSocket;
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Replica = __webpack_require__(7);
+const utils = __webpack_require__(4);
 
 function elementUtilities(element) {
     return {
@@ -17651,7 +18081,7 @@ module.exports = function PolymerBaseMixin(base) {
 
 
 /***/ }),
-/* 6 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17659,13 +18089,15 @@ module.exports = function PolymerBaseMixin(base) {
 
 const PatchDiff = __webpack_require__(1);
 const Proxy = __webpack_require__(3);
-const Replica = __webpack_require__(4);
-const {PolymerElementMixin, LitElementMixin} = __webpack_require__(20);
+const Replica = __webpack_require__(7);
+const WorkerServer = __webpack_require__(19);
+const WorkerSocket = __webpack_require__(22);
+const {PolymerElementMixin, LitElementMixin} = __webpack_require__(23);
 
-module.exports = {Replica, PatchDiff, Proxy, LitElementMixin, PolymerElementMixin};
+module.exports = {Replica, PatchDiff, Proxy, WorkerServer, WorkerSocket, LitElementMixin, PolymerElementMixin};
 
 /***/ }),
-/* 7 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17682,11 +18114,11 @@ module.exports = {Replica, PatchDiff, Proxy, LitElementMixin, PolymerElementMixi
 // import debuglog from 'debuglog'
 // const debug = debuglog('patch-diff');
 
-const {EventEmitter} = __webpack_require__(8);
-const _ = __webpack_require__(2);
-const utils = __webpack_require__(11);
-const DiffTracker = __webpack_require__(12);
-const debuglog = __webpack_require__(13);
+const {EventEmitter} = __webpack_require__(2);
+const _ = __webpack_require__(5);
+const utils = __webpack_require__(13);
+const DiffTracker = __webpack_require__(14);
+const debuglog = __webpack_require__(15);
 const debug = debuglog('patch-diff');
 
 class PatchDiff extends EventEmitter {
@@ -18141,341 +18573,7 @@ module.exports = PatchDiff;
 
 
 /***/ }),
-/* 8 */
-/***/ (function(module, exports) {
-
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-function EventEmitter() {
-  this._events = this._events || {};
-  this._maxListeners = this._maxListeners || undefined;
-}
-module.exports = EventEmitter;
-
-// Backwards-compat with node 0.10.x
-EventEmitter.EventEmitter = EventEmitter;
-
-EventEmitter.prototype._events = undefined;
-EventEmitter.prototype._maxListeners = undefined;
-
-// By default EventEmitters will print a warning if more than 10 listeners are
-// added to it. This is a useful default which helps finding memory leaks.
-EventEmitter.defaultMaxListeners = 10;
-
-// Obviously not all Emitters should be limited to 10. This function allows
-// that to be increased. Set to zero for unlimited.
-EventEmitter.prototype.setMaxListeners = function(n) {
-  if (!isNumber(n) || n < 0 || isNaN(n))
-    throw TypeError('n must be a positive number');
-  this._maxListeners = n;
-  return this;
-};
-
-EventEmitter.prototype.emit = function(type) {
-  var er, handler, len, args, i, listeners;
-
-  if (!this._events)
-    this._events = {};
-
-  // If there is no 'error' event listener then throw.
-  if (type === 'error') {
-    if (!this._events.error ||
-        (isObject(this._events.error) && !this._events.error.length)) {
-      er = arguments[1];
-      if (er instanceof Error) {
-        throw er; // Unhandled 'error' event
-      } else {
-        // At least give some kind of context to the user
-        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
-        err.context = er;
-        throw err;
-      }
-    }
-  }
-
-  handler = this._events[type];
-
-  if (isUndefined(handler))
-    return false;
-
-  if (isFunction(handler)) {
-    switch (arguments.length) {
-      // fast cases
-      case 1:
-        handler.call(this);
-        break;
-      case 2:
-        handler.call(this, arguments[1]);
-        break;
-      case 3:
-        handler.call(this, arguments[1], arguments[2]);
-        break;
-      // slower
-      default:
-        args = Array.prototype.slice.call(arguments, 1);
-        handler.apply(this, args);
-    }
-  } else if (isObject(handler)) {
-    args = Array.prototype.slice.call(arguments, 1);
-    listeners = handler.slice();
-    len = listeners.length;
-    for (i = 0; i < len; i++)
-      listeners[i].apply(this, args);
-  }
-
-  return true;
-};
-
-EventEmitter.prototype.addListener = function(type, listener) {
-  var m;
-
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  if (!this._events)
-    this._events = {};
-
-  // To avoid recursion in the case that type === "newListener"! Before
-  // adding it to the listeners, first emit "newListener".
-  if (this._events.newListener)
-    this.emit('newListener', type,
-              isFunction(listener.listener) ?
-              listener.listener : listener);
-
-  if (!this._events[type])
-    // Optimize the case of one listener. Don't need the extra array object.
-    this._events[type] = listener;
-  else if (isObject(this._events[type]))
-    // If we've already got an array, just append.
-    this._events[type].push(listener);
-  else
-    // Adding the second element, need to change to array.
-    this._events[type] = [this._events[type], listener];
-
-  // Check for listener leak
-  if (isObject(this._events[type]) && !this._events[type].warned) {
-    if (!isUndefined(this._maxListeners)) {
-      m = this._maxListeners;
-    } else {
-      m = EventEmitter.defaultMaxListeners;
-    }
-
-    if (m && m > 0 && this._events[type].length > m) {
-      this._events[type].warned = true;
-      console.error('(node) warning: possible EventEmitter memory ' +
-                    'leak detected. %d listeners added. ' +
-                    'Use emitter.setMaxListeners() to increase limit.',
-                    this._events[type].length);
-      if (typeof console.trace === 'function') {
-        // not supported in IE 10
-        console.trace();
-      }
-    }
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-EventEmitter.prototype.once = function(type, listener) {
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  var fired = false;
-
-  function g() {
-    this.removeListener(type, g);
-
-    if (!fired) {
-      fired = true;
-      listener.apply(this, arguments);
-    }
-  }
-
-  g.listener = listener;
-  this.on(type, g);
-
-  return this;
-};
-
-// emits a 'removeListener' event iff the listener was removed
-EventEmitter.prototype.removeListener = function(type, listener) {
-  var list, position, length, i;
-
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  if (!this._events || !this._events[type])
-    return this;
-
-  list = this._events[type];
-  length = list.length;
-  position = -1;
-
-  if (list === listener ||
-      (isFunction(list.listener) && list.listener === listener)) {
-    delete this._events[type];
-    if (this._events.removeListener)
-      this.emit('removeListener', type, listener);
-
-  } else if (isObject(list)) {
-    for (i = length; i-- > 0;) {
-      if (list[i] === listener ||
-          (list[i].listener && list[i].listener === listener)) {
-        position = i;
-        break;
-      }
-    }
-
-    if (position < 0)
-      return this;
-
-    if (list.length === 1) {
-      list.length = 0;
-      delete this._events[type];
-    } else {
-      list.splice(position, 1);
-    }
-
-    if (this._events.removeListener)
-      this.emit('removeListener', type, listener);
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.removeAllListeners = function(type) {
-  var key, listeners;
-
-  if (!this._events)
-    return this;
-
-  // not listening for removeListener, no need to emit
-  if (!this._events.removeListener) {
-    if (arguments.length === 0)
-      this._events = {};
-    else if (this._events[type])
-      delete this._events[type];
-    return this;
-  }
-
-  // emit removeListener for all listeners on all events
-  if (arguments.length === 0) {
-    for (key in this._events) {
-      if (key === 'removeListener') continue;
-      this.removeAllListeners(key);
-    }
-    this.removeAllListeners('removeListener');
-    this._events = {};
-    return this;
-  }
-
-  listeners = this._events[type];
-
-  if (isFunction(listeners)) {
-    this.removeListener(type, listeners);
-  } else if (listeners) {
-    // LIFO order
-    while (listeners.length)
-      this.removeListener(type, listeners[listeners.length - 1]);
-  }
-  delete this._events[type];
-
-  return this;
-};
-
-EventEmitter.prototype.listeners = function(type) {
-  var ret;
-  if (!this._events || !this._events[type])
-    ret = [];
-  else if (isFunction(this._events[type]))
-    ret = [this._events[type]];
-  else
-    ret = this._events[type].slice();
-  return ret;
-};
-
-EventEmitter.prototype.listenerCount = function(type) {
-  if (this._events) {
-    var evlistener = this._events[type];
-
-    if (isFunction(evlistener))
-      return 1;
-    else if (evlistener)
-      return evlistener.length;
-  }
-  return 0;
-};
-
-EventEmitter.listenerCount = function(emitter, type) {
-  return emitter.listenerCount(type);
-};
-
-function isFunction(arg) {
-  return typeof arg === 'function';
-}
-
-function isNumber(arg) {
-  return typeof arg === 'number';
-}
-
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
-}
-
-function isUndefined(arg) {
-  return arg === void 0;
-}
-
-
-/***/ }),
-/* 9 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1, eval)("this");
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 10 */
+/* 12 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
@@ -18503,7 +18601,7 @@ module.exports = function(module) {
 
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18568,7 +18666,7 @@ const Utils = {
 module.exports = Utils;
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18614,10 +18712,10 @@ function create(diffsAsArray) {
 module.exports = {create};
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {var util = __webpack_require__(15);
+/* WEBPACK VAR INJECTION */(function(process) {var util = __webpack_require__(17);
 
 module.exports = (util && util.debuglog) || debuglog;
 
@@ -18640,10 +18738,10 @@ function debuglog(set) {
   return debugs[set];
 };
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(14)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(16)))
 
 /***/ }),
-/* 14 */
+/* 16 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -18833,13 +18931,13 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 15 */
+/* 17 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 16 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18853,7 +18951,7 @@ process.umask = function() { return 0; };
 
 const PatchDiff = __webpack_require__(1);
 const PatcherProxy = __webpack_require__(3);
-const LiveReplicaConnection = __webpack_require__(17);
+const LiveReplicaConnection = __webpack_require__(8);
 
 class Replica extends PatchDiff {
 
@@ -18908,126 +19006,338 @@ class Replica extends PatchDiff {
 module.exports = Replica;
 
 /***/ }),
-/* 17 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Created by barakedry on 06/07/2018.
- */
-
-const LiveReplicaEvents = __webpack_require__(18).Events;
-
-/**
- *  LiveReplicaSocket
- */
-class LiveReplicaSocket {
-
-    constructor(baseSocket) {
-        this._instance = LiveReplicaSocket.instances++;
-        this._socket = baseSocket;
-    }
-
-    eventName(event) {
-        let eventName = LiveReplicaEvents[event] || event;
-        return `${eventName}.${this._instance}`;
-    }
-
-    send(event, payload, ack) {
-        const eventName = this.eventName(event);
-        this.socketSend(eventName, payload, ack);
-    }
-
-    on(event, fn) {
-        this.addSocketEventListener(this.eventName(event), fn)
-    }
-
-    off(event, fn) {
-        this.removeSocketEventListener(this.eventName(event), fn)
-    }
-
-    get baseSocket() {
-        return this._socket;
-    }
-
-    /**
-     * Overrides
-     */
-
-    addSocketEventListener(eventName, fn) {
-        this._socket.on(eventName, fn);
-    }
-
-    removeSocketEventListener(eventName, fn) {
-        this._socket.removeEventListener(eventName, fn);
-    }
-
-    socketSend(eventName, payload, ack) {
-        this._socket.send(eventName, payload, ack);
-    }
-
-    connect() {
-        if (!this.isConnected()) {
-            this._socket.connect();
-        }
-    }
-
-    disconnect() {
-        this._socket.disconnect();
-    }
-
-    isConnected() { return false; }
-}
-
-LiveReplicaSocket.instances = 0;
-
-module.exports = LiveReplicaSocket;
-
-/***/ }),
-/* 18 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Created by barakedry on 06/07/2018.
- */
-
-//export * from './events';
-module.exports = __webpack_require__(19);
-
-/***/ }),
 /* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/**
+/* WEBPACK VAR INJECTION */(function(global) {/**
  * Created by barakedry on 06/07/2018.
  */
 
+const LiveReplicaEvents = __webpack_require__(0);
+const { EventEmitter }  = __webpack_require__(2);
+const LiveReplicaServer = __webpack_require__(20);
 
-module.exports = {
-    subscribe: '$s',
-    unsubscribe: '$u',
-    invokeRPC: '$i',
-    apply: '$a',
-    dictionaryUpdate: '$d'
-};
+
+class Socket extends EventEmitter {
+    constructor() {
+        this.messageFromMaster = ({data}) => {
+            if (data.liveReplica) {
+                const {event, payload, ack} = data.liveReplica;
+                this.emit(event, payload, ack);
+            }
+        };
+
+        global.addEventListener('onMessage', this.messageFromMaster);
+    }
+
+    eventName(event) {
+        return LiveReplicaEvents[event] || event;
+    }
+
+    send(event, payload) {
+        event = this.eventName(event);
+        global.postMessage({
+            liveReplica: {
+                event,
+                payload
+            }
+        });
+    }
+
+
+    emit(eventName, ...args) {
+        eventName = this.eventName(eventName);
+        const callArgs = [eventName].concat(args);
+        super.emit.apply(this, callArgs);
+    }
+
+    addEventListener(eventName, handler) {
+        eventName = this.eventName(eventName);
+        super.addEventListener(eventName, handler);
+    }
+
+    removeEventListener(eventName, handler) {
+        eventName = this.eventName(eventName);
+        super.removeEventListener(eventName, handler);
+    }
+
+}
+
+/**
+ *  LiveReplicaWorkerSocket
+ */
+class LiveReplicaWorkerServer extends LiveReplicaServer {
+    constructor() {
+        if (typeof onmessage !== 'function') {
+            throw new Error('LiveReplicaWorkerServer can be initiated only inside a web worker')
+        }
+        super();
+
+        this._soleSocket = new Socket();
+        this.onConnect(this._soleSocket)
+    }
+
+}
+
+module.exports = LiveReplicaWorkerServer;
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6)))
 
 /***/ }),
 /* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = {
-    LitElementMixin: __webpack_require__(21),
-    PolymerElementMixin: __webpack_require__(22),
-};
+"use strict";
+/**
+ * Created by barakedry on 02/06/2018.
+ */
+
+
+// import PatchDiff = require('@live-replica/patch-diff';
+// import PatcherProxy = require('@live-replica/proxy';
+// import Middlewares = require('./middleware-chain.js';
+
+
+const PatchDiff = __webpack_require__(1);
+const PatcherProxy = __webpack_require__(3);
+const Middlewares = __webpack_require__(21);
+const LiveReplicaEvents = __webpack_require__(0);
+
+class LiveReplicaServer extends PatchDiff {
+
+    constructor(options) {
+        super();
+
+        this.options = Object.assign({
+        }, options);
+
+
+        this.middlewares = new Middlewares();
+    }
+
+    onConnect(connection) {
+        connection.on('subscribe', (clientRequest, ack) => {
+            const {id, path, allowRPC, allowWrite} = clientRequest;
+
+            const subscribeRequest = {
+                id,
+                socket,
+                ack,
+                path,
+                allowRPC,
+                allowWrite
+            };
+
+            this.onSubscribeRequest(subscribeRequest);
+        });
+    }
+
+    onSubscribeRequest(subscribeRequest) {
+        this.emit('subscribe-request', subscribeRequest);
+
+        subscribeRequest = Object.assign({
+            allowWrite: false,
+            allowRPC: false
+        }, subscribeRequest);
+
+        let reject = function(rejectReason) {
+            subscribeRequest.ack({rejectReason});
+        };
+
+        this.middlewares.run(subscribeRequest, reject, (request) => {
+            this.emit('subscribe', request);
+
+            subscribeRequest.ack({success: true});
+
+            this.subscribeClient(request);
+        });
+    }
+
+    subscribeClient(request) {
+        const path = request.path;
+        const clientSubset = this.at(path);
+
+        let ownerChange = false;
+        clientSubset.subscribe((data) => {
+            if (!ownerChange) {
+                request.socket.send(data.differences);
+            }
+
+            ownerChange = false;
+        });
+
+        if (request.allowWrite) {
+            request.socket.on('apply', (payload) => {
+                ownerChange = true;
+                clientSubset.apply(payload);
+            });
+        }
+
+        if (request.allowRPC) {
+        }
+    }
+
+    use(fn) {
+        this.middlewares.use(fn);
+    }
+
+    get data() {
+        if (this.options.readonly) {
+            return this._data;
+        } else {
+            if (!this.proxies.has(this)) {
+                const proxy = new PatcherProxy(this);
+                this.proxies.set(this, proxy);
+            }
+            return this.proxies.get(this);
+        }
+    }
+}
+
+module.exports = LiveReplicaServer;
 
 /***/ }),
 /* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const utils = __webpack_require__(0);
-const PolymerBaseMixin = __webpack_require__(5);
+"use strict";
+/**
+ * Created by barakedry on 02/06/2018.
+ */
+
+
+class MiddlewareChain {
+    constructor() {
+        this.chain = [];
+    }
+
+    start(...args) {
+        const finishCallback = args.pop();
+        if (typeof finishCallback !== 'function') {
+            throw new Error('MiddlewareChain.start() last arguments must be a finish function');
+        }
+        this._run(0, finishCallback, args);
+    }
+
+    add(middleware) {
+        if (typeof middleware !== 'function') {
+            throw new Error('middleware must be a function');
+        }
+
+        this.chain.push(middleware);
+    }
+
+    remove(middleware) {
+        const index = this.chain.indexOf(middleware);
+        if (index !== -1) {
+            this.chain.splice(index, 1);
+        }
+    }
+
+    _run(index, finishCallback, args) {
+        const self = this;
+        if (index >= this.chain.length) {
+            return finishCallback(...args);
+        }
+
+        const middleware = this.chain[index];
+        middleware(...args.concat(function next() {
+            self._run(index + 1, finishCallback, args);
+        }));
+    }
+}
+
+MiddlewareChain.prototype.use = MiddlewareChain.prototype.add;
+
+// export default MiddlewareChain;
+module.exports = MiddlewareChain;
+
+/***/ }),
+/* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Created by barakedry on 06/07/2018.
+ */
+
+const LiveReplicaEvents = __webpack_require__(0);
+const Events = __webpack_require__(2);
+const LiveReplicaSocket = __webpack_require__(8);
+
+/**
+ *  LiveReplicaWorkerSocket
+ */
+class LiveReplicaWorkerSocket extends LiveReplicaSocket {
+
+    constructor() {
+        super();
+    }
+
+    _addSocketEventListener(eventName, fn) {
+
+    }
+
+    _removeSocketEventListener(eventName, fn) {
+    }
+
+    _socketSend(event, payload, ack) {
+
+        if (!this.worker) {
+            throw new Error('worker does not exists');
+        }
+
+        const message = {
+            liveReplica: {
+                event,
+                payload
+            }
+        };
+
+        this.worker.postMessage(message);
+    }
+
+    get baseSocket() {
+        return this.worker;
+    }
+
+    connect(worker) {
+        this.worker = worker;
+        this.onWorkerMessage = ({data}) => {
+            if (data.liveReplica) {
+                const {event, payload} = data.liveReplica;
+                this.emit(event, payload);
+            }
+        };
+
+        this.worker.addEventListener('onmessage', this.onWorkerMessage);
+    }
+
+    disconnect() {
+        this.worker.removeEventListener('onmessage', this.onWorkerMessage);
+        delete this.socket;
+    }
+
+    isConnected() { return !!this.socket; }
+}
+
+module.exports = LiveReplicaWorkerSocket;
+
+/***/ }),
+/* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = {
+    LitElementMixin: __webpack_require__(24),
+    PolymerElementMixin: __webpack_require__(25),
+};
+
+/***/ }),
+/* 24 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const utils = __webpack_require__(4);
+const PolymerBaseMixin = __webpack_require__(9);
 
 function createDirective(replica, property) {
 
@@ -19098,11 +19408,11 @@ module.exports = function LitElementMixin(base) {
 
 
 /***/ }),
-/* 22 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const PolymerBaseMixin = __webpack_require__(5);
-const utils = __webpack_require__(0);
+const PolymerBaseMixin = __webpack_require__(9);
+const utils = __webpack_require__(4);
 function debouncer(fn, time) {
     let debounceClearer;
 

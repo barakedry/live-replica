@@ -10,6 +10,8 @@
         "@live-replica/patch-diff": "*",
         "@live-replica/proxy": "*",
         "@live-replica/socket": "*",
+        "@live-replica/worker-server": "*",
+        "@live-replica/worker-socket": "*",
         "@live-replica/live-replica-polymer": "*"
     },
   "author": "Barak Edry",
