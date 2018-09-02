@@ -6,13 +6,21 @@ const eventName = require('../common/events');
 const { EventEmitter }  = require('events');
 const LiveReplicaServer = require('@live-replica/server');
 
-class Socket extends EventEmitter {
+class Connection extends EventEmitter {
     constructor() {
         super();
         this.messageFromMaster = ({data}) => {
             if (data.liveReplica) {
                 const {event, payload, ack} = data.liveReplica;
-                this.emit(event, payload, ack);
+
+                let ackFunction;
+                if (ack) {
+                    ackFunction = (...args)=> {
+                        this.send(ack, ...args);
+                    }
+                }
+
+                this.emit(event, payload, ackFunction);
             }
         };
 
@@ -57,8 +65,8 @@ class LiveReplicaWorkerServer extends LiveReplicaServer {
         }
         super();
 
-        this._soleSocket = new Socket();
-        this.onConnect(this._soleSocket)
+        this._masterConnection = new Connection();
+        this.onConnect(this._masterConnection)
     }
 
 }

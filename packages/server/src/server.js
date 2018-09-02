@@ -15,7 +15,7 @@ class LiveReplicaServer extends PatchDiff {
         }, options);
 
 
-        this.middlewares = new Middlewares();
+        this.middlewares = new Middlewares(this);
     }
 
     onConnect(connection) {
@@ -63,14 +63,14 @@ class LiveReplicaServer extends PatchDiff {
         let ownerChange = false;
         clientSubset.subscribe((data) => {
             if (!ownerChange) {
-                request.socket.send(data.differences);
+                request.connection.send(data.differences);
             }
 
             ownerChange = false;
         });
 
         if (request.allowWrite) {
-            request.socket.on('apply', (payload) => {
+            request.connection.on('apply', (payload) => {
                 ownerChange = true;
                 clientSubset.apply(payload);
             });
@@ -80,14 +80,14 @@ class LiveReplicaServer extends PatchDiff {
         }
 
         const onUnsubscribe = () => {
-            request.socket.removeListener('unsubscribe', onUnsubscribe);
-            request.socket.removeListener('disconnect', onUnsubscribe);
+            request.connection.removeListener('unsubscribe', onUnsubscribe);
+            request.connection.removeListener('disconnect', onUnsubscribe);
             this.emit('unsubscribe', request);
         };
 
 
-        request.socket.once('unsubscribe', onUnsubscribe);
-        request.socket.once('disconnect', onUnsubscribe);
+        request.connection.once('unsubscribe', onUnsubscribe);
+        request.connection.once('disconnect', onUnsubscribe);
     }
 
     use(fn) {

@@ -21,6 +21,10 @@ class LiveReplicaSocket {
         this._addSocketEventListener(eventName(event), fn)
     }
 
+    once(event, fn) {
+        this._addSocketEventListenerOnce(eventName(event), fn)
+    }
+
     off(event, fn) {
         this._removeSocketEventListener(eventName(event), fn)
     }
@@ -35,6 +39,9 @@ class LiveReplicaSocket {
 
     _addSocketEventListener(eventName, fn) {
         this._socket.on(eventName, fn);
+    }
+    _addSocketEventListenerOnce(eventName, fn) {
+        this._socket.once(eventName, fn);
     }
 
     _removeSocketEventListener(eventName, fn) {

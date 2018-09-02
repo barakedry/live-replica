@@ -3,7 +3,7 @@
  */
 'use strict';
 
-module.exporst = {
+module.exports = {
     oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback) {
 
         if (typeof path === 'function') {
@@ -38,7 +38,7 @@ module.exporst = {
                     }
                 });
 
-                firstSubscriptionCallback.call(server, unsubscriberRequest);
+                firstSubscriptionCallback.call(server, request, reject, approve);
             }
 
             subscribed++;

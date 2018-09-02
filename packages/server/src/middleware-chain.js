@@ -4,8 +4,9 @@
 'use strict';
 
 class MiddlewareChain {
-    constructor() {
+    constructor(owner) {
         this.chain = [];
+        this.owner = owner || this;
     }
 
     start(...args) {
@@ -38,7 +39,7 @@ class MiddlewareChain {
         }
 
         const middleware = this.chain[index];
-        middleware(...args.concat(function next() {
+        middleware.call(this.owner, ...args.concat(function next() {
             self._run(index + 1, finishCallback, args);
         }));
     }

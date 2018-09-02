@@ -82,7 +82,7 @@ var LiveReplica =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 12);
+/******/ 	return __webpack_require__(__webpack_require__.s = 11);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -92,7 +92,7 @@ var LiveReplica =
 /**
  * Created by barakedry on 6/19/15.
  */
-module.exports = __webpack_require__(13);
+module.exports = __webpack_require__(12);
 
 /***/ }),
 /* 1 */
@@ -17895,7 +17895,7 @@ module.exports = {
   else {}
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6), __webpack_require__(7)(module)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6), __webpack_require__(13)(module)))
 
 /***/ }),
 /* 6 */
@@ -17925,34 +17925,6 @@ module.exports = g;
 
 /***/ }),
 /* 7 */
-/***/ (function(module, exports) {
-
-module.exports = function(module) {
-	if (!module.webpackPolyfill) {
-		module.deprecate = function() {};
-		module.paths = [];
-		// module.parent = undefined by default
-		if (!module.children) module.children = [];
-		Object.defineProperty(module, "loaded", {
-			enumerable: true,
-			get: function() {
-				return module.l;
-			}
-		});
-		Object.defineProperty(module, "id", {
-			enumerable: true,
-			get: function() {
-				return module.i;
-			}
-		});
-		module.webpackPolyfill = 1;
-	}
-	return module;
-};
-
-
-/***/ }),
-/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17967,7 +17939,7 @@ export default Replica;
 module.exports = __webpack_require__(19);
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17994,6 +17966,10 @@ class LiveReplicaSocket {
         this._addSocketEventListener(eventName(event), fn)
     }
 
+    once(event, fn) {
+        this._addSocketEventListenerOnce(eventName(event), fn)
+    }
+
     off(event, fn) {
         this._removeSocketEventListener(eventName(event), fn)
     }
@@ -18008,6 +17984,9 @@ class LiveReplicaSocket {
 
     _addSocketEventListener(eventName, fn) {
         this._socket.on(eventName, fn);
+    }
+    _addSocketEventListenerOnce(eventName, fn) {
+        this._socket.once(eventName, fn);
     }
 
     _removeSocketEventListener(eventName, fn) {
@@ -18039,7 +18018,7 @@ LiveReplicaSocket.instances = 0;
 module.exports = LiveReplicaSocket;
 
 /***/ }),
-/* 10 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18060,7 +18039,7 @@ class LiveReplicaServer extends PatchDiff {
         }, options);
 
 
-        this.middlewares = new Middlewares();
+        this.middlewares = new Middlewares(this);
     }
 
     onConnect(connection) {
@@ -18108,14 +18087,14 @@ class LiveReplicaServer extends PatchDiff {
         let ownerChange = false;
         clientSubset.subscribe((data) => {
             if (!ownerChange) {
-                request.socket.send(data.differences);
+                request.connection.send(data.differences);
             }
 
             ownerChange = false;
         });
 
         if (request.allowWrite) {
-            request.socket.on('apply', (payload) => {
+            request.connection.on('apply', (payload) => {
                 ownerChange = true;
                 clientSubset.apply(payload);
             });
@@ -18125,14 +18104,14 @@ class LiveReplicaServer extends PatchDiff {
         }
 
         const onUnsubscribe = () => {
-            request.socket.removeListener('unsubscribe', onUnsubscribe);
-            request.socket.removeListener('disconnect', onUnsubscribe);
+            request.connection.removeListener('unsubscribe', onUnsubscribe);
+            request.connection.removeListener('disconnect', onUnsubscribe);
             this.emit('unsubscribe', request);
         };
 
 
-        request.socket.once('unsubscribe', onUnsubscribe);
-        request.socket.once('disconnect', onUnsubscribe);
+        request.connection.once('unsubscribe', onUnsubscribe);
+        request.connection.once('disconnect', onUnsubscribe);
     }
 
     use(fn) {
@@ -18157,10 +18136,10 @@ LiveReplicaServer.middlewares = __webpack_require__(21);
 module.exports = LiveReplicaServer;
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Replica = __webpack_require__(8);
+const Replica = __webpack_require__(7);
 const utils = __webpack_require__(4);
 
 function elementUtilities(element) {
@@ -18231,7 +18210,7 @@ module.exports = function PolymerBaseMixin(base) {
 
 
 /***/ }),
-/* 12 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18239,8 +18218,8 @@ module.exports = function PolymerBaseMixin(base) {
 
 const PatchDiff = __webpack_require__(0);
 const Proxy = __webpack_require__(2);
-const Replica = __webpack_require__(8);
-const ReplicaServer = __webpack_require__(10);
+const Replica = __webpack_require__(7);
+const ReplicaServer = __webpack_require__(9);
 const WorkerServer = __webpack_require__(22);
 const WorkerSocket = __webpack_require__(23);
 const {PolymerElementMixin, LitElementMixin} = __webpack_require__(24);
@@ -18248,7 +18227,7 @@ const {PolymerElementMixin, LitElementMixin} = __webpack_require__(24);
 module.exports = {Replica, ReplicaServer, PatchDiff, Proxy, WorkerServer, WorkerSocket, LitElementMixin, PolymerElementMixin};
 
 /***/ }),
-/* 13 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18724,6 +18703,34 @@ module.exports = PatchDiff;
 
 
 /***/ }),
+/* 13 */
+/***/ (function(module, exports) {
+
+module.exports = function(module) {
+	if (!module.webpackPolyfill) {
+		module.deprecate = function() {};
+		module.paths = [];
+		// module.parent = undefined by default
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
+			enumerable: true,
+			get: function() {
+				return module.l;
+			}
+		});
+		Object.defineProperty(module, "id", {
+			enumerable: true,
+			get: function() {
+				return module.i;
+			}
+		});
+		module.webpackPolyfill = 1;
+	}
+	return module;
+};
+
+
+/***/ }),
 /* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -19074,7 +19081,7 @@ process.umask = function() { return 0; };
 
 const PatchDiff = __webpack_require__(0);
 const PatcherProxy = __webpack_require__(2);
-const LiveReplicaConnection = __webpack_require__(9);
+const LiveReplicaConnection = __webpack_require__(8);
 
 class Replica extends PatchDiff {
 
@@ -19139,8 +19146,9 @@ module.exports = Replica;
 
 
 class MiddlewareChain {
-    constructor() {
+    constructor(owner) {
         this.chain = [];
+        this.owner = owner || this;
     }
 
     start(...args) {
@@ -19173,7 +19181,7 @@ class MiddlewareChain {
         }
 
         const middleware = this.chain[index];
-        middleware(...args.concat(function next() {
+        middleware.call(this.owner, ...args.concat(function next() {
             self._run(index + 1, finishCallback, args);
         }));
     }
@@ -19189,12 +19197,12 @@ module.exports = MiddlewareChain;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(module) {/**
+/**
  * Created by barakedry on 12/08/2018.
  */
 
 
-module.exporst = {
+module.exports = {
     oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback) {
 
         if (typeof path === 'function') {
@@ -19229,7 +19237,7 @@ module.exporst = {
                     }
                 });
 
-                firstSubscriptionCallback.call(server, unsubscriberRequest);
+                firstSubscriptionCallback.call(server, request, reject, approve);
             }
 
             subscribed++;
@@ -19237,7 +19245,6 @@ module.exporst = {
         };
     }
 };
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7)(module)))
 
 /***/ }),
 /* 22 */
@@ -19250,15 +19257,23 @@ module.exporst = {
 
 const eventName = __webpack_require__(3);
 const { EventEmitter }  = __webpack_require__(1);
-const LiveReplicaServer = __webpack_require__(10);
+const LiveReplicaServer = __webpack_require__(9);
 
-class Socket extends EventEmitter {
+class Connection extends EventEmitter {
     constructor() {
         super();
         this.messageFromMaster = ({data}) => {
             if (data.liveReplica) {
                 const {event, payload, ack} = data.liveReplica;
-                this.emit(event, payload, ack);
+
+                let ackFunction;
+                if (ack) {
+                    ackFunction = (...args)=> {
+                        this.send(ack, ...args);
+                    }
+                }
+
+                this.emit(event, payload, ackFunction);
             }
         };
 
@@ -19303,8 +19318,8 @@ class LiveReplicaWorkerServer extends LiveReplicaServer {
         }
         super();
 
-        this._soleSocket = new Socket();
-        this.onConnect(this._soleSocket)
+        this._masterConnection = new Connection();
+        this.onConnect(this._masterConnection)
     }
 
 }
@@ -19323,8 +19338,8 @@ module.exports = LiveReplicaWorkerServer;
 
 const LiveReplicaEvents = __webpack_require__(3);
 const Events = __webpack_require__(1);
-const LiveReplicaSocket = __webpack_require__(9);
-
+const LiveReplicaSocket = __webpack_require__(8);
+let acks = 1;
 /**
  *  LiveReplicaWorkerSocket
  */
@@ -19332,13 +19347,20 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
 
     constructor() {
         super();
+        this._emitter = new Events.EventEmitter();
     }
 
-    _addSocketEventListener(eventName, fn) {
+    // overrides
 
+    _addSocketEventListener(eventName, fn) {
+        this._emitter.on(eventName, fn);
+    }
+    _addSocketEventListenerOnce(eventName, fn) {
+        this._emitter.once(eventName, fn);
     }
 
     _removeSocketEventListener(eventName, fn) {
+        this._emitter.removeEventListener(eventName, fn);
     }
 
     _socketSend(event, payload, ack) {
@@ -19347,10 +19369,17 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
             throw new Error('worker does not exists');
         }
 
+        let ackEvent;
+        if (ack) {
+            ackEvent = `lr-acks::${++acks}`;
+            this.once(ackEvent, ack);
+        }
+
         const message = {
             liveReplica: {
                 event,
-                payload
+                payload,
+                ack: ackEvent,
             }
         };
 
@@ -19366,7 +19395,7 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
         this.onWorkerMessage = ({data}) => {
             if (data.liveReplica) {
                 const {event, payload} = data.liveReplica;
-                this.emit(event, payload);
+                this._emitter.emit(event, payload);
             }
         };
 
@@ -19397,7 +19426,7 @@ module.exports = {
 /***/ (function(module, exports, __webpack_require__) {
 
 const utils = __webpack_require__(4);
-const PolymerBaseMixin = __webpack_require__(11);
+const PolymerBaseMixin = __webpack_require__(10);
 
 function createDirective(replica, property) {
 
@@ -19471,7 +19500,7 @@ module.exports = function LitElementMixin(base) {
 /* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const PolymerBaseMixin = __webpack_require__(11);
+const PolymerBaseMixin = __webpack_require__(10);
 const utils = __webpack_require__(4);
 function debouncer(fn, time) {
     let debounceClearer;
