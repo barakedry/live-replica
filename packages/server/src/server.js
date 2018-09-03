@@ -59,34 +59,53 @@ class LiveReplicaServer extends PatchDiff {
     subscribeClient(request) {
         const path = request.path;
         const clientSubset = this.at(path);
+        const connection = request.connection;
+
+        const unsubscribeEvent = `unsubscribe:${request.id}`;
+        const applyEvent = `apply:${request.id}`;
+        const invokeRpcEvent = `invokeRPC:${request.id}`;
 
         let ownerChange = false;
-        clientSubset.subscribe((data) => {
+        clientSubset.subscribe((patchData) => {
             if (!ownerChange) {
-                request.connection.send(data.differences);
+                connection.send(applyEvent, patchData);
             }
 
             ownerChange = false;
         });
 
+        if (connection.listenerCount(applyEvent)) {
+            connection.removeAllListeners(applyEvent);
+        }
+
+        if (connection.listenerCount(invokeRpcEvent)) {
+            connection.removeAllListeners(invokeRpcEvent);
+        }
+
         if (request.allowWrite) {
-            request.connection.on('apply', (payload) => {
+            connection.on(applyEvent, (payload) => {
                 ownerChange = true;
                 clientSubset.apply(payload);
             });
         }
 
         if (request.allowRPC) {
+
+            connection.on(invokeRpcEvent, (path, args, ack) => {
+                const method = clientSubset.get(path);
+                // check if promise
+                method.call(clientSubset, ...args).then(ack);
+            });
         }
 
         const onUnsubscribe = () => {
-            request.connection.removeListener('unsubscribe', onUnsubscribe);
+            request.connection.removeListener(unsubscribeEvent, onUnsubscribe);
             request.connection.removeListener('disconnect', onUnsubscribe);
             this.emit('unsubscribe', request);
         };
 
 
-        request.connection.once('unsubscribe', onUnsubscribe);
+        request.connection.once(unsubscribeEvent, onUnsubscribe);
         request.connection.once('disconnect', onUnsubscribe);
     }
 

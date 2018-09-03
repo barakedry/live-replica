@@ -8,8 +8,9 @@
 
 const PatchDiff = require('@live-replica/patch-diff');
 const PatcherProxy = require('@live-replica/proxy');
-const LiveReplicaConnection = require('@live-replica/socket');
+const LiveReplicaSocket = require('@live-replica/socket');
 
+let replicaId = 1000;
 class Replica extends PatchDiff {
 
     constructor(remotePath, options = {dataObject: {}}) {
@@ -21,25 +22,73 @@ class Replica extends PatchDiff {
 
         super(options.dataObject || {}, options);
         this.remotePath = remotePath;
+        this.id = ++replicaId;
         this.proxies = new WeakMap();
 
-        if (this.options.connectOnCreate) {
-            this.connect(this.options.connection)
+        if (!this.options.connectionCallback) {
+            this.options.connectionCallback = (result) => {
+                if (result.success) {
+                    console.info(`live-replica subscribed to remote ${this.options.readonly ? 'readonly': ''} path=${this.remotePath}`);
+                } else {
+                    console.error(`live-replica failed to subscribe remote ${this.options.readonly ? 'readonly': ''} path=${this.remotePath} reason=${result.reason}`);
+                }
+            };
+        }
+
+        if (this.options.subscribeRemoteOnCreate) {
+            this.subscribeRemote(this.options.connection)
         }
     }
 
-    subscribeRemote(connection = this.options.connection) {
+    subscribeRemote(connection = this.options.connection, connectionCallback = this.options.connectionCallback) {
 
-        if (!(connetion && connection instanceof LiveReplicaSocket)) {
+        if (!(connection && connection instanceof LiveReplicaSocket)) {
             throw Error('undefined connection or not a LiveReplicaSocket');
         }
 
         this.connection = connection;
-        this.connection.send('subscribe');
+        this._bindToSocket();
+        this.connection.send('subscribe', {
+            id: this.id,
+            path: this.remotePath,
+            allowRPC: !this.options.readonly,
+            allowWrite: !this.options.readonly
+        }, connectionCallback);
+    }
+
+    _bindToSocket() {
+
+        this.connection.on(`apply:${this.id}`, (delta) => {
+            this.localApply = false;
+            this._remoteApply(delta);
+        });
+
+        if (this.options.readonly === false) {
+            this.subscribe((data) => {
+
+                debugger;
+                if (this.localApply) {
+                    this.connection.send(`apply:${this.id}`, data);
+                }
+
+            });
+        }
+    }
+
+    _remoteApply() {
+        super.apply(...arguments);
+    }
+
+    apply() {
+        if (this.options.readonly === false) {
+            this.localApply = true;
+            super.apply(...arguments);
+            this.localApply = false;
+        }
     }
 
     unsubscribeRemote() {
-        this.connection.send('unsubscribe');
+        this.connection.send(`unsubscribe:${this.id}`);
     }
 
 

@@ -773,7 +773,13 @@ names.forEach((key) => {
 });
 
 module.exports = function eventName(event) {
-    return LiveReplicaEvents[event] || event;
+    const split = event.split(':');
+    if (split.length === 2) {
+        return [LiveReplicaEvents[split[0]] || event[0], split[1]].join(':');
+    } else {
+        return LiveReplicaEvents[event] || event;
+    }
+
 };
 
 /***/ }),
@@ -18083,34 +18089,53 @@ class LiveReplicaServer extends PatchDiff {
     subscribeClient(request) {
         const path = request.path;
         const clientSubset = this.at(path);
+        const connection = request.connection;
+
+        const unsubscribeEvent = `unsubscribe:${request.id}`;
+        const applyEvent = `apply:${request.id}`;
+        const invokeRpcEvent = `invokeRPC:${request.id}`;
 
         let ownerChange = false;
-        clientSubset.subscribe((data) => {
+        clientSubset.subscribe((patchData) => {
             if (!ownerChange) {
-                request.connection.send(data.differences);
+                connection.send(applyEvent, patchData);
             }
 
             ownerChange = false;
         });
 
+        if (connection.listenerCount(applyEvent)) {
+            connection.removeAllListeners(applyEvent);
+        }
+
+        if (connection.listenerCount(invokeRpcEvent)) {
+            connection.removeAllListeners(invokeRpcEvent);
+        }
+
         if (request.allowWrite) {
-            request.connection.on('apply', (payload) => {
+            connection.on(applyEvent, (payload) => {
                 ownerChange = true;
                 clientSubset.apply(payload);
             });
         }
 
         if (request.allowRPC) {
+
+            connection.on(invokeRpcEvent, (path, args, ack) => {
+                const method = clientSubset.get(path);
+                // check if promise
+                method.call(clientSubset, ...args).then(ack);
+            });
         }
 
         const onUnsubscribe = () => {
-            request.connection.removeListener('unsubscribe', onUnsubscribe);
+            request.connection.removeListener(unsubscribeEvent, onUnsubscribe);
             request.connection.removeListener('disconnect', onUnsubscribe);
             this.emit('unsubscribe', request);
         };
 
 
-        request.connection.once('unsubscribe', onUnsubscribe);
+        request.connection.once(unsubscribeEvent, onUnsubscribe);
         request.connection.once('disconnect', onUnsubscribe);
     }
 
@@ -19081,8 +19106,9 @@ process.umask = function() { return 0; };
 
 const PatchDiff = __webpack_require__(0);
 const PatcherProxy = __webpack_require__(2);
-const LiveReplicaConnection = __webpack_require__(8);
+const LiveReplicaSocket = __webpack_require__(8);
 
+let replicaId = 1000;
 class Replica extends PatchDiff {
 
     constructor(remotePath, options = {dataObject: {}}) {
@@ -19094,25 +19120,73 @@ class Replica extends PatchDiff {
 
         super(options.dataObject || {}, options);
         this.remotePath = remotePath;
+        this.id = ++replicaId;
         this.proxies = new WeakMap();
 
-        if (this.options.connectOnCreate) {
-            this.connect(this.options.connection)
+        if (!this.options.connectionCallback) {
+            this.options.connectionCallback = (result) => {
+                if (result.success) {
+                    console.info(`live-replica subscribed to remote ${this.options.readonly ? 'readonly': ''} path=${this.remotePath}`);
+                } else {
+                    console.error(`live-replica failed to subscribe remote ${this.options.readonly ? 'readonly': ''} path=${this.remotePath} reason=${result.reason}`);
+                }
+            };
+        }
+
+        if (this.options.subscribeRemoteOnCreate) {
+            this.subscribeRemote(this.options.connection)
         }
     }
 
-    subscribeRemote(connection = this.options.connection) {
+    subscribeRemote(connection = this.options.connection, connectionCallback = this.options.connectionCallback) {
 
-        if (!(connetion && connection instanceof LiveReplicaSocket)) {
+        if (!(connection && connection instanceof LiveReplicaSocket)) {
             throw Error('undefined connection or not a LiveReplicaSocket');
         }
 
         this.connection = connection;
-        this.connection.send('subscribe');
+        this._bindToSocket();
+        this.connection.send('subscribe', {
+            id: this.id,
+            path: this.remotePath,
+            allowRPC: !this.options.readonly,
+            allowWrite: !this.options.readonly
+        }, connectionCallback);
+    }
+
+    _bindToSocket() {
+
+        this.connection.on(`apply:${this.id}`, (delta) => {
+            this.localApply = false;
+            this._remoteApply(delta);
+        });
+
+        if (this.options.readonly === false) {
+            this.subscribe((data) => {
+
+                debugger;
+                if (this.localApply) {
+                    this.connection.send(`apply:${this.id}`, data);
+                }
+
+            });
+        }
+    }
+
+    _remoteApply() {
+        super.apply(...arguments);
+    }
+
+    apply() {
+        if (this.options.readonly === false) {
+            this.localApply = true;
+            super.apply(...arguments);
+            this.localApply = false;
+        }
     }
 
     unsubscribeRemote() {
-        this.connection.send('unsubscribe');
+        this.connection.send(`unsubscribe:${this.id}`);
     }
 
 

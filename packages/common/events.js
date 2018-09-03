@@ -18,5 +18,11 @@ names.forEach((key) => {
 });
 
 module.exports = function eventName(event) {
-    return LiveReplicaEvents[event] || event;
+    const split = event.split(':');
+    if (split.length === 2) {
+        return [LiveReplicaEvents[split[0]] || event[0], split[1]].join(':');
+    } else {
+        return LiveReplicaEvents[event] || event;
+    }
+
 };
