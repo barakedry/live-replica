@@ -26,6 +26,12 @@ const PatcherProxy = {
             },
             has: (target, name) => {
                 return Boolean(this.handleGet(proxy, target, name));
+            },
+            ownKeys: (target) => {
+                return this.handleOwnKeys(proxy, target);
+            },
+            enumerate: () => {
+                return proxy[Symbol.iterator];
             }
         };
 
@@ -196,9 +202,42 @@ const PatcherProxy = {
         return childProxy;
     },
 
+    handleOwnKeys(proxy, target) {
+        let properties = this.proxyProperties.get(proxy);
+        let root = this.getRoot(proxy);
+        let fullPath = this.getPath(proxy);
+        let changes = _.get(this.proxyProperties.get(root).changes, fullPath);
+
+
+        if (!changes) {
+            return Reflect.ownKeys(target);
+        }
+
+        const deleteValue = properties.patcher.options.deleteKeyword;
+        const targetKeys = Reflect.ownKeys(target);
+        const changedKeys = Reflect.ownKeys(changes);
+        for (let i = 0; i < changedKeys.length; i++) {
+            let key = changedKeys[i];
+            if (changes[key] === deleteValue) {
+                let index = targetKeys.indexOf(key);
+                targetKeys.splice(index, 1);
+            // new
+            } else if (!targetKeys[key]) {
+                targetKeys.push(key);
+            }
+        }
+
+        return targetKeys;
+    },
+
     handleGet(proxy, target, name, readonly) {
 
         let properties = this.proxyProperties.get(proxy);
+
+        if (name === Symbol.iterator) {
+            // return this.getIterator(proxy, this.handleOwnKeys(proxy, target, true));
+            return this.getIterator(proxy, Object.keys(target));
+        }
 
         if (properties.isArray && arrayMutationMethods[name]) {
             return this.getOrCreateArrayMethod(proxy, target, name, readonly);
@@ -296,6 +335,20 @@ const PatcherProxy = {
         let patcher = properties.patcher;
         patcher.splice(this.getPath(proxy), index, itemsToRemove, ...itemsToAdd);
 
+    },
+
+    getIterator(proxy, keys) {
+        return function() {
+            return {
+                i: 0,
+                next() {
+                    if (this.i < keys.length) {
+                        return { value: proxy[keys[this.i++]], done: false };
+                    }
+                    return { done: true };
+                }
+            };
+        }.bind(proxy);
     },
     
     commit(proxy, immediate = false) {

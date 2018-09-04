@@ -1,6 +1,21 @@
 const utils = require('./utils');
 const PolymerBaseMixin = require('./polymer-mixin');
 
+Object.byString = function(o, s) {
+    s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
+    s = s.replace(/^\./, '');           // strip a leading dot
+    var a = s.split('.');
+    for (var i = 0, n = a.length; i < n; ++i) {
+        var k = a[i];
+        if (k in o) {
+            o = o[k];
+        } else {
+            return;
+        }
+    }
+    return o;
+}
+
 function createDirective(replica, property) {
 
     const subscribersByPart = new WeakMap();
@@ -26,14 +41,29 @@ function createDirective(replica, property) {
 }
 
 function getDirective(data, path) {
-    let replica = this.replicaByData.call(this, data);
+
+    if (typeof data !== 'object') {
+        throw new Error('live-replica lit-element directive data must be of type object');
+    }
+
+    let {replica, basePath} = this.replicaByData.call(this, data);
+
+    if (!replica) {
+        const drv = function staticDirective(part) {
+            part.setValue(Object.byString(data, path) || '');
+        };
+        drv.__litDirective = true;
+
+        return drv;
+    }
 
     if (!this.__replicaDirectivesCache) {
         this.__replicaDirectivesCache = new WeakMap();
     }
 
     let property;
-    ({path, property} = utils.extractBasePathAndProperty(path));
+
+    ({path, property} = utils.extractBasePathAndProperty(utils.concatPath(basePath, path)));
 
     if (path) {
         replica = replica.at(path);

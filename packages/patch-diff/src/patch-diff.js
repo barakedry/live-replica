@@ -146,14 +146,14 @@ class PatchDiff extends EventEmitter {
 
         let current = this.get(path);
         if (current) {
-            fn(current);
+            fn(current, {snapshot: true});
         }
 
         path = utils.concatPath(this._path, path);
         path = path || '*';
 
         const handler = function (diff) {
-            fn(diff.differences);
+            fn(diff.differences, diff);
         };
         super.on(path, handler);
 
@@ -314,8 +314,7 @@ class PatchDiff extends EventEmitter {
 
             // remove
             if (patch[key] === options.deleteKeyword) {
-
-                levelDiffs = this._deleteAtKey(target, path, key, srcKey, options, existingValue, levelDiffs);
+                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs);
 
             // update object
             } else if (isPatchValueObject) {

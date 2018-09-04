@@ -1,29 +1,33 @@
 const Replica = require('@live-replica/replica');
 const utils = require('./utils');
+const PatcherProxy = require('@live-replica/proxy');
 
 function elementUtilities(element) {
     return {
         __replicas: new Map(),
 
-        attach(pathOrBaseReplica) {
-            let replica;
-            if (typeof pathOrBaseReplica === 'string') {
-                replica = new Replica(pathOrBaseReplica);
-            } else {
-                replica = pathOrBaseReplica;
-            }
-
+        attach(replica) {
             const data = replica.data;
             this.__replicas.set(data, replica);
             return data;
         },
 
         replicaByData(data) {
-            return this.__replicas.get(data);
+
+            if (!PatcherProxy.proxyProperties.has(data)) {
+                return undefined;
+            }
+
+            const root = PatcherProxy.getRoot(data);
+            const basePath = PatcherProxy.getPath(data);
+            const replica = this.__replicas.get(root);
+
+            return {replica, basePath};
         },
 
         watch(data, path, cb) {
             let replica = this.__replicas.get(data);
+
             let render = this.render;
             let property;
             ({path, property} = utils.extractBasePathAndProperty(path));
@@ -31,17 +35,24 @@ function elementUtilities(element) {
             if (path) {
                 replica = replica.at(path);
             }
-            replica.subscribe(function (diff) {
-                if (!diff[property]) { return; }
+            replica.subscribe(function (patch, diff) {
+
+                let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
+
+                if (!lengthChanged && !patch[property]) { return; }
 
                 if (cb) {
-                    cb.call(element, diff, replica.get(property));
+                    cb.call(element, patch, replica.get(property));
                 }
 
                 if (typeof render === 'function') {
-                    render(diff, replica.get(property));
+                    render(patch, replica.get(property));
                 }
             });
+        },
+
+        get ready() {
+            return Promise.all(Array.from(this.__replicas.entries()).map(replica => replica.sync));
         },
 
         clearAll() {

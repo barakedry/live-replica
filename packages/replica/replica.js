@@ -64,8 +64,8 @@ class Replica extends PatchDiff {
             this.localApply = false;
             this._remoteApply(delta);
             if (delta && !this.synced) {
-                this.emit('synced');
                 this.synced = true;
+                this.emit('synced', this.get());
             }
         });
 
@@ -126,6 +126,12 @@ class Replica extends PatchDiff {
 
     }
 
+    getWhenExists(path) {
+        return new Promise(resolve => {
+            this.get(path, resolve);
+        });
+    }
+
     get data() {
         if (!this.proxies.has(this)) {
             const proxy = PatcherProxy.create(this, '', null, this.options.readonly);
@@ -137,7 +143,7 @@ class Replica extends PatchDiff {
     get sync() {
         return new Promise((resolve) => {
             if (this.synced) {
-                resolve(true);
+                resolve(this.get());
             } else {
                 this.once('synced', resolve);
             }

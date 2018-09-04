@@ -1,4 +1,11 @@
 module.exports = {
+    concatPath: function (path, suffix) {
+        if (path && suffix) {
+            return [path, suffix].join('.');
+        }
+
+        return path || suffix;
+    },
     extractBasePathAndProperty(path) {
         const lastPart = path.lastIndexOf('.');
         if (lastPart === -1) {
