@@ -264,7 +264,7 @@ class PatchDiff extends EventEmitter {
         }
 
         if (_.isFunction(patchValue)) {
-            appliedValue = utils.SERIALIZABLE_FUNCTION;
+            appliedValue = utils.SERIALIZED_FUNCTION;
         } else {
             isPatchValueObject = _.isObject(patchValue);
             if (_.isUndefined(patchValue)) {
@@ -464,6 +464,7 @@ class PatchDiff extends EventEmitter {
 
 PatchDiff.prototype.observe = EventEmitter.prototype.on;
 PatchDiff.prototype.override = PatchDiff.prototype.set;
+PatchDiff.utils = utils;
 
 //export default PatchDiff;
 module.exports = PatchDiff;

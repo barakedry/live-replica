@@ -48,11 +48,7 @@ const Utils = {
         return typeof obj1 === 'object' && Object.getPrototypeOf(obj1) === Object.getPrototypeOf(obj2);
     },
 
-    SERIALIZABLE_FUNCTION: {
-        toJSON: function () {
-            return 'function()';
-        }
-    }
+    SERIALIZED_FUNCTION: 'function()'
 };
 
 // export default Utils;

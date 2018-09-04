@@ -9,6 +9,7 @@
 const PatchDiff = require('@live-replica/patch-diff');
 const PatcherProxy = require('@live-replica/proxy');
 const LiveReplicaSocket = require('@live-replica/socket');
+const concatPath = PatchDiff.utils.concatPath;
 
 let replicaId = 1000;
 class Replica extends PatchDiff {
@@ -46,6 +47,7 @@ class Replica extends PatchDiff {
             throw Error('undefined connection or not a LiveReplicaSocket');
         }
 
+        this.synced = false;
         this.connection = connection;
         this._bindToSocket();
         this.connection.send('subscribe', {
@@ -61,22 +63,47 @@ class Replica extends PatchDiff {
         this.connection.on(`apply:${this.id}`, (delta) => {
             this.localApply = false;
             this._remoteApply(delta);
+            if (delta && !this.synced) {
+                this.emit('synced');
+                this.synced = true;
+            }
         });
 
         if (this.options.readonly === false) {
             this.subscribe((data) => {
-
-                debugger;
                 if (this.localApply) {
                     this.connection.send(`apply:${this.id}`, data);
                 }
-
             });
         }
     }
 
-    _remoteApply() {
-        super.apply(...arguments);
+    _createRPCfunction(path) {
+        return function rpcToRemote(...args) {
+            new Promise((resolve) => {
+                this.connection.send(`invokeRPC:${this.id}`, path, args, resolve);
+            });
+        }
+    }
+
+    _deserialzeFunctions(data, path) {
+
+        const keys = Object.keys(data);
+        for (let i = 0, l = keys.length; i < l; i++) {
+            const key = keys[i];
+            const value = data[key];
+
+            if (value === 'function()') {
+                data[key] = this._createRPCfunction(concatPath(path, key));
+            } if (typeof value === 'object' && value !== null) {
+                this._deserialzeFunctions(value, concatPath(path, key));
+            }
+        }
+        return data;
+    }
+
+    _remoteApply(data) {
+        super.apply(this._deserialzeFunctions(data));
     }
 
     apply() {
@@ -105,6 +132,17 @@ class Replica extends PatchDiff {
             this.proxies.set(this, proxy);
         }
         return this.proxies.get(this);
+    }
+
+    get sync() {
+        return new Promise((resolve) => {
+            if (this.synced) {
+                resolve(true);
+            } else {
+                this.once('synced', resolve);
+            }
+
+        });
     }
 }
 

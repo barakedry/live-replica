@@ -18039,11 +18039,8 @@ const Middlewares = __webpack_require__(20);
 class LiveReplicaServer extends PatchDiff {
 
     constructor(options) {
-        super();
-
-        this.options = Object.assign({
-        }, options);
-
+        options = Object.assign({}, options);
+        super(options.dataObject || {}, options);
 
         this.middlewares = new Middlewares(this);
     }
@@ -18124,8 +18121,14 @@ class LiveReplicaServer extends PatchDiff {
             connection.on(invokeRpcEvent, (path, args, ack) => {
                 const method = clientSubset.get(path);
                 // check if promise
-                method.call(clientSubset, ...args).then(ack);
+                const res = method.call(clientSubset, ...args);
+                if (res && typeof res.then === 'function') {
+                    res.then(ack);
+                } else {
+                    ack(res);
+                }
             });
+
         }
 
         const onUnsubscribe = () => {
@@ -18522,7 +18525,7 @@ class PatchDiff extends EventEmitter {
         }
 
         if (_.isFunction(patchValue)) {
-            appliedValue = utils.SERIALIZABLE_FUNCTION;
+            appliedValue = utils.SERIALIZED_FUNCTION;
         } else {
             isPatchValueObject = _.isObject(patchValue);
             if (_.isUndefined(patchValue)) {
@@ -18722,6 +18725,7 @@ class PatchDiff extends EventEmitter {
 
 PatchDiff.prototype.observe = EventEmitter.prototype.on;
 PatchDiff.prototype.override = PatchDiff.prototype.set;
+PatchDiff.utils = utils;
 
 //export default PatchDiff;
 module.exports = PatchDiff;
@@ -18810,11 +18814,7 @@ const Utils = {
         return typeof obj1 === 'object' && Object.getPrototypeOf(obj1) === Object.getPrototypeOf(obj2);
     },
 
-    SERIALIZABLE_FUNCTION: {
-        toJSON: function () {
-            return 'function()';
-        }
-    }
+    SERIALIZED_FUNCTION: 'function()'
 };
 
 // export default Utils;
@@ -19107,6 +19107,7 @@ process.umask = function() { return 0; };
 const PatchDiff = __webpack_require__(0);
 const PatcherProxy = __webpack_require__(2);
 const LiveReplicaSocket = __webpack_require__(8);
+const concatPath = PatchDiff.utils.concatPath;
 
 let replicaId = 1000;
 class Replica extends PatchDiff {
@@ -19144,6 +19145,7 @@ class Replica extends PatchDiff {
             throw Error('undefined connection or not a LiveReplicaSocket');
         }
 
+        this.synced = false;
         this.connection = connection;
         this._bindToSocket();
         this.connection.send('subscribe', {
@@ -19159,22 +19161,47 @@ class Replica extends PatchDiff {
         this.connection.on(`apply:${this.id}`, (delta) => {
             this.localApply = false;
             this._remoteApply(delta);
+            if (delta && !this.synced) {
+                this.emit('synced');
+                this.synced = true;
+            }
         });
 
         if (this.options.readonly === false) {
             this.subscribe((data) => {
-
-                debugger;
                 if (this.localApply) {
                     this.connection.send(`apply:${this.id}`, data);
                 }
-
             });
         }
     }
 
-    _remoteApply() {
-        super.apply(...arguments);
+    _createRPCfunction(path) {
+        return function rpcToRemote(...args) {
+            new Promise((resolve) => {
+                this.connection.send(`invokeRPC:${this.id}`, path, args, resolve);
+            });
+        }
+    }
+
+    _deserialzeFunctions(data, path) {
+
+        const keys = Object.keys(data);
+        for (let i = 0, l = keys.length; i < l; i++) {
+            const key = keys[i];
+            const value = data[key];
+
+            if (value === 'function()') {
+                data[key] = this._createRPCfunction(concatPath(path, key));
+            } if (typeof value === 'object' && value !== null) {
+                this._deserialzeFunctions(value, concatPath(path, key));
+            }
+        }
+        return data;
+    }
+
+    _remoteApply(data) {
+        super.apply(this._deserialzeFunctions(data));
     }
 
     apply() {
@@ -19203,6 +19230,17 @@ class Replica extends PatchDiff {
             this.proxies.set(this, proxy);
         }
         return this.proxies.get(this);
+    }
+
+    get sync() {
+        return new Promise((resolve) => {
+            if (this.synced) {
+                resolve(true);
+            } else {
+                this.once('synced', resolve);
+            }
+
+        });
     }
 }
 

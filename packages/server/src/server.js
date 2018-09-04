@@ -9,11 +9,8 @@ const Middlewares = require('./middleware-chain.js');
 class LiveReplicaServer extends PatchDiff {
 
     constructor(options) {
-        super();
-
-        this.options = Object.assign({
-        }, options);
-
+        options = Object.assign({}, options);
+        super(options.dataObject || {}, options);
 
         this.middlewares = new Middlewares(this);
     }
@@ -94,8 +91,14 @@ class LiveReplicaServer extends PatchDiff {
             connection.on(invokeRpcEvent, (path, args, ack) => {
                 const method = clientSubset.get(path);
                 // check if promise
-                method.call(clientSubset, ...args).then(ack);
+                const res = method.call(clientSubset, ...args);
+                if (res && typeof res.then === 'function') {
+                    res.then(ack);
+                } else {
+                    ack(res);
+                }
             });
+
         }
 
         const onUnsubscribe = () => {
