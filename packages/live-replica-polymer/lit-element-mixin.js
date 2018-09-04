@@ -1,20 +1,20 @@
 const utils = require('./utils');
 const PolymerBaseMixin = require('./polymer-mixin');
 
-Object.byString = function(o, s) {
-    s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
-    s = s.replace(/^\./, '');           // strip a leading dot
-    var a = s.split('.');
-    for (var i = 0, n = a.length; i < n; ++i) {
-        var k = a[i];
-        if (k in o) {
-            o = o[k];
+Object.byPath = function(object, path) {
+    path = path.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
+    path = path.replace(/^\./, '');           // strip a leading dot
+    let a = path.split('.');
+    for (let i = 0, n = a.length; i < n; ++i) {
+        let k = a[i];
+        if (k in object) {
+            object = object[k];
         } else {
             return;
         }
     }
-    return o;
-}
+    return object;
+};
 
 function createDirective(replica, property) {
 
@@ -50,7 +50,7 @@ function getDirective(data, path) {
 
     if (!replica) {
         const drv = function staticDirective(part) {
-            part.setValue(Object.byString(data, path) || '');
+            part.setValue(Object.byPath(data, path) || '');
         };
         drv.__litDirective = true;
 
