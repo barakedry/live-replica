@@ -102,6 +102,7 @@ let arrayMutationMethods = {};
 });
 
 const PatcherProxy = {
+    proxies: new WeakMap(),
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
     create(patcher, path, root, readonly) {
         let patcherRef = patcher.get(path);
@@ -154,8 +155,7 @@ const PatcherProxy = {
             patcher,
             path,
             isArray: Array.isArray(patcherRef),
-            arrayMethods: {},
-            childs: {}
+            arrayMethods: {}
         };
 
         if (root) {
@@ -173,7 +173,8 @@ const PatcherProxy = {
                 return [changes, overrides];
             };
         }
-        
+
+        this.proxies.set(patcherRef, proxy);
         this.proxyProperties.set(proxy, properties);
 
         return proxy;
@@ -281,19 +282,6 @@ const PatcherProxy = {
         return key;
     },
 
-    getOrCreateChildProxyForKey(parent, key, readonly) {
-        let parentProperties = this.proxyProperties.get(parent);
-
-        if (parentProperties.childs[key]) {
-            return parentProperties.childs[key];
-        }
-
-        let childProxy = this.create(parentProperties.patcher, this.getPath(parent, key), this.getRoot(parent), readonly);
-        parentProperties.childs[key] = childProxy;
-
-        return childProxy;
-    },
-
     handleOwnKeys(proxy, target) {
         let properties = this.proxyProperties.get(proxy);
         let root = this.getRoot(proxy);
@@ -339,9 +327,10 @@ const PatcherProxy = {
         let fullPath = this.getPath(proxy, name);
         let deleteValue = properties.patcher.options.deleteKeyword;
         let value = _.get(this.proxyProperties.get(root).changes, fullPath);
+        let realValue = target[name];
 
-        if (properties.childs[name]) {
-            return properties.childs[name];
+        if (this.proxies.has(realValue)) {
+            return this.proxies.get(realValue);
         }
 
         if (value) {
@@ -352,11 +341,10 @@ const PatcherProxy = {
             return value;
         }
 
-        let realValue = target[name];
         if (realValue) {
             // if real value is an object we must return accessor proxy
             if (typeof realValue === 'object') {
-                return this.getOrCreateChildProxyForKey(proxy, name, readonly);
+                return this.create(properties.patcher, fullPath, this.getRoot(proxy), readonly);
             }
 
             return realValue;
@@ -386,11 +374,6 @@ const PatcherProxy = {
             this.proxyProperties.get(root).overrides[fullPath] = true;
         }
 
-        if (properties.childs[name]) {
-            this.proxyProperties.delete(properties.childs[name]);
-            delete properties.childs[name];
-        }
-
         this.proxyProperties.get(root).dirty = true;
         _.set(this.proxyProperties.get(root).changes, fullPath, newval);
         this.commit(root);
@@ -409,11 +392,6 @@ const PatcherProxy = {
             _.set(rootChangeTracker, fullPath, properties.patcher.options.deleteKeyword);
         } else {
             _.unset(rootChangeTracker, fullPath);
-        }
-
-        if (properties.childs[name]) {
-            this.proxyProperties.delete(properties.childs[name]);
-            delete properties.childs[name];
         }
 
         this.commit(root);
@@ -18350,6 +18328,10 @@ const DiffTracker = __webpack_require__(15);
 const debuglog = __webpack_require__(16);
 const debug = debuglog('patch-diff');
 
+function index(key, levelDiffs) {
+    return Number(key) - (levelDiffs.arrayOffset || 0);
+}
+
 class PatchDiff extends EventEmitter {
     constructor(object, options) {
 
@@ -18560,7 +18542,7 @@ class PatchDiff extends EventEmitter {
             let key = keys[i];
 
             if (utils.isValid(patch[key]) && patch[key] !== target[key]) {
-                levelDiffs = this._applyAtKey(target, patch, path, key, levelDiffs, options, level, override);
+                levelDiffs = this._applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray);
             }
         }
 
@@ -18571,7 +18553,7 @@ class PatchDiff extends EventEmitter {
         return levelDiffs;
     }
 
-    _applyAtKey(target, patch, path, key, levelDiffs, options, level, override) {
+    _applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray) {
 
         let childDiffs,
             patchValue,
@@ -18616,6 +18598,10 @@ class PatchDiff extends EventEmitter {
                 // add new object
                 if (isPatchValueObject) {
 
+                    if (isTargetArray) {
+                        srcKey = index(srcKey, levelDiffs);
+                    }
+
                     target[srcKey] = patchValue.constructor.call(Object.create(Object.getPrototypeOf(patchValue)));
 
                     childDiffs = this._applyObject(target[srcKey],
@@ -18623,7 +18609,9 @@ class PatchDiff extends EventEmitter {
                         utils.concatPath(path, key),
                         options,
                         level + 1,
-                        override);
+                        override,
+                        isTargetArray
+                    );
 
                     levelDiffs.addChildTracking(childDiffs, key);
 
@@ -18646,7 +18634,7 @@ class PatchDiff extends EventEmitter {
 
             // remove
             if (patch[key] === options.deleteKeyword) {
-                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs);
+                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isTargetArray);
 
             // update object
             } else if (isPatchValueObject) {
@@ -18688,9 +18676,16 @@ class PatchDiff extends EventEmitter {
         return levelDiffs;
     }
 
-    _deleteAtKey(target, path, key, options, existingValue, levelDiffs) {
+    _deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray) {
         if (options.patchDeletions) {
-            delete target[key];
+
+            if (isArray) {
+                target.splice(index(key, levelDiffs), 1);
+                levelDiffs.arrayOffset = (levelDiffs.arrayOffset || 0) -1;
+            } else {
+                delete target[key];
+            }
+
         }
 
         levelDiffs.deletions[key] = existingValue;
@@ -18703,7 +18698,7 @@ class PatchDiff extends EventEmitter {
         return levelDiffs;
     }
 
-    _detectDeletionsAtLevel(target, patch, levelDiffs, path, options) {
+    _detectDeletionsAtLevel(target, patch, levelDiffs, path, options, isArray) {
         const keys = _.keys(target),
             length = keys.length;
 
@@ -18717,7 +18712,7 @@ class PatchDiff extends EventEmitter {
 
             if (!patch.hasOwnProperty(key)) {
                 existingValue = target[key];
-                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs);
+                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray);
             }
 
         }
@@ -19616,20 +19611,20 @@ module.exports = {
 const utils = __webpack_require__(4);
 const PolymerBaseMixin = __webpack_require__(10);
 
-Object.byString = function(o, s) {
-    s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
-    s = s.replace(/^\./, '');           // strip a leading dot
-    var a = s.split('.');
-    for (var i = 0, n = a.length; i < n; ++i) {
-        var k = a[i];
-        if (k in o) {
-            o = o[k];
+Object.byPath = function(object, path) {
+    path = path.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
+    path = path.replace(/^\./, '');           // strip a leading dot
+    let a = path.split('.');
+    for (let i = 0, n = a.length; i < n; ++i) {
+        let k = a[i];
+        if (k in object) {
+            object = object[k];
         } else {
             return;
         }
     }
-    return o;
-}
+    return object;
+};
 
 function createDirective(replica, property) {
 
@@ -19665,7 +19660,7 @@ function getDirective(data, path) {
 
     if (!replica) {
         const drv = function staticDirective(part) {
-            part.setValue(Object.byString(data, path) || '');
+            part.setValue(Object.byPath(data, path) || '');
         };
         drv.__litDirective = true;
 

@@ -18,6 +18,10 @@ const DiffTracker = require('./diff-tracker');
 const debuglog = require('debuglog');
 const debug = debuglog('patch-diff');
 
+function index(key, levelDiffs) {
+    return Number(key) - (levelDiffs.arrayOffset || 0);
+}
+
 class PatchDiff extends EventEmitter {
     constructor(object, options) {
 
@@ -228,7 +232,7 @@ class PatchDiff extends EventEmitter {
             let key = keys[i];
 
             if (utils.isValid(patch[key]) && patch[key] !== target[key]) {
-                levelDiffs = this._applyAtKey(target, patch, path, key, levelDiffs, options, level, override);
+                levelDiffs = this._applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray);
             }
         }
 
@@ -239,7 +243,7 @@ class PatchDiff extends EventEmitter {
         return levelDiffs;
     }
 
-    _applyAtKey(target, patch, path, key, levelDiffs, options, level, override) {
+    _applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray) {
 
         let childDiffs,
             patchValue,
@@ -284,6 +288,10 @@ class PatchDiff extends EventEmitter {
                 // add new object
                 if (isPatchValueObject) {
 
+                    if (isTargetArray) {
+                        srcKey = index(srcKey, levelDiffs);
+                    }
+
                     target[srcKey] = patchValue.constructor.call(Object.create(Object.getPrototypeOf(patchValue)));
 
                     childDiffs = this._applyObject(target[srcKey],
@@ -291,7 +299,9 @@ class PatchDiff extends EventEmitter {
                         utils.concatPath(path, key),
                         options,
                         level + 1,
-                        override);
+                        override,
+                        isTargetArray
+                    );
 
                     levelDiffs.addChildTracking(childDiffs, key);
 
@@ -314,7 +324,7 @@ class PatchDiff extends EventEmitter {
 
             // remove
             if (patch[key] === options.deleteKeyword) {
-                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs);
+                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isTargetArray);
 
             // update object
             } else if (isPatchValueObject) {
@@ -356,9 +366,16 @@ class PatchDiff extends EventEmitter {
         return levelDiffs;
     }
 
-    _deleteAtKey(target, path, key, options, existingValue, levelDiffs) {
+    _deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray) {
         if (options.patchDeletions) {
-            delete target[key];
+
+            if (isArray) {
+                target.splice(index(key, levelDiffs), 1);
+                levelDiffs.arrayOffset = (levelDiffs.arrayOffset || 0) -1;
+            } else {
+                delete target[key];
+            }
+
         }
 
         levelDiffs.deletions[key] = existingValue;
@@ -371,7 +388,7 @@ class PatchDiff extends EventEmitter {
         return levelDiffs;
     }
 
-    _detectDeletionsAtLevel(target, patch, levelDiffs, path, options) {
+    _detectDeletionsAtLevel(target, patch, levelDiffs, path, options, isArray) {
         const keys = _.keys(target),
             length = keys.length;
 
@@ -385,7 +402,7 @@ class PatchDiff extends EventEmitter {
 
             if (!patch.hasOwnProperty(key)) {
                 existingValue = target[key];
-                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs);
+                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray);
             }
 
         }
