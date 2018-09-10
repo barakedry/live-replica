@@ -82,7 +82,7 @@ var LiveReplica =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 11);
+/******/ 	return __webpack_require__(__webpack_require__.s = 10);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -94,12 +94,88 @@ var LiveReplica =
  * Created by barakedry on 31/03/2017.
  */
 
-const _ = __webpack_require__(5);
-
 let arrayMutationMethods = {};
 ['copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'].forEach((method) => {
     arrayMutationMethods[method] = true;
 });
+
+function set(target, path, value) {
+
+    let levels,
+        curr,
+        i,
+        len;
+
+    if (!path) {
+        return value;
+    }
+
+    levels = path.split('.');
+    len = levels.length;
+    i = 0;
+    target = target || {};
+    curr = target;
+
+    while (i < (len - 1)) {
+        curr[levels[i]] = {};
+        curr = curr[levels[i]];
+        i++;
+    }
+
+    curr[levels[i]] = value;
+
+    return target;
+}
+
+function unset(target, path) {
+
+    let levels,
+        curr,
+        i,
+        len;
+
+    if (!path) {
+        return value;
+    }
+
+    levels = path.split('.');
+    len = levels.length;
+    i = 0;
+    curr = target;
+
+    while (curr && i < (len - 1)) {
+        curr = curr[levels[i]];
+        i++;
+    }
+
+    if (curr && curr[levels[i]]) {
+        delete curr[levels[i]];
+    }
+}
+
+function get(target, path) {
+
+    let levels,
+        curr,
+        i,
+        len;
+
+    if (!path) {
+        return value;
+    }
+
+    levels = path.split('.');
+    len = levels.length;
+    i = 0;
+    curr = target;
+
+    while (curr && i < len) {
+        curr = curr[levels[i]];
+        i++;
+    }
+
+    return curr;
+}
 
 const PatcherProxy = {
     proxies: new WeakMap(),
@@ -286,7 +362,7 @@ const PatcherProxy = {
         let properties = this.proxyProperties.get(proxy);
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy);
-        let changes = _.get(this.proxyProperties.get(root).changes, fullPath);
+        let changes = get(this.proxyProperties.get(root).changes, fullPath);
 
 
         if (!changes) {
@@ -326,7 +402,7 @@ const PatcherProxy = {
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
         let deleteValue = properties.patcher.options.deleteKeyword;
-        let value = _.get(this.proxyProperties.get(root).changes, fullPath);
+        let value = get(this.proxyProperties.get(root).changes, fullPath);
         let realValue = target[name];
 
         if (this.proxies.has(realValue)) {
@@ -375,7 +451,7 @@ const PatcherProxy = {
         }
 
         this.proxyProperties.get(root).dirty = true;
-        _.set(this.proxyProperties.get(root).changes, fullPath, newval);
+        set(this.proxyProperties.get(root).changes, fullPath, newval);
         this.commit(root);
 
         return true;
@@ -389,9 +465,9 @@ const PatcherProxy = {
 
         rootChangeTracker.dirty = true;
         if (target[name]) {
-            _.set(rootChangeTracker, fullPath, properties.patcher.options.deleteKeyword);
+            set(rootChangeTracker, fullPath, properties.patcher.options.deleteKeyword);
         } else {
-            _.unset(rootChangeTracker, fullPath);
+            unset(rootChangeTracker, fullPath);
         }
 
         this.commit(root);
@@ -469,7 +545,7 @@ module.exports = PatcherProxy;
 /**
  * Created by barakedry on 6/19/15.
  */
-module.exports = __webpack_require__(12);
+module.exports = __webpack_require__(11);
 
 /***/ }),
 /* 2 */
@@ -839,6 +915,861 @@ module.exports = {
 
 /***/ }),
 /* 5 */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1, eval)("this");
+} catch (e) {
+	// This works if the window reference is available
+	if (typeof window === "object") g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Created by barakedry on 05/07/2018.
+ */
+
+/*
+import Replica from "./replica";
+export default Replica;
+*/
+module.exports = __webpack_require__(19);
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Created by barakedry on 06/07/2018.
+ */
+
+const eventName = __webpack_require__(3);
+
+/**
+ *  LiveReplicaSocket
+ */
+class LiveReplicaSocket {
+
+    constructor(baseSocket) {
+        this._instance = LiveReplicaSocket.instances++;
+    }
+
+    send(event, payload, ack) {
+        this._socketSend(eventName(event), payload, ack);
+    }
+
+    on(event, fn) {
+        this._addSocketEventListener(eventName(event), fn)
+    }
+
+    once(event, fn) {
+        this._addSocketEventListenerOnce(eventName(event), fn)
+    }
+
+    off(event, fn) {
+        this._removeSocketEventListener(eventName(event), fn)
+    }
+
+    /**
+     * Overrides
+     */
+
+    get baseSocket() {
+        return this._socket;
+    }
+
+    _addSocketEventListener(eventName, fn) {
+        this._socket.on(eventName, fn);
+    }
+    _addSocketEventListenerOnce(eventName, fn) {
+        this._socket.once(eventName, fn);
+    }
+
+    _removeSocketEventListener(eventName, fn) {
+        this._socket.removeEventListener(eventName, fn);
+    }
+
+    _socketSend(eventName, payload, ack) {
+        this._socket.send(eventName, payload, ack);
+    }
+
+    connect(baseSocket) {
+
+        this._socket = baseSocket;
+
+        if (!this.isConnected()) {
+            this._socket.connect();
+        }
+    }
+
+    disconnect() {
+        this._socket.disconnect();
+    }
+
+    isConnected() { return false; }
+}
+
+LiveReplicaSocket.instances = 0;
+
+module.exports = LiveReplicaSocket;
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Created by barakedry on 02/06/2018.
+ */
+
+const PatchDiff = __webpack_require__(1);
+const PatcherProxy = __webpack_require__(0);
+const Middlewares = __webpack_require__(20);
+
+class LiveReplicaServer extends PatchDiff {
+
+    constructor(options) {
+        options = Object.assign({}, options);
+        super(options.dataObject || {}, options);
+
+        this.middlewares = new Middlewares(this);
+    }
+
+    onConnect(connection) {
+        connection.on('subscribe', (clientRequest, ack) => {
+            const {id, path, allowRPC, allowWrite} = clientRequest;
+
+            const subscribeRequest = {
+                id,
+                connection,
+                ack,
+                path,
+                allowRPC,
+                allowWrite
+            };
+
+            this.onSubscribeRequest(subscribeRequest);
+        });
+    }
+
+    onSubscribeRequest(subscribeRequest) {
+        this.emit('subscribe-request', subscribeRequest);
+
+        subscribeRequest = Object.assign({
+            allowWrite: false,
+            allowRPC: false
+        }, subscribeRequest);
+
+        let reject = function(rejectReason) {
+            subscribeRequest.ack({rejectReason});
+        };
+
+        this.middlewares.start(subscribeRequest, reject, (request) => {
+            this.emit('subscribe', request);
+
+            subscribeRequest.ack({success: true});
+
+            this.subscribeClient(request);
+        });
+    }
+
+    subscribeClient(request) {
+        const path = request.path;
+        const clientSubset = this.at(path);
+        const connection = request.connection;
+
+        const unsubscribeEvent = `unsubscribe:${request.id}`;
+        const applyEvent = `apply:${request.id}`;
+        const invokeRpcEvent = `invokeRPC:${request.id}`;
+
+        let ownerChange = false;
+        clientSubset.subscribe((patchData) => {
+            if (!ownerChange) {
+                connection.send(applyEvent, patchData);
+            }
+
+            ownerChange = false;
+        });
+
+        if (connection.listenerCount(applyEvent)) {
+            connection.removeAllListeners(applyEvent);
+        }
+
+        if (connection.listenerCount(invokeRpcEvent)) {
+            connection.removeAllListeners(invokeRpcEvent);
+        }
+
+        if (request.allowWrite) {
+            connection.on(applyEvent, (payload) => {
+                ownerChange = true;
+                clientSubset.apply(payload);
+            });
+        }
+
+        if (request.allowRPC) {
+
+            connection.on(invokeRpcEvent, (path, args, ack) => {
+                const method = clientSubset.get(path);
+                // check if promise
+                const res = method.call(clientSubset, ...args);
+                if (res && typeof res.then === 'function') {
+                    res.then(ack);
+                } else {
+                    ack(res);
+                }
+            });
+
+        }
+
+        const onUnsubscribe = () => {
+            request.connection.removeListener(unsubscribeEvent, onUnsubscribe);
+            request.connection.removeListener('disconnect', onUnsubscribe);
+            this.emit('unsubscribe', request);
+        };
+
+
+        request.connection.once(unsubscribeEvent, onUnsubscribe);
+        request.connection.once('disconnect', onUnsubscribe);
+    }
+
+    use(fn) {
+        this.middlewares.use(fn);
+    }
+
+    get data() {
+        if (this.options.readonly) {
+            return this._data;
+        } else {
+            if (!this.proxies.has(this)) {
+                const proxy = new PatcherProxy(this);
+                this.proxies.set(this, proxy);
+            }
+            return this.proxies.get(this);
+        }
+    }
+}
+
+LiveReplicaServer.middlewares = __webpack_require__(21);
+
+module.exports = LiveReplicaServer;
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Replica = __webpack_require__(6);
+const utils = __webpack_require__(4);
+const PatcherProxy = __webpack_require__(0);
+
+function elementUtilities(element) {
+    return {
+        __replicas: new Map(),
+
+        attach(replica) {
+            const data = replica.data;
+            this.__replicas.set(data, replica);
+            return data;
+        },
+
+        replicaByData(data) {
+
+            if (!PatcherProxy.proxyProperties.has(data)) {
+                return undefined;
+            }
+
+            const root = PatcherProxy.getRoot(data);
+            const basePath = PatcherProxy.getPath(data);
+            const replica = this.__replicas.get(root);
+
+            return {replica, basePath};
+        },
+
+        watch(data, path, cb) {
+            let replica = this.__replicas.get(data);
+
+            let render = this.render;
+            let property;
+            ({path, property} = utils.extractBasePathAndProperty(path));
+
+            if (path) {
+                replica = replica.at(path);
+            }
+            replica.subscribe(function (patch, diff) {
+
+                let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
+
+                if (!lengthChanged && !patch[property]) { return; }
+
+                if (cb) {
+                    cb.call(element, patch, replica.get(property));
+                }
+
+                if (typeof render === 'function') {
+                    render(patch, replica.get(property));
+                }
+            });
+        },
+
+        get ready() {
+            return Promise.all(Array.from(this.__replicas.entries()).map(replica => replica.sync));
+        },
+
+        clearAll() {
+
+        }
+    };
+}
+
+
+module.exports = function PolymerBaseMixin(base) {
+    return class extends base {
+
+        constructor() {
+            super();
+            this.liveReplica = elementUtilities(this);
+        }
+
+        disconnectedCallback() {
+            super.disconnectedCallback();
+            this.liveReplica.clearAll();
+        };
+    };
+};
+
+
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+const PatchDiff = __webpack_require__(1);
+const Proxy = __webpack_require__(0);
+const Replica = __webpack_require__(6);
+const ReplicaServer = __webpack_require__(8);
+const WorkerServer = __webpack_require__(22);
+const WorkerSocket = __webpack_require__(23);
+const {PolymerElementMixin, LitElementMixin} = __webpack_require__(24);
+
+module.exports = {Replica, ReplicaServer, PatchDiff, Proxy, WorkerServer, WorkerSocket, LitElementMixin, PolymerElementMixin};
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Created by barakedry on 6/19/15.
+ */
+/* eslint max-params: 'off' */
+
+
+// import {EventEmitter} from 'events';
+// import _ from 'lodash';
+// import utils from './utils';
+// import DiffTracker from './diff-tracker';
+// import debuglog from 'debuglog'
+// const debug = debuglog('patch-diff');
+
+const {EventEmitter} = __webpack_require__(2);
+const _ = __webpack_require__(12);
+const utils = __webpack_require__(14);
+const DiffTracker = __webpack_require__(15);
+const debuglog = __webpack_require__(16);
+const debug = debuglog('patch-diff');
+
+function index(key, levelDiffs) {
+    return Number(key) - (levelDiffs.arrayOffset || 0);
+}
+
+class PatchDiff extends EventEmitter {
+    constructor(object, options) {
+
+        super();
+
+        this.options = _.defaults(options || {}, {
+            emitEvents: true, //settings this to false should allow faster merging but it is not implemented yet
+            undefinedKeyword: '__$$U',
+            deleteKeyword: '__$$D',
+            spliceKeyword: '__$$S',
+            protoKeyword: '__$$P',
+            patchDeletions: true,
+            patchAdditions: true,
+            emitAdditions: true,
+            emitUpdates: true,
+            emitDifferences: true,
+            maxKeysInLevel: 1000,
+            maxLevels: 50,
+            maxListeners: 1000000
+        });
+
+        this._data = object || {};
+        this.setMaxListeners(this.options.maxListeners);
+        //this.prototypes = []; // prototypes are stored in a special collection
+    }
+
+    apply(patch, path, options) {
+
+        path = utils.concatPath(this._path, path);
+        options = _.defaults(options || {}, this.options);
+
+        if (!_.isObject(patch) && !path) {
+            debug('invalid apply, target and patch must be objects');
+
+            return;
+        }
+
+        this._applyObject(this._data, utils.wrapByPath(patch, path), '', options, 0);
+    }
+
+    set(fullDocument, path, options) {
+
+        path = utils.concatPath(this._path, path);
+
+        options = _.defaults(options || {}, this.options);
+
+        if (!_.isObject(fullDocument) && !path) {
+            debug('invalid apply, target and value must be objects');
+
+            return;
+        }
+
+        this._applyObject(this._data, utils.wrapByPath(fullDocument, path), '', options, 0, path || '');
+    }
+
+    remove(path) {
+
+        path = utils.concatPath(this._path, path);
+
+        if (!(path && _.isString(path))) {
+            debug('invalid path, cannot remove');
+
+            return;
+        }
+
+        this._applyObject(this._data, utils.wrapByPath(this.options.deleteKeyword, path), '', this.options, 0);
+    }
+
+    splice(path, index, itemsToRemove, ...itemsToAdd) {
+        path = utils.concatPath(this._path, path);
+        this._applyObject(this._data, utils.wrapByPath({[this.options.spliceKeyword]: {index, itemsToRemove, itemsToAdd}}, path), '', this.options, 0);
+    }
+
+    get(path, callback) {
+
+        if (typeof path === 'function') {
+            callback = path;
+            path = undefined;
+        }
+
+        const fullPath = utils.concatPath(this._path, path);
+        if (fullPath && (!_.isString(fullPath))) {
+            debug('invalid path, cannot get');
+
+            return;
+        }
+
+
+        let retVal;
+        if (fullPath) {
+            retVal = _.get(this._data, fullPath);
+        } else {
+            retVal = this._data;
+        }
+
+        if (callback) {
+            if (retVal) {
+                callback(retVal);
+            } else {
+                // subscribe for first data
+                let unsub;
+                let once;
+                unsub = this.subscribe(path, () => {
+                    if (!once) {
+                        callback(_.get(this._data, fullPath));
+                        once = true;
+                        setTimeout(unsub, 0);
+                    }
+                });
+            }
+        }
+
+        return retVal;
+    }
+
+    on(path, fn) {
+        path = utils.concatPath(this._path, path);
+        super.on(path, fn);
+    }
+
+    subscribe (path, fn) {
+        if (typeof path === 'function') {
+            fn = path;
+            path = '';
+        }
+
+        let current = this.get(path);
+        if (current) {
+            fn(current, {snapshot: true}, {});
+        }
+
+        path = utils.concatPath(this._path, path);
+        path = path || '*';
+
+        const handler = function (diff, options) {
+            fn(diff.differences, diff, options);
+        };
+        super.on(path, handler);
+
+        return () => {
+            this.removeListener(path, handler);
+        };
+    }
+
+    at(subPath) {
+        let path = utils.concatPath(this._path, subPath);
+        let at = Object.create(this);
+        at._path = path;
+
+        return at;
+    }
+
+
+    /************************************************************************************
+     * The basic merging recursion implementation:
+     * ._applyObject() -> ._applyAtKey() -> ._applyObject() -> ._applyAtKey() -> ...
+     *
+     * ._applyObject() iterate keys at level and calls ._applyAtKey() for each key,
+     * after iteration ends it emits and returns level changes to the caller.
+     *
+     * ._applyAtKey() assigns/remove primitives and calls _.applyObject() for objects
+     ************************************************************************************/
+    _applyObject(target, patch, path, options, level, override) {
+
+        if (!(_.isObject(target) && _.isObject(patch))) {
+            debug('invalid apply, target and patch must be objects');
+            this.emit('error', new Error('invalid apply, target and patch must be objects'));
+
+            return;
+        }
+
+        if (level > options.maxLevels) {
+            debug('Trying to apply too deep, stopping at level %d', level);
+            this.emit('error', new Error('Trying to apply too deep, stopping at level ' + level));
+
+            return;
+        }
+
+        let levelDiffs;
+        let keys = _.keys(patch);
+        let length = keys.length;
+        let isTargetArray = _.isArray(target);
+
+        if (options.emitEvents) {
+            levelDiffs = DiffTracker.create(isTargetArray && target.length === 0 && _.isArray(patch));
+            levelDiffs.path = path;
+        }
+
+        if (isTargetArray) {
+            levelDiffs = levelDiffs || {};
+        }
+
+        if (length > options.maxKeysInLevel) {
+            debug('Stopped patching, Too many keys in object - %d out of %d allowed keys.', length, options.maxKeysInLevel);
+            this.emit('error', new Error('Stopped patching, Too many keys in object - ' + length + ' out of ' + options.maxKeysInLevel + ' allowed keys.'));
+
+            return levelDiffs;
+        }
+
+        // override is either undefined, a path or true
+        if ((options.overrides && options.overrides[path]) || (!_.isUndefined(override) && (override === true || override === path))) {
+            // find keys at this level that exists at the target object and remove them
+            levelDiffs = this._detectDeletionsAtLevel(target, patch, levelDiffs, path, options, isTargetArray, level);
+        }
+
+        // main logic loop, iterate patch keys and apply to dest object
+        for (let i = 0; i < length; i++) {
+            let key = keys[i];
+
+            if (utils.isValid(patch[key]) && patch[key] !== target[key]) {
+                levelDiffs = this._applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray);
+            }
+        }
+
+        if (options.emitEvents && levelDiffs.hasDifferences) {
+            this.emit((path || '*'), levelDiffs, options);
+        }
+
+        return levelDiffs;
+    }
+
+    _applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray) {
+
+        let childDiffs,
+            patchValue,
+            existingValue,
+            srcKey,
+            appliedValue, // this value is what goes out to the tracker its not always the same as patchValue
+            isExistingValueArray,
+            isPatchValueObject = false;
+
+        patchValue = patch[key];
+        srcKey = key;
+
+        // splice treat as primitive
+        if (key === this.options.spliceKeyword) {
+            appliedValue = this._splice(path, patchValue.index, patchValue.itemsToRemove || 0, ...(patchValue.itemsToAdd || []));
+            target[srcKey] = patchValue;
+
+            levelDiffs.hasUpdates = true;
+            levelDiffs.hasDifferences = true;
+            levelDiffs.differences[key] = appliedValue;
+            return levelDiffs;
+        }
+
+        if (_.isFunction(patchValue)) {
+            appliedValue = utils.SERIALIZED_FUNCTION;
+        } else {
+            isPatchValueObject = _.isObject(patchValue);
+            if (_.isUndefined(patchValue)) {
+                appliedValue = options.undefinedKeyword;
+            } else if (patchValue === options.undefinedKeyword) {
+                appliedValue = patchValue;
+                patchValue = undefined;
+            } else {
+                appliedValue = patchValue;
+            }
+        }
+
+        // new
+        if (!target.hasOwnProperty(srcKey)) {
+            if (options.patchAdditions && patch[key] !== options.deleteKeyword) {
+
+                // add new object
+                if (isPatchValueObject) {
+
+                    if (isTargetArray) {
+                        srcKey = index(srcKey, levelDiffs);
+                    }
+
+                    target[srcKey] = patchValue.constructor.call(Object.create(Object.getPrototypeOf(patchValue)));
+
+                    childDiffs = this._applyObject(target[srcKey],
+                        patchValue,
+                        utils.concatPath(path, key),
+                        options,
+                        level + 1,
+                        override,
+                        isTargetArray
+                    );
+
+                    levelDiffs.addChildTracking(childDiffs, key);
+
+                    // add new primitive
+                } else {
+
+                    target[srcKey] = patchValue;
+
+                    levelDiffs.hasAdditions = true;
+                    levelDiffs.additions[key] = appliedValue;
+                    levelDiffs.hasDifferences = true;
+                    levelDiffs.differences[key] = appliedValue;
+                }
+            }
+        // existing
+        } else {
+
+            existingValue = target[srcKey];
+            isExistingValueArray = _.isArray(existingValue);
+
+            // remove
+            if (patch[key] === options.deleteKeyword) {
+                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isTargetArray);
+
+            // update object
+            } else if (isPatchValueObject) {
+
+                // we should replace the target value, todo: array merges check is not sufficient
+                if (!isExistingValueArray && !utils.hasSamePrototype(existingValue, patchValue)) {
+
+                    // this is a restructure
+                    // handle prototypes
+                    target[srcKey] = Object.create(this._getPrototypeOf(patchValue));
+
+                }
+
+                childDiffs = this._applyObject(target[srcKey],
+                    patchValue,
+                    utils.concatPath(path, key),
+                    options,
+                    level + 1,
+                    override);
+
+                levelDiffs.addChildTracking(childDiffs, key);
+
+            // update primitive
+            } else {
+
+                target[srcKey] = patchValue;
+
+                levelDiffs.hasUpdates = true;
+                levelDiffs.updates[key] = {
+                    oldVal: existingValue,
+                    newVal: appliedValue
+                };
+                levelDiffs.hasDifferences = true;
+                levelDiffs.differences[key] = appliedValue;
+            }
+
+        }
+
+        return levelDiffs;
+    }
+
+    _deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray) {
+        if (options.patchDeletions) {
+
+            if (isArray) {
+                target.splice(index(key, levelDiffs), 1);
+                levelDiffs.arrayOffset = (levelDiffs.arrayOffset || 0) -1;
+            } else {
+                delete target[key];
+            }
+
+        }
+
+        levelDiffs.deletions[key] = existingValue;
+        levelDiffs.differences[key] = options.deleteKeyword;
+        levelDiffs.hasDeletions = true;
+        levelDiffs.hasDifferences = true;
+
+        this._emitInnerDeletions(path, existingValue, options);
+
+        return levelDiffs;
+    }
+
+    _detectDeletionsAtLevel(target, patch, levelDiffs, path, options, isArray) {
+        const keys = _.keys(target),
+            length = keys.length;
+
+        let existingValue,
+            key,
+            i;
+
+        // run target object at this level
+        for (i = 0; i < length; i++) {
+            key = keys[i];
+
+            if (!patch.hasOwnProperty(key)) {
+                existingValue = target[key];
+                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray);
+            }
+
+        }
+
+        return levelDiffs;
+    }
+
+    _splice(path, index, itemsToRemove, ...itemsToAdd) {
+        const target = this.get(path);
+        if (!_.isArray(target)) {
+            debug('invalid splice, target must be an array');
+
+            return { deleted: [] };
+        }
+        const deleted = target.splice(index, itemsToRemove, ...itemsToAdd);
+        const diff = { index, itemsToRemove, itemsToAdd, deleted };
+
+        return diff;
+    }
+
+    _getPrototypeOf(object) {
+        return Object.getPrototypeOf(object);
+    }
+
+    _emitInnerDeletions(deletedObject, path, options) {
+        let levelDiffs,
+            childDiffs;
+
+        if (!_.isObject(deletedObject)) {
+            return;
+        }
+
+        if (options.emitEvents) {
+            levelDiffs = DiffTracker.create();
+            levelDiffs.path = path;
+        }
+
+        let keys = _.keys(deletedObject);
+        for (let i = 0; i < keys.length; i++) {
+            let key = keys[i];
+            if (_.isObject(deletedObject[key])) {
+                childDiffs = this._emitInnerDeletions(deletedObject[key], utils.concatPath(path, key), options);
+                levelDiffs.addChildTracking(childDiffs, key);
+            }
+
+        }
+
+        levelDiffs.hasDeletions = true;
+        levelDiffs.deletions = deletedObject;
+        this.emit((path || '*'), levelDiffs, options);
+
+        return levelDiffs;
+    }
+
+    _emitFrom(path, diff) {
+
+        if (!path) {
+            this.emit('*', diff);
+
+            return;
+        }
+
+        let pindex = path.lastIndexOf('.');
+        while (pindex > 0) {
+            const key = path.substring(pindex + 1);
+            path = path.substring(0, pindex);
+            diff = { [key]: diff };
+            this.emit(path, diff);
+
+            pindex = path.lastIndexOf('.');
+        }
+        this.emit('*', { [path]: diff });
+    }
+}
+
+PatchDiff.prototype.observe = EventEmitter.prototype.on;
+PatchDiff.prototype.override = PatchDiff.prototype.set;
+PatchDiff.utils = utils;
+
+//export default PatchDiff;
+module.exports = PatchDiff;
+
+
+/***/ }),
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, module) {var __WEBPACK_AMD_DEFINE_RESULT__;/**
@@ -17939,862 +18870,7 @@ module.exports = {
   else {}
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6), __webpack_require__(13)(module)))
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1, eval)("this");
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Created by barakedry on 05/07/2018.
- */
-
-/*
-import Replica from "./replica";
-export default Replica;
-*/
-module.exports = __webpack_require__(19);
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Created by barakedry on 06/07/2018.
- */
-
-const eventName = __webpack_require__(3);
-
-/**
- *  LiveReplicaSocket
- */
-class LiveReplicaSocket {
-
-    constructor(baseSocket) {
-        this._instance = LiveReplicaSocket.instances++;
-    }
-
-    send(event, payload, ack) {
-        this._socketSend(eventName(event), payload, ack);
-    }
-
-    on(event, fn) {
-        this._addSocketEventListener(eventName(event), fn)
-    }
-
-    once(event, fn) {
-        this._addSocketEventListenerOnce(eventName(event), fn)
-    }
-
-    off(event, fn) {
-        this._removeSocketEventListener(eventName(event), fn)
-    }
-
-    /**
-     * Overrides
-     */
-
-    get baseSocket() {
-        return this._socket;
-    }
-
-    _addSocketEventListener(eventName, fn) {
-        this._socket.on(eventName, fn);
-    }
-    _addSocketEventListenerOnce(eventName, fn) {
-        this._socket.once(eventName, fn);
-    }
-
-    _removeSocketEventListener(eventName, fn) {
-        this._socket.removeEventListener(eventName, fn);
-    }
-
-    _socketSend(eventName, payload, ack) {
-        this._socket.send(eventName, payload, ack);
-    }
-
-    connect(baseSocket) {
-
-        this._socket = baseSocket;
-
-        if (!this.isConnected()) {
-            this._socket.connect();
-        }
-    }
-
-    disconnect() {
-        this._socket.disconnect();
-    }
-
-    isConnected() { return false; }
-}
-
-LiveReplicaSocket.instances = 0;
-
-module.exports = LiveReplicaSocket;
-
-/***/ }),
-/* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Created by barakedry on 02/06/2018.
- */
-
-const PatchDiff = __webpack_require__(1);
-const PatcherProxy = __webpack_require__(0);
-const Middlewares = __webpack_require__(20);
-
-class LiveReplicaServer extends PatchDiff {
-
-    constructor(options) {
-        options = Object.assign({}, options);
-        super(options.dataObject || {}, options);
-
-        this.middlewares = new Middlewares(this);
-    }
-
-    onConnect(connection) {
-        connection.on('subscribe', (clientRequest, ack) => {
-            const {id, path, allowRPC, allowWrite} = clientRequest;
-
-            const subscribeRequest = {
-                id,
-                connection,
-                ack,
-                path,
-                allowRPC,
-                allowWrite
-            };
-
-            this.onSubscribeRequest(subscribeRequest);
-        });
-    }
-
-    onSubscribeRequest(subscribeRequest) {
-        this.emit('subscribe-request', subscribeRequest);
-
-        subscribeRequest = Object.assign({
-            allowWrite: false,
-            allowRPC: false
-        }, subscribeRequest);
-
-        let reject = function(rejectReason) {
-            subscribeRequest.ack({rejectReason});
-        };
-
-        this.middlewares.start(subscribeRequest, reject, (request) => {
-            this.emit('subscribe', request);
-
-            subscribeRequest.ack({success: true});
-
-            this.subscribeClient(request);
-        });
-    }
-
-    subscribeClient(request) {
-        const path = request.path;
-        const clientSubset = this.at(path);
-        const connection = request.connection;
-
-        const unsubscribeEvent = `unsubscribe:${request.id}`;
-        const applyEvent = `apply:${request.id}`;
-        const invokeRpcEvent = `invokeRPC:${request.id}`;
-
-        let ownerChange = false;
-        clientSubset.subscribe((patchData) => {
-            if (!ownerChange) {
-                connection.send(applyEvent, patchData);
-            }
-
-            ownerChange = false;
-        });
-
-        if (connection.listenerCount(applyEvent)) {
-            connection.removeAllListeners(applyEvent);
-        }
-
-        if (connection.listenerCount(invokeRpcEvent)) {
-            connection.removeAllListeners(invokeRpcEvent);
-        }
-
-        if (request.allowWrite) {
-            connection.on(applyEvent, (payload) => {
-                ownerChange = true;
-                clientSubset.apply(payload);
-            });
-        }
-
-        if (request.allowRPC) {
-
-            connection.on(invokeRpcEvent, (path, args, ack) => {
-                const method = clientSubset.get(path);
-                // check if promise
-                const res = method.call(clientSubset, ...args);
-                if (res && typeof res.then === 'function') {
-                    res.then(ack);
-                } else {
-                    ack(res);
-                }
-            });
-
-        }
-
-        const onUnsubscribe = () => {
-            request.connection.removeListener(unsubscribeEvent, onUnsubscribe);
-            request.connection.removeListener('disconnect', onUnsubscribe);
-            this.emit('unsubscribe', request);
-        };
-
-
-        request.connection.once(unsubscribeEvent, onUnsubscribe);
-        request.connection.once('disconnect', onUnsubscribe);
-    }
-
-    use(fn) {
-        this.middlewares.use(fn);
-    }
-
-    get data() {
-        if (this.options.readonly) {
-            return this._data;
-        } else {
-            if (!this.proxies.has(this)) {
-                const proxy = new PatcherProxy(this);
-                this.proxies.set(this, proxy);
-            }
-            return this.proxies.get(this);
-        }
-    }
-}
-
-LiveReplicaServer.middlewares = __webpack_require__(21);
-
-module.exports = LiveReplicaServer;
-
-/***/ }),
-/* 10 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Replica = __webpack_require__(7);
-const utils = __webpack_require__(4);
-const PatcherProxy = __webpack_require__(0);
-
-function elementUtilities(element) {
-    return {
-        __replicas: new Map(),
-
-        attach(replica) {
-            const data = replica.data;
-            this.__replicas.set(data, replica);
-            return data;
-        },
-
-        replicaByData(data) {
-
-            if (!PatcherProxy.proxyProperties.has(data)) {
-                return undefined;
-            }
-
-            const root = PatcherProxy.getRoot(data);
-            const basePath = PatcherProxy.getPath(data);
-            const replica = this.__replicas.get(root);
-
-            return {replica, basePath};
-        },
-
-        watch(data, path, cb) {
-            let replica = this.__replicas.get(data);
-
-            let render = this.render;
-            let property;
-            ({path, property} = utils.extractBasePathAndProperty(path));
-
-            if (path) {
-                replica = replica.at(path);
-            }
-            replica.subscribe(function (patch, diff) {
-
-                let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
-
-                if (!lengthChanged && !patch[property]) { return; }
-
-                if (cb) {
-                    cb.call(element, patch, replica.get(property));
-                }
-
-                if (typeof render === 'function') {
-                    render(patch, replica.get(property));
-                }
-            });
-        },
-
-        get ready() {
-            return Promise.all(Array.from(this.__replicas.entries()).map(replica => replica.sync));
-        },
-
-        clearAll() {
-
-        }
-    };
-}
-
-
-module.exports = function PolymerBaseMixin(base) {
-    return class extends base {
-
-        constructor() {
-            super();
-            this.liveReplica = elementUtilities(this);
-        }
-
-        disconnectedCallback() {
-            super.disconnectedCallback();
-            this.liveReplica.clearAll();
-        };
-    };
-};
-
-
-
-/***/ }),
-/* 11 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-const PatchDiff = __webpack_require__(1);
-const Proxy = __webpack_require__(0);
-const Replica = __webpack_require__(7);
-const ReplicaServer = __webpack_require__(9);
-const WorkerServer = __webpack_require__(22);
-const WorkerSocket = __webpack_require__(23);
-const {PolymerElementMixin, LitElementMixin} = __webpack_require__(24);
-
-module.exports = {Replica, ReplicaServer, PatchDiff, Proxy, WorkerServer, WorkerSocket, LitElementMixin, PolymerElementMixin};
-
-/***/ }),
-/* 12 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Created by barakedry on 6/19/15.
- */
-/* eslint max-params: 'off' */
-
-
-// import {EventEmitter} from 'events';
-// import _ from 'lodash';
-// import utils from './utils';
-// import DiffTracker from './diff-tracker';
-// import debuglog from 'debuglog'
-// const debug = debuglog('patch-diff');
-
-const {EventEmitter} = __webpack_require__(2);
-const _ = __webpack_require__(5);
-const utils = __webpack_require__(14);
-const DiffTracker = __webpack_require__(15);
-const debuglog = __webpack_require__(16);
-const debug = debuglog('patch-diff');
-
-function index(key, levelDiffs) {
-    return Number(key) - (levelDiffs.arrayOffset || 0);
-}
-
-class PatchDiff extends EventEmitter {
-    constructor(object, options) {
-
-        super();
-
-        this.options = _.defaults(options || {}, {
-            emitEvents: true, //settings this to false should allow faster merging but it is not implemented yet
-            undefinedKeyword: '__$$U',
-            deleteKeyword: '__$$D',
-            spliceKeyword: '__$$S',
-            protoKeyword: '__$$P',
-            patchDeletions: true,
-            patchAdditions: true,
-            emitAdditions: true,
-            emitUpdates: true,
-            emitDifferences: true,
-            maxKeysInLevel: 1000,
-            maxLevels: 50,
-            maxListeners: 1000000
-        });
-
-        this._data = object || {};
-        this.setMaxListeners(this.options.maxListeners);
-        //this.prototypes = []; // prototypes are stored in a special collection
-    }
-
-    apply(patch, path, options) {
-
-        path = utils.concatPath(this._path, path);
-        options = _.defaults(options || {}, this.options);
-
-        if (!_.isObject(patch) && !path) {
-            debug('invalid apply, target and patch must be objects');
-
-            return;
-        }
-
-        this._applyObject(this._data, utils.wrapByPath(patch, path), '', options, 0);
-    }
-
-    set(fullDocument, path, options) {
-
-        path = utils.concatPath(this._path, path);
-
-        options = _.defaults(options || {}, this.options);
-
-        if (!_.isObject(fullDocument) && !path) {
-            debug('invalid apply, target and value must be objects');
-
-            return;
-        }
-
-        this._applyObject(this._data, utils.wrapByPath(fullDocument, path), '', options, 0, path || '');
-    }
-
-    remove(path) {
-
-        path = utils.concatPath(this._path, path);
-
-        if (!(path && _.isString(path))) {
-            debug('invalid path, cannot remove');
-
-            return;
-        }
-
-        this._applyObject(this._data, utils.wrapByPath(this.options.deleteKeyword, path), '', this.options, 0);
-    }
-
-    splice(path, index, itemsToRemove, ...itemsToAdd) {
-        path = utils.concatPath(this._path, path);
-        this._applyObject(this._data, utils.wrapByPath({[this.options.spliceKeyword]: {index, itemsToRemove, itemsToAdd}}, path), '', this.options, 0);
-    }
-
-    get(path, callback) {
-
-        if (typeof path === 'function') {
-            callback = path;
-            path = undefined;
-        }
-
-        const fullPath = utils.concatPath(this._path, path);
-        if (fullPath && (!_.isString(fullPath))) {
-            debug('invalid path, cannot get');
-
-            return;
-        }
-
-
-        let retVal;
-        if (fullPath) {
-            retVal = _.get(this._data, fullPath);
-        } else {
-            retVal = this._data;
-        }
-
-        if (callback) {
-            if (retVal) {
-                callback(retVal);
-            } else {
-                // subscribe for first data
-                let unsub;
-                let once;
-                unsub = this.subscribe(path, () => {
-                    if (!once) {
-                        callback(_.get(this._data, fullPath));
-                        once = true;
-                        setTimeout(unsub, 0);
-                    }
-                });
-            }
-        }
-
-        return retVal;
-    }
-
-    on(path, fn) {
-        path = utils.concatPath(this._path, path);
-        super.on(path, fn);
-    }
-
-    subscribe (path, fn) {
-        if (typeof path === 'function') {
-            fn = path;
-            path = '';
-        }
-
-        let current = this.get(path);
-        if (current) {
-            fn(current, {snapshot: true}, {});
-        }
-
-        path = utils.concatPath(this._path, path);
-        path = path || '*';
-
-        const handler = function (diff, options) {
-            fn(diff.differences, diff, options);
-        };
-        super.on(path, handler);
-
-        return () => {
-            this.removeListener(path, handler);
-        };
-    }
-
-    at(subPath) {
-        let path = utils.concatPath(this._path, subPath);
-        let at = Object.create(this);
-        at._path = path;
-
-        return at;
-    }
-
-
-    /************************************************************************************
-     * The basic merging recursion implementation:
-     * ._applyObject() -> ._applyAtKey() -> ._applyObject() -> ._applyAtKey() -> ...
-     *
-     * ._applyObject() iterate keys at level and calls ._applyAtKey() for each key,
-     * after iteration ends it emits and returns level changes to the caller.
-     *
-     * ._applyAtKey() assigns/remove primitives and calls _.applyObject() for objects
-     ************************************************************************************/
-    _applyObject(target, patch, path, options, level, override) {
-
-        if (!(_.isObject(target) && _.isObject(patch))) {
-            debug('invalid apply, target and patch must be objects');
-            this.emit('error', new Error('invalid apply, target and patch must be objects'));
-
-            return;
-        }
-
-        if (level > options.maxLevels) {
-            debug('Trying to apply too deep, stopping at level %d', level);
-            this.emit('error', new Error('Trying to apply too deep, stopping at level ' + level));
-
-            return;
-        }
-
-        let levelDiffs;
-        let keys = _.keys(patch);
-        let length = keys.length;
-        let isTargetArray = _.isArray(target);
-
-        if (options.emitEvents) {
-            levelDiffs = DiffTracker.create(isTargetArray && target.length === 0 && _.isArray(patch));
-            levelDiffs.path = path;
-        }
-
-        if (isTargetArray) {
-            levelDiffs = levelDiffs || {};
-        }
-
-        if (length > options.maxKeysInLevel) {
-            debug('Stopped patching, Too many keys in object - %d out of %d allowed keys.', length, options.maxKeysInLevel);
-            this.emit('error', new Error('Stopped patching, Too many keys in object - ' + length + ' out of ' + options.maxKeysInLevel + ' allowed keys.'));
-
-            return levelDiffs;
-        }
-
-        // override is either undefined, a path or true
-        if ((options.overrides && options.overrides[path]) || (!_.isUndefined(override) && (override === true || override === path))) {
-            // find keys at this level that exists at the target object and remove them
-            levelDiffs = this._detectDeletionsAtLevel(target, patch, levelDiffs, path, options, isTargetArray, level);
-        }
-
-        // main logic loop, iterate patch keys and apply to dest object
-        for (let i = 0; i < length; i++) {
-            let key = keys[i];
-
-            if (utils.isValid(patch[key]) && patch[key] !== target[key]) {
-                levelDiffs = this._applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray);
-            }
-        }
-
-        if (options.emitEvents && levelDiffs.hasDifferences) {
-            this.emit((path || '*'), levelDiffs, options);
-        }
-
-        return levelDiffs;
-    }
-
-    _applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray) {
-
-        let childDiffs,
-            patchValue,
-            existingValue,
-            srcKey,
-            appliedValue, // this value is what goes out to the tracker its not always the same as patchValue
-            isExistingValueArray,
-            isPatchValueObject = false;
-
-        patchValue = patch[key];
-        srcKey = key;
-
-        // splice treat as primitive
-        if (key === this.options.spliceKeyword) {
-            appliedValue = this._splice(path, patchValue.index, patchValue.itemsToRemove || 0, ...(patchValue.itemsToAdd || []));
-            target[srcKey] = patchValue;
-
-            levelDiffs.hasUpdates = true;
-            levelDiffs.hasDifferences = true;
-            levelDiffs.differences[key] = appliedValue;
-            return levelDiffs;
-        }
-
-        if (_.isFunction(patchValue)) {
-            appliedValue = utils.SERIALIZED_FUNCTION;
-        } else {
-            isPatchValueObject = _.isObject(patchValue);
-            if (_.isUndefined(patchValue)) {
-                appliedValue = options.undefinedKeyword;
-            } else if (patchValue === options.undefinedKeyword) {
-                appliedValue = patchValue;
-                patchValue = undefined;
-            } else {
-                appliedValue = patchValue;
-            }
-        }
-
-        // new
-        if (!target.hasOwnProperty(srcKey)) {
-            if (options.patchAdditions && patch[key] !== options.deleteKeyword) {
-
-                // add new object
-                if (isPatchValueObject) {
-
-                    if (isTargetArray) {
-                        srcKey = index(srcKey, levelDiffs);
-                    }
-
-                    target[srcKey] = patchValue.constructor.call(Object.create(Object.getPrototypeOf(patchValue)));
-
-                    childDiffs = this._applyObject(target[srcKey],
-                        patchValue,
-                        utils.concatPath(path, key),
-                        options,
-                        level + 1,
-                        override,
-                        isTargetArray
-                    );
-
-                    levelDiffs.addChildTracking(childDiffs, key);
-
-                    // add new primitive
-                } else {
-
-                    target[srcKey] = patchValue;
-
-                    levelDiffs.hasAdditions = true;
-                    levelDiffs.additions[key] = appliedValue;
-                    levelDiffs.hasDifferences = true;
-                    levelDiffs.differences[key] = appliedValue;
-                }
-            }
-        // existing
-        } else {
-
-            existingValue = target[srcKey];
-            isExistingValueArray = _.isArray(existingValue);
-
-            // remove
-            if (patch[key] === options.deleteKeyword) {
-                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isTargetArray);
-
-            // update object
-            } else if (isPatchValueObject) {
-
-                // we should replace the target value, todo: array merges check is not sufficient
-                if (!isExistingValueArray && !utils.hasSamePrototype(existingValue, patchValue)) {
-
-                    // this is a restructure
-                    // handle prototypes
-                    target[srcKey] = Object.create(this._getPrototypeOf(patchValue));
-
-                }
-
-                childDiffs = this._applyObject(target[srcKey],
-                    patchValue,
-                    utils.concatPath(path, key),
-                    options,
-                    level + 1,
-                    override);
-
-                levelDiffs.addChildTracking(childDiffs, key);
-
-            // update primitive
-            } else {
-
-                target[srcKey] = patchValue;
-
-                levelDiffs.hasUpdates = true;
-                levelDiffs.updates[key] = {
-                    oldVal: existingValue,
-                    newVal: appliedValue
-                };
-                levelDiffs.hasDifferences = true;
-                levelDiffs.differences[key] = appliedValue;
-            }
-
-        }
-
-        return levelDiffs;
-    }
-
-    _deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray) {
-        if (options.patchDeletions) {
-
-            if (isArray) {
-                target.splice(index(key, levelDiffs), 1);
-                levelDiffs.arrayOffset = (levelDiffs.arrayOffset || 0) -1;
-            } else {
-                delete target[key];
-            }
-
-        }
-
-        levelDiffs.deletions[key] = existingValue;
-        levelDiffs.differences[key] = options.deleteKeyword;
-        levelDiffs.hasDeletions = true;
-        levelDiffs.hasDifferences = true;
-
-        this._emitInnerDeletions(path, existingValue, options);
-
-        return levelDiffs;
-    }
-
-    _detectDeletionsAtLevel(target, patch, levelDiffs, path, options, isArray) {
-        const keys = _.keys(target),
-            length = keys.length;
-
-        let existingValue,
-            key,
-            i;
-
-        // run target object at this level
-        for (i = 0; i < length; i++) {
-            key = keys[i];
-
-            if (!patch.hasOwnProperty(key)) {
-                existingValue = target[key];
-                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray);
-            }
-
-        }
-
-        return levelDiffs;
-    }
-
-    _splice(path, index, itemsToRemove, ...itemsToAdd) {
-        const target = this.get(path);
-        if (!_.isArray(target)) {
-            debug('invalid splice, target must be an array');
-
-            return { deleted: [] };
-        }
-        const deleted = target.splice(index, itemsToRemove, ...itemsToAdd);
-        const diff = { index, itemsToRemove, itemsToAdd, deleted };
-
-        return diff;
-    }
-
-    _getPrototypeOf(object) {
-        return Object.getPrototypeOf(object);
-    }
-
-    _emitInnerDeletions(deletedObject, path, options) {
-        let levelDiffs,
-            childDiffs;
-
-        if (!_.isObject(deletedObject)) {
-            return;
-        }
-
-        if (options.emitEvents) {
-            levelDiffs = DiffTracker.create();
-            levelDiffs.path = path;
-        }
-
-        let keys = _.keys(deletedObject);
-        for (let i = 0; i < keys.length; i++) {
-            let key = keys[i];
-            if (_.isObject(deletedObject[key])) {
-                childDiffs = this._emitInnerDeletions(deletedObject[key], utils.concatPath(path, key), options);
-                levelDiffs.addChildTracking(childDiffs, key);
-            }
-
-        }
-
-        levelDiffs.hasDeletions = true;
-        levelDiffs.deletions = deletedObject;
-        this.emit((path || '*'), levelDiffs, options);
-
-        return levelDiffs;
-    }
-
-    _emitFrom(path, diff) {
-
-        if (!path) {
-            this.emit('*', diff);
-
-            return;
-        }
-
-        let pindex = path.lastIndexOf('.');
-        while (pindex > 0) {
-            const key = path.substring(pindex + 1);
-            path = path.substring(0, pindex);
-            diff = { [key]: diff };
-            this.emit(path, diff);
-
-            pindex = path.lastIndexOf('.');
-        }
-        this.emit('*', { [path]: diff });
-    }
-}
-
-PatchDiff.prototype.observe = EventEmitter.prototype.on;
-PatchDiff.prototype.override = PatchDiff.prototype.set;
-PatchDiff.utils = utils;
-
-//export default PatchDiff;
-module.exports = PatchDiff;
-
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5), __webpack_require__(13)(module)))
 
 /***/ }),
 /* 13 */
@@ -19171,7 +19247,7 @@ process.umask = function() { return 0; };
 
 const PatchDiff = __webpack_require__(1);
 const PatcherProxy = __webpack_require__(0);
-const LiveReplicaSocket = __webpack_require__(8);
+const LiveReplicaSocket = __webpack_require__(7);
 const concatPath = PatchDiff.utils.concatPath;
 
 let replicaId = 1000;
@@ -19442,7 +19518,7 @@ module.exports = {
 
 const eventName = __webpack_require__(3);
 const { EventEmitter }  = __webpack_require__(2);
-const LiveReplicaServer = __webpack_require__(9);
+const LiveReplicaServer = __webpack_require__(8);
 
 class Connection extends EventEmitter {
     constructor() {
@@ -19510,7 +19586,7 @@ class LiveReplicaWorkerServer extends LiveReplicaServer {
 }
 
 module.exports = LiveReplicaWorkerServer;
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5)))
 
 /***/ }),
 /* 23 */
@@ -19523,7 +19599,7 @@ module.exports = LiveReplicaWorkerServer;
 
 const LiveReplicaEvents = __webpack_require__(3);
 const Events = __webpack_require__(2);
-const LiveReplicaSocket = __webpack_require__(8);
+const LiveReplicaSocket = __webpack_require__(7);
 let acks = 1;
 /**
  *  LiveReplicaWorkerSocket
@@ -19611,7 +19687,7 @@ module.exports = {
 /***/ (function(module, exports, __webpack_require__) {
 
 const utils = __webpack_require__(4);
-const PolymerBaseMixin = __webpack_require__(10);
+const PolymerBaseMixin = __webpack_require__(9);
 
 Object.byPath = function(object, path) {
     path = path.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
@@ -19715,7 +19791,7 @@ module.exports = function LitElementMixin(base) {
 /* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const PolymerBaseMixin = __webpack_require__(10);
+const PolymerBaseMixin = __webpack_require__(9);
 const utils = __webpack_require__(4);
 function debouncer(fn, time) {
     let debounceClearer;

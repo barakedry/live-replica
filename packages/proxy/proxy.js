@@ -2,12 +2,88 @@
  * Created by barakedry on 31/03/2017.
  */
 'use strict';
-const _ = require('lodash');
-
 let arrayMutationMethods = {};
 ['copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'].forEach((method) => {
     arrayMutationMethods[method] = true;
 });
+
+function set(target, path, value) {
+
+    let levels,
+        curr,
+        i,
+        len;
+
+    if (!path) {
+        return value;
+    }
+
+    levels = path.split('.');
+    len = levels.length;
+    i = 0;
+    target = target || {};
+    curr = target;
+
+    while (i < (len - 1)) {
+        curr[levels[i]] = {};
+        curr = curr[levels[i]];
+        i++;
+    }
+
+    curr[levels[i]] = value;
+
+    return target;
+}
+
+function unset(target, path) {
+
+    let levels,
+        curr,
+        i,
+        len;
+
+    if (!path) {
+        return value;
+    }
+
+    levels = path.split('.');
+    len = levels.length;
+    i = 0;
+    curr = target;
+
+    while (curr && i < (len - 1)) {
+        curr = curr[levels[i]];
+        i++;
+    }
+
+    if (curr && curr[levels[i]]) {
+        delete curr[levels[i]];
+    }
+}
+
+function get(target, path) {
+
+    let levels,
+        curr,
+        i,
+        len;
+
+    if (!path) {
+        return value;
+    }
+
+    levels = path.split('.');
+    len = levels.length;
+    i = 0;
+    curr = target;
+
+    while (curr && i < len) {
+        curr = curr[levels[i]];
+        i++;
+    }
+
+    return curr;
+}
 
 const PatcherProxy = {
     proxies: new WeakMap(),
@@ -194,7 +270,7 @@ const PatcherProxy = {
         let properties = this.proxyProperties.get(proxy);
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy);
-        let changes = _.get(this.proxyProperties.get(root).changes, fullPath);
+        let changes = get(this.proxyProperties.get(root).changes, fullPath);
 
 
         if (!changes) {
@@ -234,7 +310,7 @@ const PatcherProxy = {
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
         let deleteValue = properties.patcher.options.deleteKeyword;
-        let value = _.get(this.proxyProperties.get(root).changes, fullPath);
+        let value = get(this.proxyProperties.get(root).changes, fullPath);
         let realValue = target[name];
 
         if (this.proxies.has(realValue)) {
@@ -283,7 +359,7 @@ const PatcherProxy = {
         }
 
         this.proxyProperties.get(root).dirty = true;
-        _.set(this.proxyProperties.get(root).changes, fullPath, newval);
+        set(this.proxyProperties.get(root).changes, fullPath, newval);
         this.commit(root);
 
         return true;
@@ -297,9 +373,9 @@ const PatcherProxy = {
 
         rootChangeTracker.dirty = true;
         if (target[name]) {
-            _.set(rootChangeTracker, fullPath, properties.patcher.options.deleteKeyword);
+            set(rootChangeTracker, fullPath, properties.patcher.options.deleteKeyword);
         } else {
-            _.unset(rootChangeTracker, fullPath);
+            unset(rootChangeTracker, fullPath);
         }
 
         this.commit(root);
