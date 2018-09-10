@@ -17,6 +17,23 @@ function debouncer(fn, time) {
     }
 }
 
+function flatten(object, base) {
+    let paths = [];
+    const keys = Object.keys(object);
+    for (let i = 0; i < keys.length; i++) {
+        if (object[keys[i]]) {
+            const key = keys[i];
+            if (typeof object[key] === 'object') {
+                paths = paths.concat(flatten(object[key]).map(cpath => base ? [base, key, cpath].join('.') : [key, cpath].join('.')));
+            } else {
+                paths.push(base ? [base, key].join('.') : key);
+            }
+        }
+
+    }
+    return paths;
+}
+
 function createAttachToProperty(element) {
 
     return function attachToProperty(property, replica) {
@@ -24,6 +41,7 @@ function createAttachToProperty(element) {
         const data = this.attach(replica);
 
         let unwatchers = [];
+        const notifyPath = element.notifyPath.bind(element);
 
         const createWatcherForPropertyEffects = debouncer( () => {
 
@@ -56,17 +74,21 @@ function createAttachToProperty(element) {
                 let watcher;
 
                 let isArray = {};
-                watcher = (diff) => {
+                watcher = (diff, info) => {
                     let keys = Object.keys(diff);
                     for (let i = 0; i < keys.length; i++) {
-                        if (templatePaths[keys[i]]) {
-                            const templatePath = templatePaths[keys[i]];
+                        const key = keys[i];
+                        if (templatePaths[key]) {
+                            const templatePath = templatePaths[key];
                             if (!isArray.hasOwnProperty(templatePath) && element.get(templatePath)) {
                                 isArray[templatePath] = Array.isArray(element.get(templatePath));
                             }
 
                             if (isArray[templatePath]) {
                                 element.notifySplices(templatePath);
+                                if (!info.snapshot && info.hasUpdates && diff[key] && typeof diff[key] === 'object') {
+                                    flatten(diff[key], templatePath).forEach(notifyPath);
+                                }
                             } else {
                                 element.notifyPath(templatePath);
                             }

@@ -61,7 +61,6 @@ class Replica extends PatchDiff {
     _bindToSocket() {
 
         this.connection.on(`apply:${this.id}`, (delta) => {
-            this.localApply = false;
             this._remoteApply(delta);
             if (delta && !this.synced) {
                 this.synced = true;
@@ -70,8 +69,8 @@ class Replica extends PatchDiff {
         });
 
         if (this.options.readonly === false) {
-            this.subscribe((data) => {
-                if (this.localApply) {
+            this.subscribe((data, diff, options) => {
+                if (options.local) {
                     this.connection.send(`apply:${this.id}`, data);
                 }
             });
@@ -106,11 +105,14 @@ class Replica extends PatchDiff {
         super.apply(this._deserialzeFunctions(data));
     }
 
-    apply() {
+    apply(...args) {
         if (this.options.readonly === false) {
-            this.localApply = true;
-            super.apply(...arguments);
-            this.localApply = false;
+            if (args.length === 3) {
+                args[2].local = true;
+            } else {
+                args.push({local: true});
+            }
+            super.apply(...args);
         }
     }
 

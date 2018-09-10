@@ -150,14 +150,14 @@ class PatchDiff extends EventEmitter {
 
         let current = this.get(path);
         if (current) {
-            fn(current, {snapshot: true});
+            fn(current, {snapshot: true}, {});
         }
 
         path = utils.concatPath(this._path, path);
         path = path || '*';
 
-        const handler = function (diff) {
-            fn(diff.differences, diff);
+        const handler = function (diff, options) {
+            fn(diff.differences, diff, options);
         };
         super.on(path, handler);
 
@@ -237,7 +237,7 @@ class PatchDiff extends EventEmitter {
         }
 
         if (options.emitEvents && levelDiffs.hasDifferences) {
-            this.emit((path || '*'), levelDiffs);
+            this.emit((path || '*'), levelDiffs, options);
         }
 
         return levelDiffs;
@@ -452,7 +452,7 @@ class PatchDiff extends EventEmitter {
 
         levelDiffs.hasDeletions = true;
         levelDiffs.deletions = deletedObject;
-        this.emit((path || '*'), levelDiffs);
+        this.emit((path || '*'), levelDiffs, options);
 
         return levelDiffs;
     }

@@ -18460,14 +18460,14 @@ class PatchDiff extends EventEmitter {
 
         let current = this.get(path);
         if (current) {
-            fn(current, {snapshot: true});
+            fn(current, {snapshot: true}, {});
         }
 
         path = utils.concatPath(this._path, path);
         path = path || '*';
 
-        const handler = function (diff) {
-            fn(diff.differences, diff);
+        const handler = function (diff, options) {
+            fn(diff.differences, diff, options);
         };
         super.on(path, handler);
 
@@ -18547,7 +18547,7 @@ class PatchDiff extends EventEmitter {
         }
 
         if (options.emitEvents && levelDiffs.hasDifferences) {
-            this.emit((path || '*'), levelDiffs);
+            this.emit((path || '*'), levelDiffs, options);
         }
 
         return levelDiffs;
@@ -18762,7 +18762,7 @@ class PatchDiff extends EventEmitter {
 
         levelDiffs.hasDeletions = true;
         levelDiffs.deletions = deletedObject;
-        this.emit((path || '*'), levelDiffs);
+        this.emit((path || '*'), levelDiffs, options);
 
         return levelDiffs;
     }
@@ -19224,7 +19224,6 @@ class Replica extends PatchDiff {
     _bindToSocket() {
 
         this.connection.on(`apply:${this.id}`, (delta) => {
-            this.localApply = false;
             this._remoteApply(delta);
             if (delta && !this.synced) {
                 this.synced = true;
@@ -19233,8 +19232,8 @@ class Replica extends PatchDiff {
         });
 
         if (this.options.readonly === false) {
-            this.subscribe((data) => {
-                if (this.localApply) {
+            this.subscribe((data, diff, options) => {
+                if (options.local) {
                     this.connection.send(`apply:${this.id}`, data);
                 }
             });
@@ -19269,11 +19268,14 @@ class Replica extends PatchDiff {
         super.apply(this._deserialzeFunctions(data));
     }
 
-    apply() {
+    apply(...args) {
         if (this.options.readonly === false) {
-            this.localApply = true;
-            super.apply(...arguments);
-            this.localApply = false;
+            if (args.length === 3) {
+                args[2].local = true;
+            } else {
+                args.push({local: true});
+            }
+            super.apply(...args);
         }
     }
 
@@ -19732,6 +19734,23 @@ function debouncer(fn, time) {
     }
 }
 
+function flatten(object, base) {
+    let paths = [];
+    const keys = Object.keys(object);
+    for (let i = 0; i < keys.length; i++) {
+        if (object[keys[i]]) {
+            const key = keys[i];
+            if (typeof object[key] === 'object') {
+                paths = paths.concat(flatten(object[key]).map(cpath => base ? [base, key, cpath].join('.') : [key, cpath].join('.')));
+            } else {
+                paths.push(base ? [base, key].join('.') : key);
+            }
+        }
+
+    }
+    return paths;
+}
+
 function createAttachToProperty(element) {
 
     return function attachToProperty(property, replica) {
@@ -19739,6 +19758,7 @@ function createAttachToProperty(element) {
         const data = this.attach(replica);
 
         let unwatchers = [];
+        const notifyPath = element.notifyPath.bind(element);
 
         const createWatcherForPropertyEffects = debouncer( () => {
 
@@ -19771,17 +19791,21 @@ function createAttachToProperty(element) {
                 let watcher;
 
                 let isArray = {};
-                watcher = (diff) => {
+                watcher = (diff, info) => {
                     let keys = Object.keys(diff);
                     for (let i = 0; i < keys.length; i++) {
-                        if (templatePaths[keys[i]]) {
-                            const templatePath = templatePaths[keys[i]];
+                        const key = keys[i];
+                        if (templatePaths[key]) {
+                            const templatePath = templatePaths[key];
                             if (!isArray.hasOwnProperty(templatePath) && element.get(templatePath)) {
                                 isArray[templatePath] = Array.isArray(element.get(templatePath));
                             }
 
                             if (isArray[templatePath]) {
                                 element.notifySplices(templatePath);
+                                if (!info.snapshot && info.hasUpdates && diff[key] && typeof diff[key] === 'object') {
+                                    flatten(diff[key], templatePath).forEach(notifyPath);
+                                }
                             } else {
                                 element.notifyPath(templatePath);
                             }
