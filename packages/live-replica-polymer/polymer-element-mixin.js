@@ -86,13 +86,14 @@ function createAttachToProperty(element) {
 
                             if (isArray[templatePath]) {
                                 element.notifySplices(templatePath);
-                                if (!info.snapshot && info.hasUpdates && diff[key] && typeof diff[key] === 'object') {
-                                    flatten(diff[key], templatePath).forEach(notifyPath);
-                                }
                             } else {
                                 element.notifyPath(templatePath);
                             }
 
+                            // not the most efficient way to update..
+                            if (!info.snapshot && info.hasUpdates && diff[key] && typeof diff[key] === 'object') {
+                                flatten(diff[key], templatePath).forEach(notifyPath);
+                            }
                         }
                     }
                 };

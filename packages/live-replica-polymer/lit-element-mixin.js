@@ -89,7 +89,7 @@ module.exports = function LitElementMixin(base) {
         constructor() {
             super();
             this.liveReplica.render = (diff, data) => {
-                this._render(data);
+                this.requestRender();
             };
 
             this.liveReplica.directive = getDirective.bind(this.liveReplica);
