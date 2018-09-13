@@ -18,11 +18,10 @@ Object.byPath = function(object, path) {
 
 function createDirective(replica, property) {
 
-    const subscribersByPart = new WeakMap();
+    const subscribersByPart = new Map();
 
     const directive = (part) => {
-
-
+        // recalling the directive
         if (subscribersByPart.has(part)) {
             part.setValue(replica.get(property));
         } else {
@@ -36,7 +35,15 @@ function createDirective(replica, property) {
             subscribersByPart.set(part, unsub);
         }
     };
+
     directive.__litDirective = true;
+    directive.kill = () => {
+        subscribersByPart.forEach((unsub, part) => {
+            unsub();
+            subscribersByPart.delete(part);
+        });
+        delete directive.kill;
+    };
     return directive;
 }
 
@@ -58,7 +65,7 @@ function getDirective(data, path) {
     }
 
     if (!this.__replicaDirectivesCache) {
-        this.__replicaDirectivesCache = new WeakMap();
+        this.__replicaDirectivesCache = new Map();
     }
 
     let property;
@@ -85,15 +92,17 @@ function getDirective(data, path) {
 
 module.exports = function LitElementMixin(base) {
     return class extends PolymerBaseMixin(base) {
-
         constructor() {
             super();
+
             this.liveReplica.render = (diff, data) => {
                 this.requestRender();
             };
 
-            this.liveReplica.directive = getDirective.bind(this.liveReplica);
-        }
 
+            this.liveReplica.directive = getDirective.bind(this.liveReplica);
+
+
+        }
     };
 };

@@ -2,10 +2,6 @@
  * Created by barakedry on 28/04/2018.
  */
 'use strict';
-// import PatchDiff from '@live-replica/patch-diff';
-// import PatcherProxy from '@live-replica/proxy';
-// import LiveReplicaConnection from '@live-replica/socket';
-
 const PatchDiff = require('@live-replica/patch-diff');
 const PatcherProxy = require('@live-replica/proxy');
 const LiveReplicaSocket = require('@live-replica/socket');
@@ -47,7 +43,7 @@ class Replica extends PatchDiff {
             throw Error('undefined connection or not a LiveReplicaSocket');
         }
 
-        this.synced = false;
+        this._subscribed = false;
         this.connection = connection;
         this._bindToSocket();
         this.connection.send('subscribe', {
@@ -62,9 +58,9 @@ class Replica extends PatchDiff {
 
         this.connection.on(`apply:${this.id}`, (delta) => {
             this._remoteApply(delta);
-            if (delta && !this.synced) {
-                this.synced = true;
-                this.emit('synced', this.get());
+            if (delta && !this._subscribed) {
+                this._subscribed = true;
+                this.emit('_subscribed', this.get());
             }
         });
 
@@ -134,6 +130,10 @@ class Replica extends PatchDiff {
         });
     }
 
+    get existance() {
+        return this.getWhenExists();
+    }
+
     get data() {
         if (!this.proxies.has(this)) {
             const proxy = PatcherProxy.create(this, '', null, this.options.readonly);
@@ -142,12 +142,12 @@ class Replica extends PatchDiff {
         return this.proxies.get(this);
     }
 
-    get sync() {
+    get subscribed() {
         return new Promise((resolve) => {
-            if (this.synced) {
+            if (this._subscribed) {
                 resolve(this.get());
             } else {
-                this.once('synced', resolve);
+                this.once('_subscribed', resolve);
             }
 
         });

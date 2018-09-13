@@ -1244,11 +1244,13 @@ function elementUtilities(element) {
         },
 
         get ready() {
-            return Promise.all(Array.from(this.__replicas.entries()).map(replica => replica.sync));
+            return Promise.all(Array.from(this.__replicas.entries()).map(replica => replica.existance));
         },
 
         clearAll() {
-
+            this.__replicas.entries().forEach(replica => {
+                //replica
+            });
         }
     };
 }
@@ -19254,10 +19256,6 @@ process.umask = function() { return 0; };
  * Created by barakedry on 28/04/2018.
  */
 
-// import PatchDiff from '@live-replica/patch-diff';
-// import PatcherProxy from '@live-replica/proxy';
-// import LiveReplicaConnection from '@live-replica/socket';
-
 const PatchDiff = __webpack_require__(1);
 const PatcherProxy = __webpack_require__(0);
 const LiveReplicaSocket = __webpack_require__(7);
@@ -19299,7 +19297,7 @@ class Replica extends PatchDiff {
             throw Error('undefined connection or not a LiveReplicaSocket');
         }
 
-        this.synced = false;
+        this._subscribed = false;
         this.connection = connection;
         this._bindToSocket();
         this.connection.send('subscribe', {
@@ -19314,9 +19312,9 @@ class Replica extends PatchDiff {
 
         this.connection.on(`apply:${this.id}`, (delta) => {
             this._remoteApply(delta);
-            if (delta && !this.synced) {
-                this.synced = true;
-                this.emit('synced', this.get());
+            if (delta && !this._subscribed) {
+                this._subscribed = true;
+                this.emit('_subscribed', this.get());
             }
         });
 
@@ -19386,6 +19384,10 @@ class Replica extends PatchDiff {
         });
     }
 
+    get existance() {
+        return this.getWhenExists();
+    }
+
     get data() {
         if (!this.proxies.has(this)) {
             const proxy = PatcherProxy.create(this, '', null, this.options.readonly);
@@ -19394,12 +19396,12 @@ class Replica extends PatchDiff {
         return this.proxies.get(this);
     }
 
-    get sync() {
+    get subscribed() {
         return new Promise((resolve) => {
-            if (this.synced) {
+            if (this._subscribed) {
                 resolve(this.get());
             } else {
-                this.once('synced', resolve);
+                this.once('_subscribed', resolve);
             }
 
         });
@@ -19719,11 +19721,10 @@ Object.byPath = function(object, path) {
 
 function createDirective(replica, property) {
 
-    const subscribersByPart = new WeakMap();
+    const subscribersByPart = new Map();
 
     const directive = (part) => {
-
-
+        // recalling the directive
         if (subscribersByPart.has(part)) {
             part.setValue(replica.get(property));
         } else {
@@ -19737,7 +19738,15 @@ function createDirective(replica, property) {
             subscribersByPart.set(part, unsub);
         }
     };
+
     directive.__litDirective = true;
+    directive.kill = () => {
+        subscribersByPart.forEach((unsub, part) => {
+            unsub();
+            subscribersByPart.delete(part);
+        });
+        delete directive.kill;
+    };
     return directive;
 }
 
@@ -19759,7 +19768,7 @@ function getDirective(data, path) {
     }
 
     if (!this.__replicaDirectivesCache) {
-        this.__replicaDirectivesCache = new WeakMap();
+        this.__replicaDirectivesCache = new Map();
     }
 
     let property;
@@ -19786,16 +19795,18 @@ function getDirective(data, path) {
 
 module.exports = function LitElementMixin(base) {
     return class extends PolymerBaseMixin(base) {
-
         constructor() {
             super();
+
             this.liveReplica.render = (diff, data) => {
                 this.requestRender();
             };
 
-            this.liveReplica.directive = getDirective.bind(this.liveReplica);
-        }
 
+            this.liveReplica.directive = getDirective.bind(this.liveReplica);
+
+
+        }
     };
 };
 

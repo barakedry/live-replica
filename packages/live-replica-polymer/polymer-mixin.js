@@ -52,11 +52,13 @@ function elementUtilities(element) {
         },
 
         get ready() {
-            return Promise.all(Array.from(this.__replicas.entries()).map(replica => replica.sync));
+            return Promise.all(Array.from(this.__replicas.entries()).map(replica => replica.existance));
         },
 
         clearAll() {
-
+            this.__replicas.entries().forEach(replica => {
+                //replica
+            });
         }
     };
 }
