@@ -174,11 +174,24 @@ const PatcherProxy = {
             return function arrayMutatingMethod() {
                 proxyServices.commit(root, true);
                 const copy = array.slice();
-                copy[methodName].call(copy, ...arguments);
+                const ret = copy[methodName].call(copy, ...arguments);
+
                 copy.forEach((item, index) => {
                     proxy[index] = item;
                 });
-                return proxy;
+
+                let len = proxy.length;
+                while(len > copy.length) {
+                    delete proxy[len -1];
+                    len--;
+                }
+
+                if (ret === copy) {
+                    return proxy;
+                } else {
+                    return ret;
+                }
+
             }
         }
 
