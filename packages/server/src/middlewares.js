@@ -3,6 +3,8 @@
  */
 'use strict';
 
+const subscriptionCounter = new WeakMap();
+
 module.exports = {
     oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback) {
 
@@ -16,19 +18,27 @@ module.exports = {
         return function onSubscribe(request, reject, approve) {
             const server = this;
 
-            if (path && unsubscriberRequest.path !== path) {
+            if (path && request.path !== path) {
                 return approve();
             }
 
+            if (!subscriptionCounter.get(this)) {
+                subscriptionCounter.set(this, {});
+            }
 
-            if (subscribed === 0) {
+            const subscribed = subscriptionCounter.get(this);
+            if (!subscribed[request.path]) {
+                subscribed[request.path] = 0;
+            }
+
+            if (subscribed[request.path] === 0) {
 
                 server.on('unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
                     if (!path || unsubscriberRequest.path === path) {
-                        subscribed--;
+                        subscribed[request.path]--;
 
-                        if (subscribed <= 0) {
-                            subscribed = 0;
+                        if (subscribed[request.path] <= 0) {
+                            delete subscribed[request.path];
                             server.removeEventListener('unsubscribe', onUnsubscribe);
                             if (lastSubscriptionCallback) {
                                 lastSubscriptionCallback.call(server, unsubscriberRequest);
@@ -41,7 +51,7 @@ module.exports = {
                 firstSubscriptionCallback.call(server, request, reject, approve);
             }
 
-            subscribed++;
+            subscribed[request.path]++;
             approve();
         };
     }
