@@ -1586,6 +1586,10 @@ class PatchDiff extends EventEmitter {
         if (!target.hasOwnProperty(srcKey)) {
             if (options.patchAdditions && patch[key] !== options.deleteKeyword) {
 
+                levelDiffs.hasAdditions = true;
+                levelDiffs.hasDifferences = true;
+
+
                 // add new object
                 if (isPatchValueObject) {
 
@@ -1606,14 +1610,16 @@ class PatchDiff extends EventEmitter {
 
                     levelDiffs.addChildTracking(childDiffs, key);
 
+                    // empty object
+                    if (!childDiffs.hasAdditions) {
+                        levelDiffs.additions[key] = appliedValue;
+                        levelDiffs.differences[key] = appliedValue;
+                    }
+
                     // add new primitive
                 } else {
-
                     target[srcKey] = patchValue;
-
-                    levelDiffs.hasAdditions = true;
                     levelDiffs.additions[key] = appliedValue;
-                    levelDiffs.hasDifferences = true;
                     levelDiffs.differences[key] = appliedValue;
                 }
             }
@@ -1654,11 +1660,11 @@ class PatchDiff extends EventEmitter {
                 target[srcKey] = patchValue;
 
                 levelDiffs.hasUpdates = true;
+                levelDiffs.hasDifferences = true;
                 levelDiffs.updates[key] = {
                     oldVal: existingValue,
                     newVal: appliedValue
                 };
-                levelDiffs.hasDifferences = true;
                 levelDiffs.differences[key] = appliedValue;
             }
 
