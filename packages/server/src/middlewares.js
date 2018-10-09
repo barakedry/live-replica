@@ -14,7 +14,6 @@ module.exports = {
             path = undefined;
         }
 
-        let subscribed = 0;
         return function onSubscribe(request, reject, approve) {
             const server = this;
 
@@ -22,7 +21,7 @@ module.exports = {
                 return approve();
             }
 
-            if (!subscriptionCounter.get(this)) {
+            if (!subscriptionCounter.has(this)) {
                 subscriptionCounter.set(this, {});
             }
 

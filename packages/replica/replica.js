@@ -49,7 +49,7 @@ class Replica extends PatchDiff {
         this.connection.send('subscribe', {
             id: this.id,
             path: this.remotePath,
-            allowRPC: !this.options.readonly,
+            allowRPC: !this.options.readonly || this.options.allowRPC,
             allowWrite: !this.options.readonly
         }, connectionCallback);
     }
