@@ -27,7 +27,7 @@ function createDirective(replica, property) {
         } else {
 
             const unsub = replica.subscribe((diff) => {
-                if (diff[property]) {
+                if (diff[property] !== undefined) {
                     part.setValue(replica.get(property));
                 }
             });
