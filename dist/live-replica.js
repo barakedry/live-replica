@@ -422,7 +422,7 @@ const PatcherProxy = {
             return this.proxies.get(realValue);
         }
 
-        if (value) {
+        if (value !== undefined) {
             if (deleteValue === value) {
                 return undefined;
             }
@@ -430,7 +430,7 @@ const PatcherProxy = {
             return value;
         }
 
-        if (realValue) {
+        if (realValue !== undefined) {
             // if real value is an object we must return accessor proxy
             if (typeof realValue === 'object') {
                 return this.create(properties.patcher, fullPath, this.getRoot(proxy), readonly);
