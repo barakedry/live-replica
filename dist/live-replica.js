@@ -1421,11 +1421,15 @@ class PatchDiff extends EventEmitter {
                 // subscribe for first data
                 let unsub;
                 let once;
-                unsub = this.subscribe(path, () => {
+                const parent = path.substring(0, path.lastIndexOf('.'));
+                unsub = this.subscribe(parent, () => {
                     if (!once) {
-                        callback(_.get(this._data, fullPath));
-                        once = true;
-                        setTimeout(unsub, 0);
+                        const value = _.get(this._data, fullPath);
+                        if (value !== undefined) {
+                            callback(value);
+                            once = true;
+                            setTimeout(unsub, 0);
+                        }
                     }
                 });
             }
