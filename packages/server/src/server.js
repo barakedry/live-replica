@@ -88,7 +88,7 @@ class LiveReplicaServer extends PatchDiff {
 
         if (request.allowRPC) {
 
-            connection.on(invokeRpcEvent, (path, args, ack) => {
+            connection.on(invokeRpcEvent, ({path, args}, ack) => {
                 const method = clientSubset.get(path);
                 // check if promise
                 const res = method.call(clientSubset, ...args);

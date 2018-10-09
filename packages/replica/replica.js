@@ -74,9 +74,10 @@ class Replica extends PatchDiff {
     }
 
     _createRPCfunction(path) {
+        const self = this;
         return function rpcToRemote(...args) {
             new Promise((resolve) => {
-                this.connection.send(`invokeRPC:${this.id}`, path, args, resolve);
+                self.connection.send(`invokeRPC:${self.id}`, {path, args}, resolve);
             });
         }
     }

@@ -1141,7 +1141,7 @@ class LiveReplicaServer extends PatchDiff {
 
         if (request.allowRPC) {
 
-            connection.on(invokeRpcEvent, (path, args, ack) => {
+            connection.on(invokeRpcEvent, ({path, args}, ack) => {
                 const method = clientSubset.get(path);
                 // check if promise
                 const res = method.call(clientSubset, ...args);
@@ -19338,9 +19338,10 @@ class Replica extends PatchDiff {
     }
 
     _createRPCfunction(path) {
+        const self = this;
         return function rpcToRemote(...args) {
             new Promise((resolve) => {
-                this.connection.send(`invokeRPC:${this.id}`, path, args, resolve);
+                self.connection.send(`invokeRPC:${self.id}`, {path, args}, resolve);
             });
         }
     }
