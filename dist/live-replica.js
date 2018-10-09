@@ -477,7 +477,7 @@ const PatcherProxy = {
         let rootChangeTracker = this.proxyProperties.get(root).changes;
 
         rootChangeTracker.dirty = true;
-        if (target[name]) {
+        if (target.hasOwnProperty(name)) {
             set(rootChangeTracker, fullPath, properties.patcher.options.deleteKeyword);
         } else {
             unset(rootChangeTracker, fullPath);
