@@ -19714,7 +19714,7 @@ module.exports = LiveReplicaWorkerSocket;
 
 module.exports = {
     LitElementMixin: __webpack_require__(25),
-    PolymerElementMixin: __webpack_require__(26),
+    PolymerElementMixin: __webpack_require__(26)
 };
 
 /***/ }),
@@ -19784,7 +19784,7 @@ function getDirective(data, path) {
         };
         drv.__litDirective = true;
 
-        return drv;
+        return LitElementMixin.directive(drv);
     }
 
     if (!this.__replicaDirectivesCache) {
@@ -19813,13 +19813,13 @@ function getDirective(data, path) {
 }
 
 
-module.exports = function LitElementMixin(base) {
+function LitElementMixin(base) {
     return class extends PolymerBaseMixin(base) {
         constructor() {
             super();
 
             this.liveReplica.render = (diff, data) => {
-                this.requestRender();
+                this.requestUpdate();
             };
 
 
@@ -19828,8 +19828,13 @@ module.exports = function LitElementMixin(base) {
 
         }
     };
+}
+
+LitElementMixin.setupLitHtmlDirective = function (Directive) {
+    this.directive = Directive
 };
 
+module.exports = LitElementMixin;
 
 /***/ }),
 /* 26 */
