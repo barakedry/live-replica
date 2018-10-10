@@ -44,7 +44,7 @@ function createDirective(replica, property) {
         });
         delete directive.kill;
     };
-    return directive;
+    return LitElementMixin.directive(directive);
 }
 
 function getDirective(data, path) {
