@@ -19752,6 +19752,7 @@ function createDirective(replica, property) {
             const unsub = replica.subscribe((diff) => {
                 if (diff[property] !== undefined) {
                     part.setValue(replica.get(property));
+                    part.commit();
                 }
             });
 
