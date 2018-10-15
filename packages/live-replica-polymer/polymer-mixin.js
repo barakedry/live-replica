@@ -56,9 +56,8 @@ function elementUtilities(element) {
         },
 
         clearAll() {
-            this.__replicas.entries().forEach(replica => {
-                //replica
-            });
+            // this.__replicas.forEach(replica => {
+            // });
         }
     };
 }
