@@ -19558,6 +19558,9 @@ const LiveReplicaServer = __webpack_require__(8);
 class Connection extends EventEmitter {
     constructor() {
         super();
+
+        this.setMaxListeners(50000);
+
         this.messageFromMaster = ({data}) => {
             if (data.liveReplica) {
                 const {event, payload, ack} = data.liveReplica;
@@ -19644,6 +19647,7 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
     constructor() {
         super();
         this._emitter = new Events.EventEmitter();
+        this._emitter.setMaxListeners(50000);
     }
 
     // overrides

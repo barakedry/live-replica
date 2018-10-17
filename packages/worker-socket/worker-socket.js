@@ -14,6 +14,7 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
     constructor() {
         super();
         this._emitter = new Events.EventEmitter();
+        this._emitter.setMaxListeners(50000);
     }
 
     // overrides

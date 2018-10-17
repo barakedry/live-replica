@@ -9,6 +9,9 @@ const LiveReplicaServer = require('@live-replica/server');
 class Connection extends EventEmitter {
     constructor() {
         super();
+
+        this.setMaxListeners(50000);
+
         this.messageFromMaster = ({data}) => {
             if (data.liveReplica) {
                 const {event, payload, ack} = data.liveReplica;
