@@ -5,11 +5,16 @@ const PatcherProxy = require('@live-replica/proxy');
 function elementUtilities(element) {
     return {
         __replicas: new Map(),
+        __unsubscribers: new WeakSet(),
 
         attach(replica) {
             const data = replica.data;
             this.__replicas.set(data, replica);
             return data;
+        },
+
+        detach(data) {
+            this.__replicas.delete(data);
         },
 
         replicaByData(data) {
@@ -35,7 +40,8 @@ function elementUtilities(element) {
             if (path) {
                 replica = replica.at(path);
             }
-            replica.subscribe(function (patch, diff) {
+
+            const unsubscribe = replica.subscribe(function (patch, diff) {
 
                 let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
 
@@ -49,6 +55,15 @@ function elementUtilities(element) {
                     render(patch, replica.get(property));
                 }
             });
+
+            const unwatch = function () {
+                this.__unsubscribers.delete(unsubscribe);
+                unsubscribe();
+            };
+
+            this.__unsubscribers.add(unsubscribe);
+
+            return unwatch;
         },
 
         get ready() {
