@@ -82,7 +82,7 @@ class Replica extends PatchDiff {
         }
     }
 
-    _deserialzeFunctions(data, path) {
+    _deserializeFunctions(data, path) {
 
         const keys = Object.keys(data);
         for (let i = 0, l = keys.length; i < l; i++) {
@@ -92,14 +92,14 @@ class Replica extends PatchDiff {
             if (value === 'function()') {
                 data[key] = this._createRPCfunction(concatPath(path, key));
             } if (typeof value === 'object' && value !== null) {
-                this._deserialzeFunctions(value, concatPath(path, key));
+                this._deserializeFunctions(value, concatPath(path, key));
             }
         }
         return data;
     }
 
     _remoteApply(data) {
-        super.apply(this._deserialzeFunctions(data));
+        super.apply(this._deserializeFunctions(data));
     }
 
     apply(...args) {

@@ -1019,7 +1019,7 @@ class LiveReplicaSocket {
     }
 
     _removeSocketEventListener(eventName, fn) {
-        this._socket.removeEventListener(eventName, fn);
+        this._socket.removeListener(eventName, fn);
     }
 
     _socketSend(eventName, payload, ack) {
@@ -1058,6 +1058,33 @@ module.exports = LiveReplicaSocket;
 const PatchDiff = __webpack_require__(1);
 const PatcherProxy = __webpack_require__(0);
 const Middlewares = __webpack_require__(20);
+const utils = PatchDiff.utils;
+
+function serializeFunctions(data) {
+
+    if (typeof data !== 'object') {
+        return data;
+    }
+
+    const ret = new (Object.getPrototypeOf(data).constructor)();
+
+
+    const keys = Object.keys(data);
+    for (let i = 0, l = keys.length; i < l; i++) {
+        const key = keys[i];
+        const value = data[key];
+
+        if (typeof value === 'function') {
+            ret[key] = utils.SERIALIZED_FUNCTION;
+        } else if (typeof value === 'object' && value !== null) {
+            ret[key] = serializeFunctions(value);
+        } else {
+            ret[key] = value;
+        }
+    }
+    return ret;
+
+}
 
 class LiveReplicaServer extends PatchDiff {
 
@@ -1114,11 +1141,12 @@ class LiveReplicaServer extends PatchDiff {
         const unsubscribeEvent = `unsubscribe:${request.id}`;
         const applyEvent = `apply:${request.id}`;
         const invokeRpcEvent = `invokeRPC:${request.id}`;
+        let invokeRpcListener, replicaApplyListener;
 
         let ownerChange = false;
-        clientSubset.subscribe((patchData) => {
+        const unsubscribeChanges = clientSubset.subscribe((patchData) => {
             if (!ownerChange) {
-                connection.send(applyEvent, patchData);
+                connection.send(applyEvent, serializeFunctions(patchData));
             }
 
             ownerChange = false;
@@ -1133,15 +1161,17 @@ class LiveReplicaServer extends PatchDiff {
         }
 
         if (request.allowWrite) {
-            connection.on(applyEvent, (payload) => {
+
+            replicaApplyListener = (payload) => {
                 ownerChange = true;
                 clientSubset.apply(payload);
-            });
+            };
+
+            connection.on(applyEvent, replicaApplyListener);
         }
 
         if (request.allowRPC) {
-
-            connection.on(invokeRpcEvent, ({path, args}, ack) => {
+            invokeRpcListener = ({path, args}, ack) => {
                 const method = clientSubset.get(path);
                 // check if promise
                 const res = method.call(clientSubset, ...args);
@@ -1150,19 +1180,25 @@ class LiveReplicaServer extends PatchDiff {
                 } else {
                     ack(res);
                 }
-            });
+            };
 
+            connection.on(invokeRpcEvent, invokeRpcListener);
         }
 
         const onUnsubscribe = () => {
-            request.connection.removeListener(unsubscribeEvent, onUnsubscribe);
-            request.connection.removeListener('disconnect', onUnsubscribe);
-            this.emit('unsubscribe', request);
+            unsubscribeChanges();
+
+            if (replicaApplyListener) { connection.removeListener(invokeRpcEvent, replicaApplyListener); }
+            if (invokeRpcListener)    { connection.removeListener(invokeRpcEvent, invokeRpcListener); }
+
+            connection.removeListener(unsubscribeEvent, onUnsubscribe);
+            connection.removeListener('disconnect', onUnsubscribe);
+
+            this.emit('replica-unsubscribe', request);
         };
 
-
-        request.connection.once(unsubscribeEvent, onUnsubscribe);
-        request.connection.once('disconnect', onUnsubscribe);
+        connection.on(unsubscribeEvent, onUnsubscribe);
+        connection.on('disconnect', onUnsubscribe);
     }
 
     use(fn) {
@@ -1197,11 +1233,16 @@ const PatcherProxy = __webpack_require__(0);
 function elementUtilities(element) {
     return {
         __replicas: new Map(),
+        __unsubscribers: new WeakSet(),
 
         attach(replica) {
             const data = replica.data;
             this.__replicas.set(data, replica);
             return data;
+        },
+
+        detach(data) {
+            this.__replicas.delete(data);
         },
 
         replicaByData(data) {
@@ -1227,7 +1268,8 @@ function elementUtilities(element) {
             if (path) {
                 replica = replica.at(path);
             }
-            replica.subscribe(function (patch, diff) {
+
+            const unsubscribe = replica.subscribe(function (patch, diff) {
 
                 let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
 
@@ -1241,6 +1283,15 @@ function elementUtilities(element) {
                     render(patch, replica.get(property));
                 }
             });
+
+            const unwatch = function () {
+                this.__unsubscribers.delete(unsubscribe);
+                unsubscribe();
+            };
+
+            this.__unsubscribers.add(unsubscribe);
+
+            return unwatch;
         },
 
         get ready() {
@@ -1248,9 +1299,8 @@ function elementUtilities(element) {
         },
 
         clearAll() {
-            this.__replicas.entries().forEach(replica => {
-                //replica
-            });
+            // this.__replicas.forEach(replica => {
+            // });
         }
     };
 }
@@ -1265,8 +1315,8 @@ module.exports = function PolymerBaseMixin(base) {
         }
 
         disconnectedCallback() {
-            super.disconnectedCallback();
             this.liveReplica.clearAll();
+            super.disconnectedCallback();
         };
     };
 };
@@ -19346,7 +19396,7 @@ class Replica extends PatchDiff {
         }
     }
 
-    _deserialzeFunctions(data, path) {
+    _deserializeFunctions(data, path) {
 
         const keys = Object.keys(data);
         for (let i = 0, l = keys.length; i < l; i++) {
@@ -19356,14 +19406,14 @@ class Replica extends PatchDiff {
             if (value === 'function()') {
                 data[key] = this._createRPCfunction(concatPath(path, key));
             } if (typeof value === 'object' && value !== null) {
-                this._deserialzeFunctions(value, concatPath(path, key));
+                this._deserializeFunctions(value, concatPath(path, key));
             }
         }
         return data;
     }
 
     _remoteApply(data) {
-        super.apply(this._deserialzeFunctions(data));
+        super.apply(this._deserializeFunctions(data));
     }
 
     apply(...args) {
@@ -19518,13 +19568,13 @@ module.exports = {
 
             if (subscribed[request.path] === 0) {
 
-                server.on('unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
+                server.on('replica-unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
                     if (!path || unsubscriberRequest.path === path) {
-                        subscribed[request.path]--;
+                        subscribed[unsubscriberRequest.path]--;
 
-                        if (subscribed[request.path] <= 0) {
-                            delete subscribed[request.path];
-                            server.removeEventListener('unsubscribe', onUnsubscribe);
+                        if (subscribed[unsubscriberRequest.path] <= 0) {
+                            delete subscribed[unsubscriberRequest.path];
+                            server.removeListener('replica-unsubscribe', onUnsubscribe);
                             if (lastSubscriptionCallback) {
                                 lastSubscriptionCallback.call(server, unsubscriberRequest);
                             }
@@ -19601,8 +19651,8 @@ class Connection extends EventEmitter {
         super.addEventListener(eventName(event), handler);
     }
 
-    removeEventListener(event, handler) {
-        super.removeEventListener(eventName(event), handler);
+    removeListener(event, handler) {
+        super.removeListener(eventName(event), handler);
     }
 
 }
@@ -19660,7 +19710,7 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
     }
 
     _removeSocketEventListener(eventName, fn) {
-        this._emitter.removeEventListener(eventName, fn);
+        this._emitter.removeListener(eventName, fn);
     }
 
     _socketSend(event, payload, ack) {
@@ -19703,7 +19753,7 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
     }
 
     disconnect() {
-        this.worker.removeEventListener('message', this.onWorkerMessage);
+        this.worker.removeListener('message', this.onWorkerMessage);
         delete this.socket;
     }
 
@@ -19817,6 +19867,20 @@ function getDirective(data, path) {
     return replicasDirectives[property];
 }
 
+function cleanDirectives() {
+    this.__replicaDirectivesCache.forEach((directives, replica) => {
+        const pathes = Object.keys(directives);
+        pathes.forEach((path) => {
+            if (directives[path].kill) {
+                directives[path].kill();
+            }
+
+            delete directives[path];
+        });
+
+        this.__replicaDirectivesCache.delete(replica);
+    });
+}
 
 function LitElementMixin(base) {
     return class extends PolymerBaseMixin(base) {
@@ -19829,8 +19893,12 @@ function LitElementMixin(base) {
 
 
             this.liveReplica.directive = getDirective.bind(this.liveReplica);
+            this.liveReplica.cleanDirectives = cleanDirectives.bind(this.liveReplica);
+        }
 
-
+        disconnectedCallback() {
+            this.liveReplica.cleanDirectives();
+            super.disconnectedCallback();
         }
     };
 }

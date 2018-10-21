@@ -87,8 +87,8 @@ module.exports = function PolymerBaseMixin(base) {
         }
 
         disconnectedCallback() {
-            super.disconnectedCallback();
             this.liveReplica.clearAll();
+            super.disconnectedCallback();
         };
     };
 };

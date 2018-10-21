@@ -5,6 +5,33 @@
 const PatchDiff = require('@live-replica/patch-diff');
 const PatcherProxy = require('@live-replica/proxy');
 const Middlewares = require('./middleware-chain.js');
+const utils = PatchDiff.utils;
+
+function serializeFunctions(data) {
+
+    if (typeof data !== 'object') {
+        return data;
+    }
+
+    const ret = new (Object.getPrototypeOf(data).constructor)();
+
+
+    const keys = Object.keys(data);
+    for (let i = 0, l = keys.length; i < l; i++) {
+        const key = keys[i];
+        const value = data[key];
+
+        if (typeof value === 'function') {
+            ret[key] = utils.SERIALIZED_FUNCTION;
+        } else if (typeof value === 'object' && value !== null) {
+            ret[key] = serializeFunctions(value);
+        } else {
+            ret[key] = value;
+        }
+    }
+    return ret;
+
+}
 
 class LiveReplicaServer extends PatchDiff {
 
@@ -61,11 +88,12 @@ class LiveReplicaServer extends PatchDiff {
         const unsubscribeEvent = `unsubscribe:${request.id}`;
         const applyEvent = `apply:${request.id}`;
         const invokeRpcEvent = `invokeRPC:${request.id}`;
+        let invokeRpcListener, replicaApplyListener;
 
         let ownerChange = false;
-        clientSubset.subscribe((patchData) => {
+        const unsubscribeChanges = clientSubset.subscribe((patchData) => {
             if (!ownerChange) {
-                connection.send(applyEvent, patchData);
+                connection.send(applyEvent, serializeFunctions(patchData));
             }
 
             ownerChange = false;
@@ -80,15 +108,17 @@ class LiveReplicaServer extends PatchDiff {
         }
 
         if (request.allowWrite) {
-            connection.on(applyEvent, (payload) => {
+
+            replicaApplyListener = (payload) => {
                 ownerChange = true;
                 clientSubset.apply(payload);
-            });
+            };
+
+            connection.on(applyEvent, replicaApplyListener);
         }
 
         if (request.allowRPC) {
-
-            connection.on(invokeRpcEvent, ({path, args}, ack) => {
+            invokeRpcListener = ({path, args}, ack) => {
                 const method = clientSubset.get(path);
                 // check if promise
                 const res = method.call(clientSubset, ...args);
@@ -97,19 +127,25 @@ class LiveReplicaServer extends PatchDiff {
                 } else {
                     ack(res);
                 }
-            });
+            };
 
+            connection.on(invokeRpcEvent, invokeRpcListener);
         }
 
         const onUnsubscribe = () => {
-            request.connection.removeListener(unsubscribeEvent, onUnsubscribe);
-            request.connection.removeListener('disconnect', onUnsubscribe);
-            this.emit('unsubscribe', request);
+            unsubscribeChanges();
+
+            if (replicaApplyListener) { connection.removeListener(invokeRpcEvent, replicaApplyListener); }
+            if (invokeRpcListener)    { connection.removeListener(invokeRpcEvent, invokeRpcListener); }
+
+            connection.removeListener(unsubscribeEvent, onUnsubscribe);
+            connection.removeListener('disconnect', onUnsubscribe);
+
+            this.emit('replica-unsubscribe', request);
         };
 
-
-        request.connection.once(unsubscribeEvent, onUnsubscribe);
-        request.connection.once('disconnect', onUnsubscribe);
+        connection.on(unsubscribeEvent, onUnsubscribe);
+        connection.on('disconnect', onUnsubscribe);
     }
 
     use(fn) {

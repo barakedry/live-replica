@@ -52,8 +52,8 @@ class Connection extends EventEmitter {
         super.addEventListener(eventName(event), handler);
     }
 
-    removeEventListener(event, handler) {
-        super.removeEventListener(eventName(event), handler);
+    removeListener(event, handler) {
+        super.removeListener(eventName(event), handler);
     }
 
 }

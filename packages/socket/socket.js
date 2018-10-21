@@ -45,7 +45,7 @@ class LiveReplicaSocket {
     }
 
     _removeSocketEventListener(eventName, fn) {
-        this._socket.removeEventListener(eventName, fn);
+        this._socket.removeListener(eventName, fn);
     }
 
     _socketSend(eventName, payload, ack) {

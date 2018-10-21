@@ -27,7 +27,7 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
     }
 
     _removeSocketEventListener(eventName, fn) {
-        this._emitter.removeEventListener(eventName, fn);
+        this._emitter.removeListener(eventName, fn);
     }
 
     _socketSend(event, payload, ack) {
@@ -70,7 +70,7 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
     }
 
     disconnect() {
-        this.worker.removeEventListener('message', this.onWorkerMessage);
+        this.worker.removeListener('message', this.onWorkerMessage);
         delete this.socket;
     }
 

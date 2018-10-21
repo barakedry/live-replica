@@ -90,6 +90,20 @@ function getDirective(data, path) {
     return replicasDirectives[property];
 }
 
+function cleanDirectives() {
+    this.__replicaDirectivesCache.forEach((directives, replica) => {
+        const pathes = Object.keys(directives);
+        pathes.forEach((path) => {
+            if (directives[path].kill) {
+                directives[path].kill();
+            }
+
+            delete directives[path];
+        });
+
+        this.__replicaDirectivesCache.delete(replica);
+    });
+}
 
 function LitElementMixin(base) {
     return class extends PolymerBaseMixin(base) {
@@ -102,8 +116,12 @@ function LitElementMixin(base) {
 
 
             this.liveReplica.directive = getDirective.bind(this.liveReplica);
+            this.liveReplica.cleanDirectives = cleanDirectives.bind(this.liveReplica);
+        }
 
-
+        disconnectedCallback() {
+            this.liveReplica.cleanDirectives();
+            super.disconnectedCallback();
         }
     };
 }

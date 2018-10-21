@@ -32,13 +32,13 @@ module.exports = {
 
             if (subscribed[request.path] === 0) {
 
-                server.on('unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
+                server.on('replica-unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
                     if (!path || unsubscriberRequest.path === path) {
-                        subscribed[request.path]--;
+                        subscribed[unsubscriberRequest.path]--;
 
-                        if (subscribed[request.path] <= 0) {
-                            delete subscribed[request.path];
-                            server.removeEventListener('unsubscribe', onUnsubscribe);
+                        if (subscribed[unsubscriberRequest.path] <= 0) {
+                            delete subscribed[unsubscriberRequest.path];
+                            server.removeListener('replica-unsubscribe', onUnsubscribe);
                             if (lastSubscriptionCallback) {
                                 lastSubscriptionCallback.call(server, unsubscriberRequest);
                             }
