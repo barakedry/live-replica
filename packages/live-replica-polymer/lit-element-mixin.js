@@ -91,6 +91,8 @@ function getDirective(data, path) {
 }
 
 function cleanDirectives() {
+    if (!this.__replicaDirectivesCache) { return; }
+
     this.__replicaDirectivesCache.forEach((directives, replica) => {
         const pathes = Object.keys(directives);
         pathes.forEach((path) => {

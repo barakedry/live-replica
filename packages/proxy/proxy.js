@@ -400,7 +400,7 @@ const PatcherProxy = {
     handleSplice(proxy, index, itemsToRemove, itemsToAdd) {
         let properties = this.proxyProperties.get(proxy);
         let patcher = properties.patcher;
-        patcher.splice(this.getPath(proxy), index, itemsToRemove, ...itemsToAdd);
+        patcher.splice(this.getPath(proxy), {index, itemsToRemove, ...itemsToAdd});
 
     },
 

@@ -492,7 +492,7 @@ const PatcherProxy = {
     handleSplice(proxy, index, itemsToRemove, itemsToAdd) {
         let properties = this.proxyProperties.get(proxy);
         let patcher = properties.patcher;
-        patcher.splice(this.getPath(proxy), index, itemsToRemove, ...itemsToAdd);
+        patcher.splice(this.getPath(proxy), {index, itemsToRemove, ...itemsToAdd});
 
     },
 
@@ -1424,9 +1424,11 @@ class PatchDiff extends EventEmitter {
         this._applyObject(this._data, utils.wrapByPath(fullDocument, path), '', options, 0, path || '');
     }
 
-    remove(path) {
+    remove(path, options) {
 
         path = utils.concatPath(this._path, path);
+
+        options = _.defaults(options || {}, this.options);
 
         if (!(path && _.isString(path))) {
             debug('invalid path, cannot remove');
@@ -1434,12 +1436,13 @@ class PatchDiff extends EventEmitter {
             return;
         }
 
-        this._applyObject(this._data, utils.wrapByPath(this.options.deleteKeyword, path), '', this.options, 0);
+        this._applyObject(this._data, utils.wrapByPath(this.options.deleteKeyword, path), '', options, 0);
     }
 
-    splice(path, index, itemsToRemove, ...itemsToAdd) {
+    splice(path, {index, itemsToRemove, ...itemsToAdd}, options = {}) {
+        options = _.defaults(options || {}, this.options);
         path = utils.concatPath(this._path, path);
-        this._applyObject(this._data, utils.wrapByPath({[this.options.spliceKeyword]: {index, itemsToRemove, itemsToAdd}}, path), '', this.options, 0);
+        this._applyObject(this._data, utils.wrapByPath({[this.options.spliceKeyword]: {index, itemsToRemove, itemsToAdd}}, path), '', options, 0);
     }
 
     get(path, callback) {
@@ -19416,16 +19419,34 @@ class Replica extends PatchDiff {
         super.apply(this._deserializeFunctions(data));
     }
 
-    apply(...args) {
+    apply(patch, path, options = {}) {
         if (this.options.readonly === false) {
-            if (args.length === 3) {
-                args[2].local = true;
-            } else {
-                args.push({local: true});
-            }
-            super.apply(...args);
+            options.local = true;
+            super.apply(patch, path, options);
         }
     }
+
+    set(pullDocument, path, options = {}) {
+        if (this.options.readonly === false) {
+            options.local = true;
+            super.apply(pullDocument, path, options);
+        }
+    }
+
+    set(patch, path, options = {}) {
+        if (this.options.readonly === false) {
+            options.local = true;
+            super.apply(patch, path, options);
+        }
+    }
+
+    splice(patch, path, options = {}) {
+        if (this.options.readonly === false) {
+            options.local = true;
+            super.apply(patch, path, options);
+        }
+    }
+
 
     unsubscribeRemote() {
         this.connection.send(`unsubscribe:${this.id}`);
@@ -19868,6 +19889,8 @@ function getDirective(data, path) {
 }
 
 function cleanDirectives() {
+    if (!this.__replicaDirectivesCache) { return; }
+
     this.__replicaDirectivesCache.forEach((directives, replica) => {
         const pathes = Object.keys(directives);
         pathes.forEach((path) => {

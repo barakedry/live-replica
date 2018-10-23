@@ -102,16 +102,34 @@ class Replica extends PatchDiff {
         super.apply(this._deserializeFunctions(data));
     }
 
-    apply(...args) {
+    apply(patch, path, options = {}) {
         if (this.options.readonly === false) {
-            if (args.length === 3) {
-                args[2].local = true;
-            } else {
-                args.push({local: true});
-            }
-            super.apply(...args);
+            options.local = true;
+            super.apply(patch, path, options);
         }
     }
+
+    set(pullDocument, path, options = {}) {
+        if (this.options.readonly === false) {
+            options.local = true;
+            super.apply(pullDocument, path, options);
+        }
+    }
+
+    set(patch, path, options = {}) {
+        if (this.options.readonly === false) {
+            options.local = true;
+            super.apply(patch, path, options);
+        }
+    }
+
+    splice(patch, path, options = {}) {
+        if (this.options.readonly === false) {
+            options.local = true;
+            super.apply(patch, path, options);
+        }
+    }
+
 
     unsubscribeRemote() {
         this.connection.send(`unsubscribe:${this.id}`);
