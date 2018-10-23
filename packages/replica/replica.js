@@ -8,8 +8,67 @@ const LiveReplicaSocket = require('@live-replica/socket');
 const concatPath = PatchDiff.utils.concatPath;
 
 let replicaId = 1000;
+
+// privates
+const deserializeFunctions  = Symbol('deserializeFunctions');
+const createRPCfunction     = Symbol('createRPCfunction');
+const remoteApply           = Symbol('remoteApply');
+const bindToSocket           = Symbol('bindToSocket');
+
 class Replica extends PatchDiff {
 
+    // private
+    [bindToSocket]() {
+
+        this.connection.on(`apply:${this.id}`, (delta) => {
+            this[remoteApply](delta);
+            if (delta && !this._subscribed) {
+                this._subscribed = true;
+                this.emit('_subscribed', this.get());
+            }
+        });
+
+        if (this.options.readonly === false) {
+            this.subscribe((data, diff, options) => {
+                if (options.local) {
+                    this.connection.send(`apply:${this.id}`, data);
+                }
+            });
+        }
+    }
+
+    [createRPCfunction](path) {
+        const self = this;
+        return function rpcToRemote(...args) {
+            return new Promise((resolve) => {
+                self.connection.send(`invokeRPC:${self.id}`, {path, args}, (returnValue) => {
+                    resolve(returnValue);
+                });
+            });
+        }
+    }
+
+    [deserializeFunctions](data, path) {
+
+        const keys = Object.keys(data);
+        for (let i = 0, l = keys.length; i < l; i++) {
+            const key = keys[i];
+            const value = data[key];
+
+            if (value === 'function()') {
+                data[key] = this[createRPCfunction](concatPath(path, key));
+            } if (typeof value === 'object' && value !== null) {
+                this[deserializeFunctions](value, concatPath(path, key));
+            }
+        }
+        return data;
+    }
+
+    [remoteApply](data) {
+        super.apply(this[deserializeFunctions](data));
+    }
+
+    // public
     constructor(remotePath, options = {dataObject: {}}) {
 
         options = Object.assign({
@@ -45,61 +104,13 @@ class Replica extends PatchDiff {
 
         this._subscribed = false;
         this.connection = connection;
-        this._bindToSocket();
+        this[bindToSocket]();
         this.connection.send('subscribe', {
             id: this.id,
             path: this.remotePath,
             allowRPC: !this.options.readonly || this.options.allowRPC,
             allowWrite: !this.options.readonly
         }, connectionCallback);
-    }
-
-    _bindToSocket() {
-
-        this.connection.on(`apply:${this.id}`, (delta) => {
-            this._remoteApply(delta);
-            if (delta && !this._subscribed) {
-                this._subscribed = true;
-                this.emit('_subscribed', this.get());
-            }
-        });
-
-        if (this.options.readonly === false) {
-            this.subscribe((data, diff, options) => {
-                if (options.local) {
-                    this.connection.send(`apply:${this.id}`, data);
-                }
-            });
-        }
-    }
-
-    _createRPCfunction(path) {
-        const self = this;
-        return function rpcToRemote(...args) {
-            new Promise((resolve) => {
-                self.connection.send(`invokeRPC:${self.id}`, {path, args}, resolve);
-            });
-        }
-    }
-
-    _deserializeFunctions(data, path) {
-
-        const keys = Object.keys(data);
-        for (let i = 0, l = keys.length; i < l; i++) {
-            const key = keys[i];
-            const value = data[key];
-
-            if (value === 'function()') {
-                data[key] = this._createRPCfunction(concatPath(path, key));
-            } if (typeof value === 'object' && value !== null) {
-                this._deserializeFunctions(value, concatPath(path, key));
-            }
-        }
-        return data;
-    }
-
-    _remoteApply(data) {
-        super.apply(this._deserializeFunctions(data));
     }
 
     apply(patch, path, options = {}) {
@@ -133,13 +144,17 @@ class Replica extends PatchDiff {
 
     unsubscribeRemote() {
         this.connection.send(`unsubscribe:${this.id}`);
+        delete this.connection;
     }
 
 
     destroy() {
 
+        if (this.connection) {
+            this.unsubscribeRemote();
+        }
+
         this.removeAllListeners();
-        this.unsubscribeRemote();
 
     }
 
