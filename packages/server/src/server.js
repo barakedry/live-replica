@@ -2,8 +2,8 @@
  * Created by barakedry on 02/06/2018.
  */
 'use strict';
-const PatchDiff = require('@live-replica/patch-diff');
-const PatcherProxy = require('@live-replica/proxy');
+const PatchDiff = require('../../patch-diff');
+const PatcherProxy = require('../../proxy');
 const Middlewares = require('./middleware-chain.js');
 const utils = PatchDiff.utils;
 
