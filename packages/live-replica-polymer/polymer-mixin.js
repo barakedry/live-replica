@@ -1,6 +1,6 @@
-const Replica = require('@live-replica/replica');
+const Replica = require('../replica');
 const utils = require('./utils');
-const PatcherProxy = require('@live-replica/proxy');
+const PatcherProxy = require('../proxy');
 
 function elementUtilities(element) {
     return {

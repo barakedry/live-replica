@@ -4,7 +4,7 @@
 'use strict';
 const LiveReplicaEvents = require('../common/events');
 const Events = require('events');
-const LiveReplicaSocket = require('@live-replica/socket');
+const LiveReplicaSocket = require('../socket');
 let acks = 1;
 /**
  *  LiveReplicaWorkerSocket
