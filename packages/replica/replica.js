@@ -2,9 +2,9 @@
  * Created by barakedry on 28/04/2018.
  */
 'use strict';
-const PatchDiff = require('@live-replica/patch-diff');
-const PatcherProxy = require('@live-replica/proxy');
-const LiveReplicaSocket = require('@live-replica/socket');
+const PatchDiff = require('../patch-diff');
+const PatcherProxy = require('../proxy');
+const LiveReplicaSocket = require('../socket');
 const concatPath = PatchDiff.utils.concatPath;
 
 let replicaId = 1000;

@@ -4,7 +4,7 @@
 'use strict';
 const eventName = require('../common/events');
 const { EventEmitter }  = require('events');
-const LiveReplicaServer = require('@live-replica/server');
+const LiveReplicaServer = require('../server');
 
 class Connection extends EventEmitter {
     constructor() {
