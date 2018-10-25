@@ -25,9 +25,6 @@
     "url": "https://github.com/barakedry/live-replica/issues"
   },
   "homepage": "https://github.com/barakedry/live-replica/",
-  "workspaces": [
-    "packages/*"
-  ],
   "devDependencies": {
     "babel-plugin-transform-commonjs-es2015-modules": "^4.0.1",
     "blanket": "latest",
@@ -39,6 +36,17 @@
     "node.extend": "latest",
     "webpack": "^4.16.2",
     "webpack-cli": "^3.1.0"
+  },
+  "dependencies": {
+    "@live-replica/patch-diff": "file:./packages/patch-diff",
+    "@live-replica/proxy": "file:./packages/proxy",
+    "@live-replica/replica": "file:./packages/replica",
+    "@live-replica/server": "file:./packages/server",
+    "@live-replica/socket": "file:./packages/socket",
+    "@live-replica/worker-server": "file:./packages/worker-server",
+    "@live-replica/worker-socket": "file:./packages/worker-socket",
+    "@live-replica/client": "file:./packages/client",
+    "@live-replica/live-replica-polymer": "file:./packages/live-replica-polymer"
   },
   "main": "index.js"
 }
