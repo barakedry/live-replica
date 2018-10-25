@@ -4,18 +4,8 @@ const PatcherProxy = require('../proxy');
 
 function elementUtilities(element) {
     return {
-        __replicas: new Map(),
         __unsubscribers: new WeakSet(),
 
-        attach(replica) {
-            const data = replica.data;
-            this.__replicas.set(data, replica);
-            return data;
-        },
-
-        detach(data) {
-            this.__replicas.delete(data);
-        },
 
         replicaByData(data) {
 
@@ -25,13 +15,13 @@ function elementUtilities(element) {
 
             const root = PatcherProxy.getRoot(data);
             const basePath = PatcherProxy.getPath(data);
-            const replica = this.__replicas.get(root);
+            const replica = PatcherProxy.proxyProperties.get(root).patcher;
 
             return {replica, basePath};
         },
 
         watch(data, path, cb) {
-            let replica = this.__replicas.get(data);
+            let { replica } = this.replicaByData(data);
 
             let render = this.render;
             let property;
@@ -64,10 +54,6 @@ function elementUtilities(element) {
             this.__unsubscribers.add(unsubscribe);
 
             return unwatch;
-        },
-
-        get ready() {
-            return Promise.all(Array.from(this.__replicas.entries()).map(replica => replica.existance));
         },
 
         clearAll() {
