@@ -38,15 +38,8 @@
     "webpack-cli": "^3.1.0"
   },
   "dependencies": {
-    "@live-replica/patch-diff": "file:./packages/patch-diff",
-    "@live-replica/proxy": "file:./packages/proxy",
-    "@live-replica/replica": "file:./packages/replica",
-    "@live-replica/server": "file:./packages/server",
-    "@live-replica/socket": "file:./packages/socket",
-    "@live-replica/worker-server": "file:./packages/worker-server",
-    "@live-replica/worker-socket": "file:./packages/worker-socket",
-    "@live-replica/client": "file:./packages/client",
-    "@live-replica/live-replica-polymer": "file:./packages/live-replica-polymer"
+    "debuglog": "latest",
+    "lodash": "latest"
   },
   "main": "index.js"
 }
