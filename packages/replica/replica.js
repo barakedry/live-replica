@@ -143,19 +143,15 @@ class Replica extends PatchDiff {
 
 
     unsubscribeRemote() {
+        if (!this.connection) { return; }
         this.connection.send(`unsubscribe:${this.id}`);
         delete this.connection;
     }
 
 
     destroy() {
-
-        if (this.connection) {
-            this.unsubscribeRemote();
-        }
-
+        this.unsubscribeRemote();
         this.removeAllListeners();
-
     }
 
     getWhenExists(path) {

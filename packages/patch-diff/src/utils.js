@@ -48,6 +48,18 @@ const Utils = {
         return typeof obj1 === 'object' && Object.getPrototypeOf(obj1) === Object.getPrototypeOf(obj2);
     },
 
+    once(fn) {
+        let lastResult, called = false;
+        return function (...args) {
+            if (called) { return lastResult; }
+
+            lastResult = fn.call(this, ...args);
+            fn = null;
+            called = true;
+            return lastResult
+        }
+    },
+
     SERIALIZED_FUNCTION: 'function()'
 };
 

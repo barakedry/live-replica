@@ -163,13 +163,15 @@ class PatchDiff extends EventEmitter {
         path = utils.concatPath(this._path, path);
         path = path || '*';
 
-        const handler = function (diff, options) {
+        let handler = function (diff, options) {
             fn(diff.differences, diff, options);
         };
         super.on(path, handler);
 
         return () => {
+            if (!handler) { return; }
             this.removeListener(path, handler);
+            handler = null;
         };
     }
 
