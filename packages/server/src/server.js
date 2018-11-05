@@ -132,7 +132,7 @@ class LiveReplicaServer extends PatchDiff {
             connection.on(invokeRpcEvent, invokeRpcListener);
         }
 
-        const onUnsubscribe = () => {
+        const onUnsubscribe = utils.once(() => {
             unsubscribeChanges();
 
             if (replicaApplyListener) { connection.removeListener(invokeRpcEvent, replicaApplyListener); }
@@ -142,7 +142,7 @@ class LiveReplicaServer extends PatchDiff {
             connection.removeListener('disconnect', onUnsubscribe);
 
             this.emit('replica-unsubscribe', request);
-        };
+        });
 
         connection.on(unsubscribeEvent, onUnsubscribe);
         connection.on('disconnect', onUnsubscribe);

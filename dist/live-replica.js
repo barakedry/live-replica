@@ -1185,7 +1185,7 @@ class LiveReplicaServer extends PatchDiff {
             connection.on(invokeRpcEvent, invokeRpcListener);
         }
 
-        const onUnsubscribe = () => {
+        const onUnsubscribe = utils.once(() => {
             unsubscribeChanges();
 
             if (replicaApplyListener) { connection.removeListener(invokeRpcEvent, replicaApplyListener); }
@@ -1195,7 +1195,7 @@ class LiveReplicaServer extends PatchDiff {
             connection.removeListener('disconnect', onUnsubscribe);
 
             this.emit('replica-unsubscribe', request);
-        };
+        });
 
         connection.on(unsubscribeEvent, onUnsubscribe);
         connection.on('disconnect', onUnsubscribe);
@@ -1496,13 +1496,15 @@ class PatchDiff extends EventEmitter {
         path = utils.concatPath(this._path, path);
         path = path || '*';
 
-        const handler = function (diff, options) {
+        let handler = function (diff, options) {
             fn(diff.differences, diff, options);
         };
         super.on(path, handler);
 
         return () => {
+            if (!handler) { return; }
             this.removeListener(path, handler);
+            handler = null;
         };
     }
 
@@ -2260,7 +2262,7 @@ module.exports = PatchDiff;
   var root = freeGlobal || freeSelf || Function('return this')();
 
   /** Detect free variable `exports`. */
-  var freeExports = true && exports && !exports.nodeType && exports;
+  var freeExports =  true && exports && !exports.nodeType && exports;
 
   /** Detect free variable `module`. */
   var freeModule = freeExports && typeof module == 'object' && module && !module.nodeType && module;
@@ -19021,6 +19023,18 @@ const Utils = {
         return typeof obj1 === 'object' && Object.getPrototypeOf(obj1) === Object.getPrototypeOf(obj2);
     },
 
+    once(fn) {
+        let lastResult, called = false;
+        return function (...args) {
+            if (called) { return lastResult; }
+
+            lastResult = fn.call(this, ...args);
+            fn = null;
+            called = true;
+            return lastResult
+        }
+    },
+
     SERIALIZED_FUNCTION: 'function()'
 };
 
@@ -19448,19 +19462,15 @@ class Replica extends PatchDiff {
 
 
     unsubscribeRemote() {
+        if (!this.connection) { return; }
         this.connection.send(`unsubscribe:${this.id}`);
         delete this.connection;
     }
 
 
     destroy() {
-
-        if (this.connection) {
-            this.unsubscribeRemote();
-        }
-
+        this.unsubscribeRemote();
         this.removeAllListeners();
-
     }
 
     getWhenExists(path) {
@@ -19585,19 +19595,24 @@ module.exports = {
                 subscriptionCounter.set(this, {});
             }
 
+            const subscribePath = request.path;
             const subscribed = subscriptionCounter.get(this);
-            if (!subscribed[request.path]) {
-                subscribed[request.path] = 0;
+            if (!subscribed.hasOwnProperty(subscribePath)) {
+                subscribed[subscribePath] = 0;
             }
 
-            if (subscribed[request.path] === 0) {
-
+            if (subscribed[subscribePath] === 0) {
                 server.on('replica-unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
-                    if (!path || unsubscriberRequest.path === path) {
-                        subscribed[unsubscriberRequest.path]--;
+                    if (subscribePath === unsubscriberRequest.path) {
 
-                        if (subscribed[unsubscriberRequest.path] <= 0) {
-                            delete subscribed[unsubscriberRequest.path];
+                        if (!subscribed[subscribePath]) {
+                            assert('')
+                        }
+
+                        subscribed[subscribePath]--;
+
+                        if (subscribed[subscribePath] <= 0) {
+                            delete subscribed[subscribePath];
                             server.removeListener('replica-unsubscribe', onUnsubscribe);
                             if (lastSubscriptionCallback) {
                                 lastSubscriptionCallback.call(server, unsubscriberRequest);

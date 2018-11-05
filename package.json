@@ -25,9 +25,6 @@
     "url": "https://github.com/barakedry/live-replica/issues"
   },
   "homepage": "https://github.com/barakedry/live-replica/",
-  "workspaces": [
-    "packages/*"
-  ],
   "devDependencies": {
     "babel-plugin-transform-commonjs-es2015-modules": "^4.0.1",
     "blanket": "latest",
@@ -39,6 +36,10 @@
     "node.extend": "latest",
     "webpack": "^4.16.2",
     "webpack-cli": "^3.1.0"
+  },
+  "dependencies": {
+    "debuglog": "latest",
+    "lodash": "latest"
   },
   "main": "index.js"
 }
