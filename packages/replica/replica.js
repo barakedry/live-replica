@@ -120,10 +120,10 @@ class Replica extends PatchDiff {
         }
     }  
 
-    set(patch, path, options = {}) {
+    set(fullDocument, path, options = {}) {
         if (this.options.readonly === false) {
             options.local = true;
-            super.apply(patch, path, options);
+            super.set(fullDocument, path, options);
         }
     }
 
