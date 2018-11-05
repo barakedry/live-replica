@@ -21,12 +21,13 @@ function elementUtilities(element) {
         },
 
         watch(data, path, cb) {
-            let { replica } = this.replicaByData(data);
+            let { replica, basePath } = this.replicaByData(data);
 
             let render = this.render;
             let property;
             ({path, property} = utils.extractBasePathAndProperty(path));
 
+            path = utils.concatPath(basePath, path);
             if (path) {
                 replica = replica.at(path);
             }
