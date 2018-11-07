@@ -1234,27 +1234,26 @@ function elementUtilities(element) {
     return {
         __unsubscribers: new WeakSet(),
 
-
         replicaByData(data) {
+            if (PatcherProxy.proxyProperties.has(data)) {
+                const root = PatcherProxy.getRoot(data);
+                const basePath = PatcherProxy.getPath(data);
+                const replica = PatcherProxy.proxyProperties.get(root).patcher;
 
-            if (!PatcherProxy.proxyProperties.has(data)) {
-                return undefined;
+                return {replica, basePath};
+            } else if (data instanceof Replica) {
+                return {replica: data, basePath: ''};
             }
-
-            const root = PatcherProxy.getRoot(data);
-            const basePath = PatcherProxy.getPath(data);
-            const replica = PatcherProxy.proxyProperties.get(root).patcher;
-
-            return {replica, basePath};
         },
 
         watch(data, path, cb) {
-            let { replica } = this.replicaByData(data);
+            let { replica, basePath } = this.replicaByData(data);
 
             let render = this.render;
             let property;
             ({path, property} = utils.extractBasePathAndProperty(path));
 
+            path = utils.concatPath(basePath, path);
             if (path) {
                 replica = replica.at(path);
             }
@@ -1407,7 +1406,7 @@ class PatchDiff extends EventEmitter {
             return;
         }
 
-        this._applyObject(this._data, utils.wrapByPath(fullDocument, path), '', options, 0, path || '');
+        this._applyObject(this._data, utils.wrapByPath(fullDocument, path), '', options, 0, path || true);
     }
 
     remove(path, options) {
@@ -1564,7 +1563,7 @@ class PatchDiff extends EventEmitter {
         }
 
         // override is either undefined, a path or true
-        if ((options.overrides && options.overrides[path]) || (!_.isUndefined(override) && (override === true || override === path))) {
+        if (_.isUndefined(override) && (override === true || path.indexOf(override) === 0)) {
             // find keys at this level that exists at the target object and remove them
             levelDiffs = this._detectDeletionsAtLevel(target, patch, levelDiffs, path, options, isTargetArray, level);
         }
@@ -2262,7 +2261,7 @@ module.exports = PatchDiff;
   var root = freeGlobal || freeSelf || Function('return this')();
 
   /** Detect free variable `exports`. */
-  var freeExports =  true && exports && !exports.nodeType && exports;
+  var freeExports = true && exports && !exports.nodeType && exports;
 
   /** Detect free variable `module`. */
   var freeModule = freeExports && typeof module == 'object' && module && !module.nodeType && module;
@@ -19437,19 +19436,12 @@ class Replica extends PatchDiff {
             options.local = true;
             super.apply(patch, path, options);
         }
-    }
+    }  
 
-    set(pullDocument, path, options = {}) {
+    set(fullDocument, path, options = {}) {
         if (this.options.readonly === false) {
             options.local = true;
-            super.apply(pullDocument, path, options);
-        }
-    }
-
-    set(patch, path, options = {}) {
-        if (this.options.readonly === false) {
-            options.local = true;
-            super.apply(patch, path, options);
+            super.set(fullDocument, path, options);
         }
     }
 
@@ -19923,6 +19915,12 @@ function cleanDirectives() {
     });
 }
 
+function getBinder(replicaOrProxy) {
+    return (path) => { // used as tagging
+        return this.directive(replicaOrProxy, path[0]);
+    }
+}
+
 function LitElementMixin(base) {
     return class extends PolymerBaseMixin(base) {
         constructor() {
@@ -19934,6 +19932,7 @@ function LitElementMixin(base) {
 
 
             this.liveReplica.directive = getDirective.bind(this.liveReplica);
+            this.liveReplica.binder = getBinder.bind(this.liveReplica);
             this.liveReplica.cleanDirectives = cleanDirectives.bind(this.liveReplica);
         }
 

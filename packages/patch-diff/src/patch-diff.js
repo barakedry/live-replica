@@ -74,7 +74,7 @@ class PatchDiff extends EventEmitter {
             return;
         }
 
-        this._applyObject(this._data, utils.wrapByPath(fullDocument, path), '', options, 0, path || '');
+        this._applyObject(this._data, utils.wrapByPath(fullDocument, path), '', options, 0, path || true);
     }
 
     remove(path, options) {
@@ -231,7 +231,7 @@ class PatchDiff extends EventEmitter {
         }
 
         // override is either undefined, a path or true
-        if ((options.overrides && options.overrides[path]) || (!_.isUndefined(override) && (override === true || override === path))) {
+        if (_.isUndefined(override) && (override === true || path.indexOf(override) === 0)) {
             // find keys at this level that exists at the target object and remove them
             levelDiffs = this._detectDeletionsAtLevel(target, patch, levelDiffs, path, options, isTargetArray, level);
         }

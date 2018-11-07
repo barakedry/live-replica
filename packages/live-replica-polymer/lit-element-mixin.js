@@ -107,6 +107,12 @@ function cleanDirectives() {
     });
 }
 
+function getBinder(replicaOrProxy) {
+    return (path) => { // used as tagging
+        return this.directive(replicaOrProxy, path[0]);
+    }
+}
+
 function LitElementMixin(base) {
     return class extends PolymerBaseMixin(base) {
         constructor() {
@@ -118,6 +124,7 @@ function LitElementMixin(base) {
 
 
             this.liveReplica.directive = getDirective.bind(this.liveReplica);
+            this.liveReplica.binder = getBinder.bind(this.liveReplica);
             this.liveReplica.cleanDirectives = cleanDirectives.bind(this.liveReplica);
         }
 

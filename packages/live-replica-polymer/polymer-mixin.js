@@ -6,18 +6,16 @@ function elementUtilities(element) {
     return {
         __unsubscribers: new WeakSet(),
 
-
         replicaByData(data) {
+            if (PatcherProxy.proxyProperties.has(data)) {
+                const root = PatcherProxy.getRoot(data);
+                const basePath = PatcherProxy.getPath(data);
+                const replica = PatcherProxy.proxyProperties.get(root).patcher;
 
-            if (!PatcherProxy.proxyProperties.has(data)) {
-                return undefined;
+                return {replica, basePath};
+            } else if (data instanceof Replica) {
+                return {replica: data, basePath: ''};
             }
-
-            const root = PatcherProxy.getRoot(data);
-            const basePath = PatcherProxy.getPath(data);
-            const replica = PatcherProxy.proxyProperties.get(root).patcher;
-
-            return {replica, basePath};
         },
 
         watch(data, path, cb) {
