@@ -19832,23 +19832,29 @@ Object.byPath = function(object, path) {
     return object;
 };
 
-function createDirective(replica, property) {
+function setPartValue(part, value, formatter) {    
+    if (formatter) {
+        value = formatter(value);
+    }
+    part.setValue(value);
+}
 
-    const subscribersByPart = new Map();
+function createDirective(replica, property, formatter) {
 
+    const subscribersByPart = new Map();    
     const directive = (part) => {
         // recalling the directive
-        if (subscribersByPart.has(part)) {
-            part.setValue(replica.get(property));
+        if (subscribersByPart.has(part)) {            
+            setPartValue(part, replica.get(property), formatter);
         } else {
-
-            const unsub = replica.subscribe((diff) => {
-                if (diff[property] !== undefined) {
-                    part.setValue(replica.get(property));
+            
+            const unsub = replica.subscribe((diff) => {                
+                if (diff[property] !== undefined) {                                        
+                    setPartValue(part, replica.get(property), formatter);
                     part.commit();
                 }
             });
-
+            
             subscribersByPart.set(part, unsub);
         }
     };
@@ -19864,7 +19870,7 @@ function createDirective(replica, property) {
     return LitElementMixin.directive(directive);
 }
 
-function getDirective(data, path) {
+function getDirective(data, path, formatter) {
 
     if (typeof data !== 'object') {
         throw new Error('live-replica lit-element directive data must be of type object');
@@ -19874,7 +19880,7 @@ function getDirective(data, path) {
 
     if (!replica) {
         const drv = function staticDirective(part) {
-            part.setValue(Object.byPath(data, path) || '');
+            setPartValue(part, Object.byPath(data, path) || '', formatter);
         };
         drv.__litDirective = true;
 
@@ -19900,7 +19906,7 @@ function getDirective(data, path) {
     }
 
     if (!replicasDirectives[property]) {
-        replicasDirectives[property] = createDirective(replica, property);
+        replicasDirectives[property] = createDirective(replica, property, formatter);
     }
 
     return replicasDirectives[property];
