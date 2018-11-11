@@ -16,29 +16,22 @@ Object.byPath = function(object, path) {
     return object;
 };
 
-function setPartValue(part, value, formatter) {    
-    if (formatter) {
-        value = formatter(value);
-    }
-    part.setValue(value);
-}
+function createDirective(replica, property, format = val => val) {
 
-function createDirective(replica, property, formatter) {
-
-    const subscribersByPart = new Map();    
+    const subscribersByPart = new Map();
     const directive = (part) => {
         // recalling the directive
-        if (subscribersByPart.has(part)) {            
-            setPartValue(part, replica.get(property), formatter);
+        if (subscribersByPart.has(part)) {
+            part.setValue(format(replica.get(property)));
         } else {
-            
-            const unsub = replica.subscribe((diff) => {                
-                if (diff[property] !== undefined) {                                        
-                    setPartValue(part, replica.get(property), formatter);
+
+            const unsub = replica.subscribe((diff) => {
+                if (diff[property] !== undefined) {
+                    part.setValue(format(replica.get(property)));
                     part.commit();
                 }
             });
-            
+
             subscribersByPart.set(part, unsub);
         }
     };
@@ -54,7 +47,7 @@ function createDirective(replica, property, formatter) {
     return LitElementMixin.directive(directive);
 }
 
-function getDirective(data, path, formatter) {
+function getDirective(data, path, format = val => val) {
 
     if (typeof data !== 'object') {
         throw new Error('live-replica lit-element directive data must be of type object');
@@ -64,7 +57,7 @@ function getDirective(data, path, formatter) {
 
     if (!replica) {
         const drv = function staticDirective(part) {
-            setPartValue(part, Object.byPath(data, path) || '', formatter);
+            part.setValue(format(Object.byPath(data, path) || ''))
         };
         drv.__litDirective = true;
 
@@ -90,7 +83,7 @@ function getDirective(data, path, formatter) {
     }
 
     if (!replicasDirectives[property]) {
-        replicasDirectives[property] = createDirective(replica, property, formatter);
+        replicasDirectives[property] = createDirective(replica, property, format);
     }
 
     return replicasDirectives[property];
