@@ -36,11 +36,16 @@ function elementUtilities(element) {
 
                 if (!lengthChanged && !patch[property]) { return; }
 
+                let doRender = true;
+
                 if (cb) {
-                    cb.call(element, patch, replica.get(property));
+                    const cbReturn = cb.call(element, patch, diff, replica.get(property));
+                    if (cbReturn === false) {
+                        doRender = false;
+                    }
                 }
 
-                if (typeof render === 'function') {
+                if (typeof render === 'function' && doRender) {
                     render(patch, replica.get(property));
                 }
             });

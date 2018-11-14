@@ -1264,11 +1264,16 @@ function elementUtilities(element) {
 
                 if (!lengthChanged && !patch[property]) { return; }
 
+                let doRender = true;
+
                 if (cb) {
-                    cb.call(element, patch, replica.get(property));
+                    const cbReturn = cb.call(element, patch, diff, replica.get(property));
+                    if (cbReturn === false) {
+                        doRender = false;
+                    }
                 }
 
-                if (typeof render === 'function') {
+                if (typeof render === 'function' && doRender) {
                     render(patch, replica.get(property));
                 }
             });
@@ -2261,7 +2266,7 @@ module.exports = PatchDiff;
   var root = freeGlobal || freeSelf || Function('return this')();
 
   /** Detect free variable `exports`. */
-  var freeExports = true && exports && !exports.nodeType && exports;
+  var freeExports =  true && exports && !exports.nodeType && exports;
 
   /** Detect free variable `module`. */
   var freeModule = freeExports && typeof module == 'object' && module && !module.nodeType && module;
