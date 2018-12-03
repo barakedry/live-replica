@@ -180,13 +180,6 @@ function get(target, path) {
 const PatcherProxy = {
     proxies: new WeakMap(),
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
-    /**
-     * @param {Replica} patcher
-     * @param {string} path
-     * @param {Proxy=} root
-     * @param {boolean} readonly - if readonly, proxy will throw an error when set or deleteProperty from replica
-     * @returns {Proxy<Object>} Proxy of replica data
-     * */
     create(patcher, path, root, readonly) {
         let patcherRef = patcher.get(path);
 
@@ -418,7 +411,7 @@ const PatcherProxy = {
         if (properties.isArray && arrayMutationMethods[name]) {
             return this.getOrCreateArrayMethod(proxy, target, name, readonly);
         }
-
+        
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
         let deleteValue = properties.patcher.options.deleteKeyword;
@@ -516,7 +509,7 @@ const PatcherProxy = {
             };
         }.bind(proxy);
     },
-
+    
     commit(proxy, immediate = false) {
         let properties = this.proxyProperties.get(proxy);
 
@@ -972,9 +965,6 @@ module.exports = g;
 import Replica from "./replica";
 export default Replica;
 */
-/**
- * @module @live-replica/live-replica/replica
- */
 module.exports = __webpack_require__(19);
 
 /***/ }),
@@ -1445,11 +1435,6 @@ class PatchDiff extends EventEmitter {
         this._applyObject(this._data, utils.wrapByPath({[this.options.spliceKeyword]: {index, itemsToRemove, itemsToAdd}}, path), '', options, 0);
     }
 
-    /**
-     * @param {string|Function} path - optional replica path. If path not provided, can be used as callback param.
-     * @param {Function} [callback]
-     * @returns {Object} - the underlying data of replica
-     * */
     get(path, callback) {
 
         if (typeof path === 'function') {
@@ -1460,6 +1445,7 @@ class PatchDiff extends EventEmitter {
         const fullPath = utils.concatPath(this._path, path);
         if (fullPath && (!_.isString(fullPath))) {
             debug('invalid path, cannot get');
+
             return;
         }
 
@@ -19339,7 +19325,6 @@ process.umask = function() { return 0; };
  * Created by barakedry on 28/04/2018.
  */
 
-/*@type {PatchDiff}*/
 const PatchDiff = __webpack_require__(1);
 const PatcherProxy = __webpack_require__(0);
 const LiveReplicaSocket = __webpack_require__(7);
@@ -19407,11 +19392,6 @@ class Replica extends PatchDiff {
     }
 
     // public
-    /**
-     * @param {string}  remotePath
-     * @param {Object} [options={}] - An optional param (Closure syntax)
-     * @return {Replica}
-     */
     constructor(remotePath, options = {dataObject: {}}) {
 
         options = Object.assign({
@@ -19422,7 +19402,6 @@ class Replica extends PatchDiff {
         super(options.dataObject || {}, options);
         this.remotePath = remotePath;
         this.id = ++replicaId;
-        /*@type WeakMap<Object, Proxy>*/
         this.proxies = new WeakMap();
 
         if (!this.options.connectionCallback) {
@@ -19457,25 +19436,13 @@ class Replica extends PatchDiff {
         }, connectionCallback);
     }
 
-    /**
-     * Apply a patch on the replica object
-     * @param {Object}  patch - data to apply on replica object
-     * @param {string=} path - sub path on replica to apply patch on
-     * @param {Object}  [options={}]
-     */
     apply(patch, path, options = {}) {
         if (this.options.readonly === false) {
             options.local = true;
             super.apply(patch, path, options);
         }
-    }
+    }  
 
-    /**
-     * Write a complete object into replica, overwriting any previous data on given path
-     * @param {Object}  fullDocument - full representation of the replica object
-     * @param {string=} path - sub path on replica to apply on. If not provided, root replica will be overwritten.
-     * @param {Object}  [options={}]
-     */
     set(fullDocument, path, options = {}) {
         if (this.options.readonly === false) {
             options.local = true;
@@ -19490,6 +19457,12 @@ class Replica extends PatchDiff {
         }
     }
 
+    remove(path, options = {}) {
+        if (this.options.readonly === false) {
+            options.local = true;
+            super.remove(path, options);
+        }
+    }
 
     unsubscribeRemote() {
         if (!this.connection) { return; }
@@ -19503,28 +19476,16 @@ class Replica extends PatchDiff {
         this.removeAllListeners();
     }
 
-    /**
-     * Promise that resolves when a value added on given replica path
-     * @param {string} path - sub path on replica to wait on
-     * @returns {Promise<Replica>}
-     */
     getWhenExists(path) {
         return new Promise(resolve => {
             this.get(path, resolve);
         });
     }
 
-    /**
-     * Getter wrapper to getWhenExists method - resolves when replica root is populated with data
-     * @returns {Promise<Replica>}
-     */
     get existance() {
         return this.getWhenExists();
     }
 
-    /**
-     * @returns {Proxy}
-     * */
     get data() {
         if (!this.proxies.has(this)) {
             const proxy = PatcherProxy.create(this, '', null, this.options.readonly);
@@ -19533,10 +19494,6 @@ class Replica extends PatchDiff {
         return this.proxies.get(this);
     }
 
-    /**
-     * Resolves with data once first message arrives from server origin
-     * @returns {Promise<Object>}
-     * */
     get subscribed() {
         return new Promise((resolve) => {
             if (this._subscribed) {
@@ -19548,6 +19505,8 @@ class Replica extends PatchDiff {
         });
     }
 }
+
+Replica.prototype.override = Replica.prototype.set;
 
 // export default Replica;
 module.exports = Replica;
