@@ -4,7 +4,7 @@ const PatcherProxy = require('../proxy');
 
 function elementUtilities(element) {
     return {
-        __unsubscribers: new WeakSet(),
+        __unsubscribers: new Set(),
 
         replicaByData(data) {
             if (PatcherProxy.proxyProperties.has(data)) {
@@ -34,7 +34,7 @@ function elementUtilities(element) {
 
                 let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
 
-                if (!lengthChanged && !patch[property]) { return; }
+                if (!lengthChanged && (property && !patch[property])) { return; }
 
                 let doRender = true;
 
@@ -55,14 +55,17 @@ function elementUtilities(element) {
                 unsubscribe();
             };
 
-            this.__unsubscribers.add(unsubscribe);
+            this.__unsubscribers.add(() => {
+                console.log('unsubscribed', path);
+                unsubscribe();
+            });
 
             return unwatch;
         },
 
         clearAll() {
-            // this.__replicas.forEach(replica => {
-            // });
+            this.__unsubscribers.forEach(unsubscribe => unsubscribe());
+            this.__unsubscribers.clear();
         }
     };
 }
