@@ -37,7 +37,6 @@ function createDirective(replica, property) {
         }
     };
 
-    directive.__litDirective = true;
     directive.kill = () => {
         subscribersByPart.forEach((unsub, part) => {
             unsub();
@@ -45,7 +44,7 @@ function createDirective(replica, property) {
         });
         delete directive.kill;
     };
-    return LitElementMixin.directive(directive);
+    return directive;
 }
 
 function getDirective(data, path) {
@@ -57,12 +56,9 @@ function getDirective(data, path) {
     let {replica, basePath} = this.replicaByData.call(this, data);
 
     if (!replica) {
-        const drv = function staticDirective(part) {
+        return function staticDirective(part) {
             part.setValue(Object.byPath(data, path) || '');
         };
-        drv.__litDirective = true;
-
-        return LitElementMixin.directive(drv);
     }
 
     if (!this.__replicaDirectivesCache) {
@@ -123,7 +119,7 @@ function LitElementMixin(base) {
             };
 
 
-            this.liveReplica.directive = getDirective.bind(this.liveReplica);
+            this.liveReplica.directive = LitElementMixin.directive(getDirective.bind(this.liveReplica));
             this.liveReplica.binder = getBinder.bind(this.liveReplica);
             this.liveReplica.cleanDirectives = cleanDirectives.bind(this.liveReplica);
         }
