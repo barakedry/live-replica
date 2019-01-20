@@ -6,7 +6,7 @@ module.exports = {
 
         return path || suffix;
     },
-    extractBasePathAndProperty(path) {
+    extractBasePathAndProperty(path = '') {
         const lastPart = path.lastIndexOf('.');
         if (lastPart === -1) {
             return {property: path, path: ''};

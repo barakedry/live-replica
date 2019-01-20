@@ -231,7 +231,7 @@ class PatchDiff extends EventEmitter {
         }
 
         // override is either undefined, a path or true
-        if (_.isUndefined(override) && (override === true || path.indexOf(override) === 0)) {
+        if (!_.isUndefined(override) && (override === true || path.indexOf(override) === 0)) {
             // find keys at this level that exists at the target object and remove them
             levelDiffs = this._detectDeletionsAtLevel(target, patch, levelDiffs, path, options, isTargetArray, level);
         }
