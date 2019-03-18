@@ -117,7 +117,9 @@ function set(target, path, value) {
     curr = target;
 
     while (i < (len - 1)) {
-        curr[levels[i]] = {};
+        if (!curr[levels[i]] || typeof curr[levels[i]] !== 'object') {
+            curr[levels[i]] = {};
+        }
         curr = curr[levels[i]];
         i++;
     }
