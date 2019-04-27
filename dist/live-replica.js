@@ -1300,8 +1300,9 @@ function elementUtilities(element) {
     };
 }
 
-
+const defferedDisconnections = new WeakMap();
 module.exports = function PolymerBaseMixin(base) {
+
     return class extends base {
 
         constructor() {
@@ -1309,14 +1310,23 @@ module.exports = function PolymerBaseMixin(base) {
             this.liveReplica = elementUtilities(this);
         }
 
+        connectedCallback() {
+            super.connectedCallback();
+            if (defferedDisconnections.has(this)) {
+                clearTimeout(defferedDisconnections.get(this));
+                defferedDisconnections.delete(this);
+            }
+        }
+
         disconnectedCallback() {
-            this.liveReplica.clearAll();
+            defferedDisconnections.set(this, setTimeout(() => {
+                this.liveReplica.clearAll();
+            }, 0));
+
             super.disconnectedCallback();
         };
     };
 };
-
-
 
 /***/ }),
 /* 10 */
@@ -19826,6 +19836,7 @@ module.exports = {
 
 const utils = __webpack_require__(4);
 const PolymerBaseMixin = __webpack_require__(9);
+const defferedDisconnections = new WeakMap();
 
 Object.byPath = function(object, path) {
     path = path.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
@@ -19950,8 +19961,19 @@ function LitElementMixin(base) {
             this.liveReplica.cleanDirectives = cleanDirectives.bind(this.liveReplica);
         }
 
+        connectedCallback() {
+            super.connectedCallback();
+            if (defferedDisconnections.has(this)) {
+                clearTimeout(defferedDisconnections.get(this));
+                defferedDisconnections.delete(this);
+            }
+        }
+
         disconnectedCallback() {
-            this.liveReplica.cleanDirectives();
+            defferedDisconnections.set(this, setTimeout(() => {
+                this.liveReplica.cleanDirectives();
+            }, 0));
+
             super.disconnectedCallback();
         }
     };
@@ -19962,6 +19984,7 @@ LitElementMixin.setupLitHtmlDirective = function (Directive) {
 };
 
 module.exports = LitElementMixin;
+
 
 /***/ }),
 /* 26 */

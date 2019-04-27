@@ -70,8 +70,9 @@ function elementUtilities(element) {
     };
 }
 
-
+const defferedDisconnections = new WeakMap();
 module.exports = function PolymerBaseMixin(base) {
+
     return class extends base {
 
         constructor() {
@@ -79,10 +80,20 @@ module.exports = function PolymerBaseMixin(base) {
             this.liveReplica = elementUtilities(this);
         }
 
+        connectedCallback() {
+            super.connectedCallback();
+            if (defferedDisconnections.has(this)) {
+                clearTimeout(defferedDisconnections.get(this));
+                defferedDisconnections.delete(this);
+            }
+        }
+
         disconnectedCallback() {
-            this.liveReplica.clearAll();
+            defferedDisconnections.set(this, setTimeout(() => {
+                this.liveReplica.clearAll();
+            }, 0));
+
             super.disconnectedCallback();
         };
     };
 };
-
