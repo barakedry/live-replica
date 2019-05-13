@@ -370,7 +370,12 @@ const PatcherProxy = {
                 }
             }
 
-            this.proxyProperties.get(root).overrides[fullPath] = true;
+
+            let fixedPath = fullPath
+            if (properties.patcher && properties.patcher._path) {
+                fixedPath = [properties.patcher._path, fullPath].join('.');
+            }
+            this.proxyProperties.get(root).overrides[fixedPath] = true;
         }
 
         this.proxyProperties.get(root).dirty = true;

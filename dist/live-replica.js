@@ -462,7 +462,12 @@ const PatcherProxy = {
                 }
             }
 
-            this.proxyProperties.get(root).overrides[fullPath] = true;
+
+            let fixedPath = fullPath
+            if (properties.patcher && properties.patcher._path) {
+                fixedPath = [properties.patcher._path, fullPath].join('.');
+            }
+            this.proxyProperties.get(root).overrides[fixedPath] = true;
         }
 
         this.proxyProperties.get(root).dirty = true;
@@ -1583,7 +1588,7 @@ class PatchDiff extends EventEmitter {
         }
 
         // override is either undefined, a path or true
-        if (!_.isUndefined(override) && (override === true || path.indexOf(override) === 0)) {
+        if ((!_.isUndefined(override) && (override === true || path.indexOf(override) === 0)) || (options.overrides && (options.overrides[path]))) {
             // find keys at this level that exists at the target object and remove them
             levelDiffs = this._detectDeletionsAtLevel(target, patch, levelDiffs, path, options, isTargetArray, level);
         }
@@ -1769,7 +1774,12 @@ class PatchDiff extends EventEmitter {
 
             if (!patch.hasOwnProperty(key)) {
                 existingValue = target[key];
-                levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray);
+                this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray);
+            } else if (typeof patch[key] === 'object') {
+
+                const diffs = DiffTracker.create(_.isArray(patch[key]));
+                this._detectDeletionsAtLevel(target[key], patch[key], diffs, [path, key].join('.'), options, Array.isArray(target[key]));
+                levelDiffs.addChildTracking(diffs, key);
             }
 
         }
@@ -2281,7 +2291,7 @@ module.exports = PatchDiff;
   var root = freeGlobal || freeSelf || Function('return this')();
 
   /** Detect free variable `exports`. */
-  var freeExports =  true && exports && !exports.nodeType && exports;
+  var freeExports = true && exports && !exports.nodeType && exports;
 
   /** Detect free variable `module`. */
   var freeModule = freeExports && typeof module == 'object' && module && !module.nodeType && module;
@@ -19070,6 +19080,20 @@ module.exports = Utils;
  */
 
 
+function deepAssign(target, patch) {
+    const keys = Object.keys(patch);
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        if (target.hasOwnProperty(key) && typeof target[key] === 'object') {
+            deepAssign(target[key], patch[key]);
+        } else {
+            target[key] = patch[key];
+        }
+    }
+
+    return target;
+}
+
 function create(diffsAsArray) {
     return {
         hasAdditions: false,
@@ -19097,7 +19121,12 @@ function create(diffsAsArray) {
             }
 
             if (childTracker.hasDifferences) {
-                this.differences[key] = childTracker.differences;
+                if (this.differences.hasOwnProperty(key) && typeof this.differences[key] === 'object') {
+                    deepAssign(this.differences[key], childTracker.differences);
+                } else {
+                    this.differences[key] = childTracker.differences;
+                }
+
                 this.hasDifferences = true;
             }
         }
