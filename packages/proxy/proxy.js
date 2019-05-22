@@ -301,7 +301,7 @@ const PatcherProxy = {
                 let index = targetKeys.indexOf(key);
                 targetKeys.splice(index, 1);
             // new
-            } else if (!targetKeys[key]) {
+            } else if (!targetKeys.includes(key)) {
                 targetKeys.push(key);
             }
         }
