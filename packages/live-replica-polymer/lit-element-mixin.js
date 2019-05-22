@@ -1,5 +1,6 @@
 const utils = require('./utils');
 const PolymerBaseMixin = require('./polymer-mixin');
+const defferedDisconnections = new WeakMap();
 
 Object.byPath = function(object, path) {
     path = path.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
@@ -124,8 +125,19 @@ function LitElementMixin(base) {
             this.liveReplica.cleanDirectives = cleanDirectives.bind(this.liveReplica);
         }
 
+        connectedCallback() {
+            super.connectedCallback();
+            if (defferedDisconnections.has(this)) {
+                clearTimeout(defferedDisconnections.get(this));
+                defferedDisconnections.delete(this);
+            }
+        }
+
         disconnectedCallback() {
-            this.liveReplica.cleanDirectives();
+            defferedDisconnections.set(this, setTimeout(() => {
+                this.liveReplica.cleanDirectives();
+            }, 0));
+
             super.disconnectedCallback();
         }
     };

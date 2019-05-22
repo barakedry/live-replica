@@ -3,6 +3,20 @@
  */
 'use strict';
 
+function deepAssign(target, patch) {
+    const keys = Object.keys(patch);
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        if (target.hasOwnProperty(key) && typeof target[key] === 'object') {
+            deepAssign(target[key], patch[key]);
+        } else {
+            target[key] = patch[key];
+        }
+    }
+
+    return target;
+}
+
 function create(diffsAsArray) {
     return {
         hasAdditions: false,
@@ -30,7 +44,12 @@ function create(diffsAsArray) {
             }
 
             if (childTracker.hasDifferences) {
-                this.differences[key] = childTracker.differences;
+                if (this.differences.hasOwnProperty(key) && typeof this.differences[key] === 'object') {
+                    deepAssign(this.differences[key], childTracker.differences);
+                } else {
+                    this.differences[key] = childTracker.differences;
+                }
+
                 this.hasDifferences = true;
             }
         }
