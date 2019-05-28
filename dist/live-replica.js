@@ -1285,7 +1285,7 @@ function elementUtilities(element) {
                 }
             });
 
-            const unwatch = function () {
+            const unwatch = () => {
                 this.__unsubscribers.delete(unsubscribe);
                 unsubscribe();
             };
