@@ -63,6 +63,7 @@ class LiveReplicaSocket {
 
     disconnect() {
         this._socket.disconnect();
+        delete this._socket;
     }
 
     isConnected() { return false; }
