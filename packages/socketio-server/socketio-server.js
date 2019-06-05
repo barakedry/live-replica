@@ -7,8 +7,8 @@ const { EventEmitter }  = require('events');
 const LiveReplicaServer = require('../server');
 
 class Connection extends EventEmitter {
-    constructor(socketio) {
-        super();
+    constructor(socketio, options) {
+        super(options);
 
         this.socket = socketio;
 
