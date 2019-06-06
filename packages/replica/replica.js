@@ -81,16 +81,6 @@ class Replica extends PatchDiff {
         this.id = ++replicaId;
         this.proxies = new WeakMap();
 
-        if (!this.options.connectionCallback) {
-            this.options.connectionCallback = (result) => {
-                if (result.success) {
-                    console.info(`live-replica subscribed to remote ${this.options.readonly ? 'readonly': ''} path=${this.remotePath}`);
-                } else {
-                    console.error(`live-replica failed to subscribe remote ${this.options.readonly ? 'readonly': ''} path=${this.remotePath} reason=${result.rejectReason}`);
-                }
-            };
-        }
-
         if (this.options.subscribeRemoteOnCreate) {
             this.subscribeRemote(this.options.connection)
         }
@@ -110,7 +100,16 @@ class Replica extends PatchDiff {
             path: this.remotePath,
             allowRPC: !this.options.readonly || this.options.allowRPC,
             allowWrite: !this.options.readonly
-        }, connectionCallback);
+        }, (result) => {
+            if (result.success) {
+                console.info(`live-replica subscribed to remote ${this.options.readonly ? 'readonly': ''} path=${this.remotePath}`);
+                if (typeof connectionCallback === 'function') {
+                    connectionCallback(result);
+                }
+            } else {
+                console.error(`live-replica failed to subscribe remote ${this.options.readonly ? 'readonly': ''} path=${this.remotePath} reason=${result.rejectReason}`);
+            }
+        });
     }
 
     apply(patch, path, options = {}) {

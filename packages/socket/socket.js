@@ -10,6 +10,7 @@ const eventName = require('../common/events');
 class LiveReplicaSocket {
 
     constructor(baseSocket) {
+        this._socket = baseSocket;
         this._instance = LiveReplicaSocket.instances++;
     }
 
@@ -49,7 +50,7 @@ class LiveReplicaSocket {
     }
 
     _socketSend(eventName, payload, ack) {
-        this._socket.send(eventName, payload, ack);
+        this._socket.emit(eventName, payload, ack);
     }
 
     connect(baseSocket) {

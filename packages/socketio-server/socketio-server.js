@@ -19,10 +19,10 @@ class Connection extends EventEmitter {
 
     send(event, payload) {
         event = eventName(event);
-        this.socket.send(event, payload);
+        this.socket.emit(event, payload);
     }
 
-    addEventListener(event, handler) {
+    addListener(event, handler) {
         this.socket.on(eventName(event), handler);
     }
 
@@ -32,6 +32,8 @@ class Connection extends EventEmitter {
 
 }
 
+Connection.prototype.on = Connection.prototype.addListener;
+
 /**
  *  LiveReplicaWorkerSocket
  */
@@ -40,6 +42,7 @@ class LiveReplicaSocketIoServer extends LiveReplicaServer {
         super();
 
         sioServer.on('connect', (socket) => {
+            console.info(`LiveReplicaSocketIoServer - new socket.io connection ${socket.id}`);
             this.onConnect(new Connection(socket));
         });
     }

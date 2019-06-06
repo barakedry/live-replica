@@ -2,7 +2,7 @@
   "name": "@live-replica/socketio-server",
   "version": "1.0.0",
   "description": "web worker server for live-replica",
-  "main": "worker-server.js",
+  "main": "socletio-server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -884,106 +884,7 @@ function isUndefined(arg) {
  * Created by barakedry on 06/07/2018.
  */
 
-
-const LiveReplicaEvents = {
-    subscribe: '$s',
-    unsubscribe: '$u',
-    invokeRPC: '$i',
-    apply: '$a',
-    dictionaryUpdate: '$d'
-};
-
-const names = Object.keys(LiveReplicaEvents);
-names.forEach((key) => {
-    const value = LiveReplicaEvents[key];
-    LiveReplicaEvents[value] = key;
-});
-
-module.exports = function eventName(event) {
-    const split = event.split(':');
-    if (split.length === 2) {
-        return [LiveReplicaEvents[split[0]] || event[0], split[1]].join(':');
-    } else {
-        return LiveReplicaEvents[event] || event;
-    }
-
-};
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports) {
-
-module.exports = {
-    concatPath: function (path, suffix) {
-        if (path && suffix) {
-            return [path, suffix].join('.');
-        }
-
-        return path || suffix;
-    },
-    extractBasePathAndProperty(path = '') {
-        const lastPart = path.lastIndexOf('.');
-        if (lastPart === -1) {
-            return {property: path, path: ''};
-        }
-
-        let property = path.substr(lastPart + 1);
-        path = path.substr(0, lastPart);
-        return {path, property};
-    }
-};
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1, eval)("this");
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Created by barakedry on 05/07/2018.
- */
-
-/*
-import Replica from "./replica";
-export default Replica;
-*/
-module.exports = __webpack_require__(19);
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Created by barakedry on 06/07/2018.
- */
-
-const eventName = __webpack_require__(3);
+const eventName = __webpack_require__(4);
 
 /**
  *  LiveReplicaSocket
@@ -991,6 +892,7 @@ const eventName = __webpack_require__(3);
 class LiveReplicaSocket {
 
     constructor(baseSocket) {
+        this._socket = baseSocket;
         this._instance = LiveReplicaSocket.instances++;
     }
 
@@ -1030,7 +932,7 @@ class LiveReplicaSocket {
     }
 
     _socketSend(eventName, payload, ack) {
-        this._socket.send(eventName, payload, ack);
+        this._socket.emit(eventName, payload, ack);
     }
 
     connect(baseSocket) {
@@ -1044,6 +946,7 @@ class LiveReplicaSocket {
 
     disconnect() {
         this._socket.disconnect();
+        delete this._socket;
     }
 
     isConnected() { return false; }
@@ -1052,6 +955,105 @@ class LiveReplicaSocket {
 LiveReplicaSocket.instances = 0;
 
 module.exports = LiveReplicaSocket;
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Created by barakedry on 06/07/2018.
+ */
+
+
+const LiveReplicaEvents = {
+    subscribe: '$s',
+    unsubscribe: '$u',
+    invokeRPC: '$i',
+    apply: '$a',
+    dictionaryUpdate: '$d'
+};
+
+const names = Object.keys(LiveReplicaEvents);
+names.forEach((key) => {
+    const value = LiveReplicaEvents[key];
+    LiveReplicaEvents[value] = key;
+});
+
+module.exports = function eventName(event) {
+    const split = event.split(':');
+    if (split.length === 2) {
+        return [LiveReplicaEvents[split[0]] || event[0], split[1]].join(':');
+    } else {
+        return LiveReplicaEvents[event] || event;
+    }
+
+};
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports) {
+
+module.exports = {
+    concatPath: function (path, suffix) {
+        if (path && suffix) {
+            return [path, suffix].join('.');
+        }
+
+        return path || suffix;
+    },
+    extractBasePathAndProperty(path = '') {
+        const lastPart = path.lastIndexOf('.');
+        if (lastPart === -1) {
+            return {property: path, path: ''};
+        }
+
+        let property = path.substr(lastPart + 1);
+        path = path.substr(0, lastPart);
+        return {path, property};
+    }
+};
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1, eval)("this");
+} catch (e) {
+	// This works if the window reference is available
+	if (typeof window === "object") g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Created by barakedry on 05/07/2018.
+ */
+
+/*
+import Replica from "./replica";
+export default Replica;
+*/
+module.exports = __webpack_require__(19);
 
 /***/ }),
 /* 8 */
@@ -1233,8 +1235,8 @@ module.exports = LiveReplicaServer;
 /* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Replica = __webpack_require__(6);
-const utils = __webpack_require__(4);
+const Replica = __webpack_require__(7);
+const utils = __webpack_require__(5);
 const PatcherProxy = __webpack_require__(0);
 
 function elementUtilities(element) {
@@ -1342,13 +1344,14 @@ module.exports = function PolymerBaseMixin(base) {
 
 const PatchDiff = __webpack_require__(1);
 const Proxy = __webpack_require__(0);
-const Replica = __webpack_require__(6);
+const Replica = __webpack_require__(7);
 const ReplicaServer = __webpack_require__(8);
 const WorkerServer = __webpack_require__(22);
 const WorkerSocket = __webpack_require__(23);
-const {PolymerElementMixin, LitElementMixin} = __webpack_require__(24);
+const SocketIoClient = __webpack_require__(24);
+const {PolymerElementMixin, LitElementMixin} = __webpack_require__(25);
 
-module.exports = {Replica, ReplicaServer, PatchDiff, Proxy, WorkerServer, WorkerSocket, LitElementMixin, PolymerElementMixin};
+module.exports = {Replica, ReplicaServer, PatchDiff, Proxy, WorkerServer, WorkerSocket, SocketIoClient, LitElementMixin, PolymerElementMixin};
 
 /***/ }),
 /* 11 */
@@ -18967,7 +18970,7 @@ module.exports = PatchDiff;
   else {}
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5), __webpack_require__(13)(module)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6), __webpack_require__(13)(module)))
 
 /***/ }),
 /* 13 */
@@ -19371,7 +19374,7 @@ process.umask = function() { return 0; };
 
 const PatchDiff = __webpack_require__(1);
 const PatcherProxy = __webpack_require__(0);
-const LiveReplicaSocket = __webpack_require__(7);
+const LiveReplicaSocket = __webpack_require__(3);
 const concatPath = PatchDiff.utils.concatPath;
 
 let replicaId = 1000;
@@ -19448,16 +19451,6 @@ class Replica extends PatchDiff {
         this.id = ++replicaId;
         this.proxies = new WeakMap();
 
-        if (!this.options.connectionCallback) {
-            this.options.connectionCallback = (result) => {
-                if (result.success) {
-                    console.info(`live-replica subscribed to remote ${this.options.readonly ? 'readonly': ''} path=${this.remotePath}`);
-                } else {
-                    console.error(`live-replica failed to subscribe remote ${this.options.readonly ? 'readonly': ''} path=${this.remotePath} reason=${result.reason}`);
-                }
-            };
-        }
-
         if (this.options.subscribeRemoteOnCreate) {
             this.subscribeRemote(this.options.connection)
         }
@@ -19477,7 +19470,16 @@ class Replica extends PatchDiff {
             path: this.remotePath,
             allowRPC: !this.options.readonly || this.options.allowRPC,
             allowWrite: !this.options.readonly
-        }, connectionCallback);
+        }, (result) => {
+            if (result.success) {
+                console.info(`live-replica subscribed to remote ${this.options.readonly ? 'readonly': ''} path=${this.remotePath}`);
+                if (typeof connectionCallback === 'function') {
+                    connectionCallback(result);
+                }
+            } else {
+                console.error(`live-replica failed to subscribe remote ${this.options.readonly ? 'readonly': ''} path=${this.remotePath} reason=${result.rejectReason}`);
+            }
+        });
     }
 
     apply(patch, path, options = {}) {
@@ -19689,7 +19691,7 @@ module.exports = {
  * Created by barakedry on 06/07/2018.
  */
 
-const eventName = __webpack_require__(3);
+const eventName = __webpack_require__(4);
 const { EventEmitter }  = __webpack_require__(2);
 const LiveReplicaServer = __webpack_require__(8);
 
@@ -19762,7 +19764,7 @@ class LiveReplicaWorkerServer extends LiveReplicaServer {
 }
 
 module.exports = LiveReplicaWorkerServer;
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(5)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6)))
 
 /***/ }),
 /* 23 */
@@ -19773,9 +19775,9 @@ module.exports = LiveReplicaWorkerServer;
  * Created by barakedry on 06/07/2018.
  */
 
-const LiveReplicaEvents = __webpack_require__(3);
+const LiveReplicaEvents = __webpack_require__(4);
 const Events = __webpack_require__(2);
-const LiveReplicaSocket = __webpack_require__(7);
+const LiveReplicaSocket = __webpack_require__(3);
 let acks = 1;
 /**
  *  LiveReplicaWorkerSocket
@@ -19854,16 +19856,37 @@ module.exports = LiveReplicaWorkerSocket;
 /* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = {
-    LitElementMixin: __webpack_require__(25),
-    PolymerElementMixin: __webpack_require__(26)
-};
+"use strict";
+/**
+ * Created by barakedry on 06/07/2018.
+ */
+
+const LiveReplicaSocket = __webpack_require__(3);
+/**
+ *  LiveReplicaSocketIoClient
+ */
+class LiveReplicaSocketIoClient extends LiveReplicaSocket {
+
+    // overrides
+    isConnected() { return !!this._socket; }
+}
+
+module.exports = LiveReplicaSocketIoClient;
 
 /***/ }),
 /* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const utils = __webpack_require__(4);
+module.exports = {
+    LitElementMixin: __webpack_require__(26),
+    PolymerElementMixin: __webpack_require__(27)
+};
+
+/***/ }),
+/* 26 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const utils = __webpack_require__(5);
 const PolymerBaseMixin = __webpack_require__(9);
 const defferedDisconnections = new WeakMap();
 
@@ -20016,11 +20039,11 @@ module.exports = LitElementMixin;
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const PolymerBaseMixin = __webpack_require__(9);
-const utils = __webpack_require__(4);
+const utils = __webpack_require__(5);
 function debouncer(fn, time) {
     let debounceClearer;
 
