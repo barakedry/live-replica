@@ -4,11 +4,11 @@
 /*global describe: false, it: false */
 'use strict';
 
-var PatchDiff = require('../index');
-var chai = require('chai');
-var assert = chai.assert;
-var extend = require('node.extend');
-var EventEmitterEnhancer = require('event-emitter-enhancer');
+const PatchDiff = require('../index');
+const chai = require('chai');
+const assert = chai.assert;
+const extend = require('node.extend');
+const EventEmitterEnhancer = require('event-emitter-enhancer');
 
 describe('apply-diff', function () {
     function createBaseObject() {
