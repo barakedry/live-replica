@@ -50,7 +50,7 @@ describe('LiveReplicaPersistence', function () {
 
     describe('constructing a LiveReplicaPersistence object', function () {
         describe('construct without parameters', function () {
-            it('should throw an error ', function () {
+            it('should throw an error', function () {
                 try {
                     const lrp = new LiveReplicaPersistence();
                 } catch (e) {
@@ -61,7 +61,15 @@ describe('LiveReplicaPersistence', function () {
         });
 
         describe('construct without a query parameter', function () {
-            const lrp = new LiveReplicaPersistence();
+
+            it('should throw an error', function () {
+                try {
+                    const lrp = new LiveReplicaPersistence();
+                } catch (e) {
+
+                }
+
+            });
         });
 
         describe('construct with a non replica (PatchDiff) parameter as the first parameter', function () {
