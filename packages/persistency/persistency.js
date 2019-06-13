@@ -6,60 +6,60 @@ const util = require('util');
 const LiveReplicaPatchDiff = require('@live-replica/patch-diff');
 
 class LiveReplicaPersistence {
-    constructor(replica, query) {
+    constructor(replica, key) {
 
         if (!(replica instanceof LiveReplicaPatchDiff)) {
             throw new Error('TypeError the "replica" argument must be an instance of LiveReplica');
         }
 
-        if (typeof query !== 'object') {
-            throw new Error('TypeError the "query" argument must be an object');
-        }
-
         this.replica = replica;
-        this.query = query;
+        this.key = key;
         this.debouncedPersist = lodash.debounce(this.presist.bind(this), 1000, {leading: true, maxWait: 10000});
     }
 
     // @protected abstract (should be overridden)
-    async read(query) {
+    async read(key) {
 
     }
 
-    async update(data, query) {
+    async update(data, key) {
 
     }
 
-    async deleteRecord(data, query) {
+    async deleteRecord(data, key) {
 
     }
 
 
-    // @ private
+    // @ public
     // reads and update the replica
     async load() {
-        const data = await this.read(this.query);
+        const data = await this.read(this.key);
         this.replica.set(data);
         return data;
     }
 
     // save the current state
     async persist() {
-        await this.update(this.replica.get(), this.query);
+        const data = this.replica.get();
+
+        if (data) {
+            await this.update(data, this.key);
+        }
     }
 
-    async persistOnChange(options = { removeOnDelete: false }) {
+    persistOnChange(options = { removeOnDelete: false }) {
 
-        let unwatch = this.replica.watch((diff) => {
+        let unwatch = this.replica.subscribe((diff) => {
             if (options.removeOnDelete && replica.options.deleteKeyword === diff) {
-                this.deleteRecord(this.query);
+                this.deleteRecord(this.key);
             } else {
                 this.debouncedPersist();
             }
         });
 
         // return stop watching
-        return async () => {
+        return () => {
             if (!unwatch) { return; }
 
             this.debouncedPersist().flush();
@@ -69,53 +69,38 @@ class LiveReplicaPersistence {
     }
 }
 
-
-function filenameFromQuery({username, componentId}) {
-    return `${username}.${componentId}.json`;
-}
-
 const read = util.promisify(fs.read);
 const write = util.promisify(fs.write);
 const unlink = util.promisify(fs.unlink);
 
 class LiveReplicaFilePersistence extends LiveReplicaPersistence {
-
-    async read() {
-        const raw = await read(this.filePath, 'utf8');
+    
+    async read(filepath) {
+        const raw = await read(filepath, 'utf8');
         return JSON.parse(raw);
     }
 
-    async update(data) {
-        await write(this.filePath, JSON.stringify(data, 4, 4));
+    async update(data, filepath) {
+        await write(filepath, JSON.stringify(data, 4, 4));
     }
 
-    async deleteRecord(data, query) {
-        await unlink(this.filePath, JSON.stringify(data, 4, 4));
+    async deleteRecord(data, filepath) {
+        await unlink(filepath, JSON.stringify(data, 4, 4));
     }
 
-    constructor(directoryPath, replica, query, options = {filenameFromQuery, filename}) {
-
-        if (typeof directoryPath !== 'string') {
-            throw new Error(`TypeError the "directoryPath" argument must be a string`);
-        }
-
-        super(replica, query);
-
-        if (options.filename) {
-            this.filePath = path.join(directoryPath, options.filename);
-        } else {
-            this.filePath = path.join(directoryPath, options.filenameFromQuery(query));
-        }
-
-    }
 }
 
 class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
 
+    constructor(replica, query, dbCollection) {
+        super(replica, query);
+        this.dbCollection = dbCollection;
+    }
+
     async read(query) {
         const record = await this.dbCollection.findOne(query);
         if (!record) {
-            throw new Error(`no record found on mongodb for query ${JSON.stringify(query)}`)
+            throw new Error(`no record found on mongodb for query ${JSON.stringify(query)}`);
         }
         return record.data;
     }
@@ -130,10 +115,6 @@ class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
         return await this.dbCollection.deleteOne(query);
     }
 
-    constructor(dbCollection, replica, query) {
-        super(replica, query);
-        this.dbCollection = dbCollection;
-    }
 }
 
 module.exports = {
