@@ -123,12 +123,11 @@ class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
     async update(data, query) {
         const document = {...query, data};
 
-
-        await this.dbCollection.update(query, document);
+        await this.dbCollection.updateOne(query, {$set: document});
     }
 
     async deleteRecord(data, query) {
-        return await this.dbCollection.delete(query);
+        return await this.dbCollection.deleteOne(query);
     }
 
     constructor(dbCollection, replica, query) {
