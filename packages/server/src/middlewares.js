@@ -10,7 +10,7 @@ function whitelist(list) {
         throw new Error('TypeError "list" must be an Array or a Set');
     }
 
-    return function check(request, reject, approve) {
+    return function whitelistTest(request, reject, approve) {
         if (list.has(request.path)) {
             approve(request);
         } else {
