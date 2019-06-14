@@ -9,7 +9,7 @@ class LiveReplicaPersistence {
     constructor(replica, key) {
 
         if (!(replica instanceof LiveReplicaPatchDiff)) {
-            throw new Error('TypeError the "replica" argument must be an instance of LiveReplica');
+            throw new TypeError('the "replica" argument must be an instance of LiveReplica');
         }
 
         this.replica = replica;
@@ -100,7 +100,7 @@ class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
     async read(query) {
         const record = await this.dbCollection.findOne(query);
         if (!record) {
-            throw new Error(`no record found on mongodb for query ${JSON.stringify(query)}`);
+            throw new TypeError(`no record found on mongodb for query ${JSON.stringify(query)}`);
         }
         return record.data;
     }

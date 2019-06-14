@@ -7,7 +7,7 @@ function whitelist(list) {
     if (Array.isArray(list)) {
         list = new Set(list);
     } else if (!(list instanceof Set)) {
-        throw new Error('TypeError "list" must be an Array or a Set');
+        throw new TypeError('"list" must be an Array or a Set');
     }
 
     return function whitelistTest(request, reject, approve) {
