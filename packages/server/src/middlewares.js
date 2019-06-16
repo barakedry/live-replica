@@ -19,7 +19,7 @@ function whitelist(list) {
     }
 }
 
-const subscriptionCounter = new WeakMap();
+const serverCounters = new WeakMap();
 function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback) {
 
     if (typeof path === 'function') {
@@ -32,45 +32,65 @@ function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCa
         const server = this;
 
         if (path && request.path !== path) {
-            return approve();
+            return approve(request);
         }
 
-        if (!subscriptionCounter.has(this)) {
-            subscriptionCounter.set(this, {});
+        if (!serverCounters.has(server)) {
+            serverCounters.set(server, {});
         }
 
         const subscribePath = request.path;
-        const subscribed = subscriptionCounter.get(this);
-        if (!subscribed.hasOwnProperty(subscribePath)) {
-            subscribed[subscribePath] = 0;
+        const subscribersPerPath = serverCounters.get(server);
+        if (!subscribersPerPath.hasOwnProperty(subscribePath)) {
+            subscribersPerPath[subscribePath] = 0;
         }
 
-        if (subscribed[subscribePath] === 0) {
-            server.on('replica-unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
-                if (subscribePath === unsubscriberRequest.path) {
+        if (subscribersPerPath[subscribePath] === 0) {
+            (async () => {
 
-                    if (!subscribed[subscribePath]) {
-                        assert('')
-                    }
+                let awaitingDone;
+                let awaitingFirstSubscriptionHandlingToEnd = true;
 
-                    subscribed[subscribePath]--;
+                server.on('replica-unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
+                    if (subscribePath === unsubscriberRequest.path) {
 
-                    if (subscribed[subscribePath] <= 0) {
-                        delete subscribed[subscribePath];
-                        server.removeListener('replica-unsubscribe', onUnsubscribe);
-                        if (lastSubscriptionCallback) {
-                            lastSubscriptionCallback.call(server, unsubscriberRequest);
+                        if (!subscribersPerPath[subscribePath]) {
+                            assert('')
                         }
 
-                    }
-                }
-            });
+                        subscribersPerPath[subscribePath]--;
 
-            firstSubscriptionCallback.call(server, request, reject, approve);
+                        if (subscribersPerPath[subscribePath] <= 0) {
+                            delete subscribersPerPath[subscribePath];
+                            server.removeListener('replica-unsubscribe', onUnsubscribe);
+                            if (lastSubscriptionCallback) {
+                                if (awaitingFirstSubscriptionHandlingToEnd) {
+                                    awaitingDone = () => { lastSubscriptionCallback.call(server, unsubscriberRequest); };
+                                } else {
+                                    lastSubscriptionCallback.call(server, unsubscriberRequest);
+                                }
+
+                            }
+
+                        }
+                    }
+                });
+
+                await firstSubscriptionCallback.call(server, request, reject, approve);
+                awaitingFirstSubscriptionHandlingToEnd = false;
+
+                if (awaitingDone) {
+                    awaitingDone();
+                    awaitingDone = undefined;
+                }
+
+            })();
+
+        } else {
+            approve(request);
         }
 
-        subscribed[request.path]++;
-        approve();
+        subscribersPerPath[subscribePath]++;
     };
 }
 
