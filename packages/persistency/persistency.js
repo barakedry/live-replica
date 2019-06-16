@@ -1,9 +1,8 @@
 const lodash = require('lodash');
-const path = require('path');
 const fs = require('fs');
 const util = require('util');
 
-const LiveReplicaPatchDiff = require('@live-replica/patch-diff');
+const LiveReplicaPatchDiff = require('../patch-diff');
 
 class LiveReplicaPersistence {
     constructor(replica, key) {

@@ -12,14 +12,14 @@ class MiddlewareChain {
     start(...args) {
         const finishCallback = args.pop();
         if (typeof finishCallback !== 'function') {
-            throw new Error('MiddlewareChain.start() last arguments must be a finish function');
+            throw new TypeError(`MiddlewareChain.start() last arguments must be a finish function, instead got ${typeof finishCallback}`);
         }
         this._run(0, finishCallback, args);
     }
 
     add(middleware) {
         if (typeof middleware !== 'function') {
-            throw new Error('middleware must be a function');
+            throw new TypeError(`middleware must be a function, instead got ${typeof middleware}`);
         }
 
         this.chain.push(middleware);
