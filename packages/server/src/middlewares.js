@@ -20,7 +20,7 @@ function whitelist(list) {
 }
 
 const serverCounters = new WeakMap();
-function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback) {
+function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback, matchPathes = (path1, path2) => path1 === path2) {
 
     if (typeof path === 'function') {
         lastSubscriptionCallback = firstSubscriptionCallback;
@@ -31,7 +31,7 @@ function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCa
     return function onSubscribe(request, reject, approve) {
         const server = this;
 
-        if (path && request.path !== path) {
+        if (path && !matchPathes(request.path, path)) {
             return approve(request);
         }
 
@@ -52,7 +52,7 @@ function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCa
                 let awaitingFirstSubscriptionHandlingToEnd = true;
 
                 server.on('replica-unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
-                    if (subscribePath === unsubscriberRequest.path) {
+                    if (matchPathes(subscribePath, unsubscriberRequest.path)) {
 
                         if (!subscribersPerPath[subscribePath]) {
                             assert('')

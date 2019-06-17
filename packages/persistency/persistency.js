@@ -12,7 +12,7 @@ class LiveReplicaPersistence {
 
         this.replica = replica;
         this.key = key;
-        this.debouncedPersist = lodash.debounce(() => this.persist(), 1000, {leading: true, maxWait: 10000});
+        this.debouncedPersist = lodash.debounce(() => this.persist(), 1500, {leading: true, maxWait: 10000});
     }
 
     // @protected abstract (should be overridden)
@@ -60,7 +60,7 @@ class LiveReplicaPersistence {
         return () => {
             if (!unwatch) { return; }
 
-            this.debouncedPersist().flush();
+            this.debouncedPersist.flush();
             unwatch();
             unwatch = null;
         }
