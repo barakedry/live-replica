@@ -76,12 +76,16 @@ function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCa
                     }
                 });
 
-                await firstSubscriptionCallback.call(server, request, reject, approve);
+                const success = await firstSubscriptionCallback.call(server, request, reject, approve);
                 awaitingFirstSubscriptionHandlingToEnd = false;
 
                 if (awaitingDone) {
                     awaitingDone();
                     awaitingDone = undefined;
+                }
+
+                if (success === false && subscribersPerPath[subscribePath]) {
+                    subscribersPerPath[subscribePath]--;
                 }
 
             })();

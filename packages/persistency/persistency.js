@@ -1,19 +1,18 @@
 const lodash = require('lodash');
+const path = require('path');
 const fs = require('fs');
 const util = require('util');
-
 const LiveReplicaPatchDiff = require('../patch-diff');
 
 class LiveReplicaPersistence {
     constructor(replica, key) {
-
         if (!(replica instanceof LiveReplicaPatchDiff)) {
             throw new TypeError('the "replica" argument must be an instance of LiveReplica');
         }
 
         this.replica = replica;
         this.key = key;
-        this.debouncedPersist = lodash.debounce(this.presist.bind(this), 1000, {leading: true, maxWait: 10000});
+        this.debouncedPersist = lodash.debounce(() => this.persist(), 1000, {leading: true, maxWait: 10000});
     }
 
     // @protected abstract (should be overridden)
@@ -68,12 +67,12 @@ class LiveReplicaPersistence {
     }
 }
 
-const read = util.promisify(fs.read);
-const write = util.promisify(fs.write);
+const read = util.promisify(fs.readFile);
+const write = util.promisify(fs.writeFile);
 const unlink = util.promisify(fs.unlink);
 
 class LiveReplicaFilePersistence extends LiveReplicaPersistence {
-    
+
     async read(filepath) {
         const raw = await read(filepath, 'utf8');
         return JSON.parse(raw);
