@@ -1101,6 +1101,8 @@ class LiveReplicaServer extends PatchDiff {
         options = Object.assign({}, options);
         super(options.dataObject || {}, options);
 
+        this.proxies = new WeakMap();
+
         this.middlewares = new Middlewares(this);
     }
 
@@ -1215,21 +1217,18 @@ class LiveReplicaServer extends PatchDiff {
     }
 
     get data() {
-        if (this.options.readonly) {
-            return this._data;
-        } else {
-            if (!this.proxies.has(this)) {
-                const proxy = new PatcherProxy(this);
-                this.proxies.set(this, proxy);
-            }
-            return this.proxies.get(this);
+        if (!this.proxies.has(this)) {
+            const proxy = PatcherProxy.create(this, '', null, this.options.readonly);
+            this.proxies.set(this, proxy);
         }
+        return this.proxies.get(this);
     }
 }
 
 LiveReplicaServer.middlewares = __webpack_require__(21);
 
 module.exports = LiveReplicaServer;
+
 
 /***/ }),
 /* 9 */
@@ -2294,7 +2293,7 @@ module.exports = PatchDiff;
   var root = freeGlobal || freeSelf || Function('return this')();
 
   /** Detect free variable `exports`. */
-  var freeExports = true && exports && !exports.nodeType && exports;
+  var freeExports =  true && exports && !exports.nodeType && exports;
 
   /** Detect free variable `module`. */
   var freeModule = freeExports && typeof module == 'object' && module && !module.nodeType && module;
@@ -19436,6 +19435,12 @@ class Replica extends PatchDiff {
 
     [remoteApply](data) {
         super.apply(this[deserializeFunctions](data));
+
+        if (!this.isReady && this.awaitingReady.length !== 0) {
+            this.awaitingReady.forEach((cb) => { cb(); });
+        }
+
+        this.isReady = true;
     }
 
     // public
@@ -19450,6 +19455,7 @@ class Replica extends PatchDiff {
         this.remotePath = remotePath;
         this.id = ++replicaId;
         this.proxies = new WeakMap();
+        this.awaitingReady = [];
 
         if (this.options.subscribeRemoteOnCreate) {
             this.subscribeRemote(this.options.connection)
@@ -19528,8 +19534,16 @@ class Replica extends PatchDiff {
         });
     }
 
-    get existance() {
-        return this.getWhenExists();
+
+    async whenReady() {
+
+        if (this.isReady) {
+            return true;
+        }
+
+        return new Promise((accept) => {
+            this.awaitingReady.push(accept);
+        })
     }
 
     get data() {
@@ -19576,14 +19590,14 @@ class MiddlewareChain {
     start(...args) {
         const finishCallback = args.pop();
         if (typeof finishCallback !== 'function') {
-            throw new Error('MiddlewareChain.start() last arguments must be a finish function');
+            throw new TypeError(`MiddlewareChain.start() last arguments must be a finish function, instead got ${typeof finishCallback}`);
         }
         this._run(0, finishCallback, args);
     }
 
     add(middleware) {
         if (typeof middleware !== 'function') {
-            throw new Error('middleware must be a function');
+            throw new TypeError(`middleware must be a function, instead got ${typeof middleware}`);
         }
 
         this.chain.push(middleware);
@@ -19624,63 +19638,106 @@ module.exports = MiddlewareChain;
  */
 
 
-const subscriptionCounter = new WeakMap();
+function whitelist(list) {
+    if (Array.isArray(list)) {
+        list = new Set(list);
+    } else if (!(list instanceof Set)) {
+        throw new TypeError('"list" must be an Array or a Set');
+    }
 
-module.exports = {
-    oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback) {
+    return function whitelistTest(request, reject, approve) {
+        if (list.has(request.path)) {
+            approve(request);
+        } else {
+            reject(`Unauthorized subscription to "${request.path}"`);
+        }
+    }
+}
 
-        if (typeof path === 'function') {
-            lastSubscriptionCallback = firstSubscriptionCallback;
-            firstSubscriptionCallback = path;
-            path = undefined;
+const serverCounters = new WeakMap();
+function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback, matchPathes = (path1, path2) => path1 === path2) {
+
+    if (typeof path === 'function') {
+        lastSubscriptionCallback = firstSubscriptionCallback;
+        firstSubscriptionCallback = path;
+        path = undefined;
+    }
+
+    return function onSubscribe(request, reject, approve) {
+        const server = this;
+
+        if (path && !matchPathes(request.path, path)) {
+            return approve(request);
         }
 
-        return function onSubscribe(request, reject, approve) {
-            const server = this;
+        if (!serverCounters.has(server)) {
+            serverCounters.set(server, {});
+        }
 
-            if (path && request.path !== path) {
-                return approve();
-            }
+        const subscribePath = request.path;
+        const subscribersPerPath = serverCounters.get(server);
+        if (!subscribersPerPath.hasOwnProperty(subscribePath)) {
+            subscribersPerPath[subscribePath] = 0;
+        }
 
-            if (!subscriptionCounter.has(this)) {
-                subscriptionCounter.set(this, {});
-            }
+        if (subscribersPerPath[subscribePath] === 0) {
+            (async () => {
 
-            const subscribePath = request.path;
-            const subscribed = subscriptionCounter.get(this);
-            if (!subscribed.hasOwnProperty(subscribePath)) {
-                subscribed[subscribePath] = 0;
-            }
+                let awaitingDone;
+                let awaitingFirstSubscriptionHandlingToEnd = true;
 
-            if (subscribed[subscribePath] === 0) {
                 server.on('replica-unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
-                    if (subscribePath === unsubscriberRequest.path) {
+                    if (matchPathes(subscribePath, unsubscriberRequest.path)) {
 
-                        if (!subscribed[subscribePath]) {
+                        if (!subscribersPerPath[subscribePath]) {
                             assert('')
                         }
 
-                        subscribed[subscribePath]--;
+                        subscribersPerPath[subscribePath]--;
 
-                        if (subscribed[subscribePath] <= 0) {
-                            delete subscribed[subscribePath];
+                        if (subscribersPerPath[subscribePath] <= 0) {
+                            delete subscribersPerPath[subscribePath];
                             server.removeListener('replica-unsubscribe', onUnsubscribe);
                             if (lastSubscriptionCallback) {
-                                lastSubscriptionCallback.call(server, unsubscriberRequest);
+                                if (awaitingFirstSubscriptionHandlingToEnd) {
+                                    awaitingDone = () => { lastSubscriptionCallback.call(server, unsubscriberRequest); };
+                                } else {
+                                    lastSubscriptionCallback.call(server, unsubscriberRequest);
+                                }
+
                             }
 
                         }
                     }
                 });
 
-                firstSubscriptionCallback.call(server, request, reject, approve);
-            }
+                const success = await firstSubscriptionCallback.call(server, request, reject, approve);
+                awaitingFirstSubscriptionHandlingToEnd = false;
 
-            subscribed[request.path]++;
-            approve();
-        };
-    }
+                if (awaitingDone) {
+                    awaitingDone();
+                    awaitingDone = undefined;
+                }
+
+                if (success === false && subscribersPerPath[subscribePath]) {
+                    subscribersPerPath[subscribePath]--;
+                }
+
+            })();
+
+        } else {
+            approve(request);
+        }
+
+        subscribersPerPath[subscribePath]++;
+    };
+}
+
+module.exports = {
+    oncePerSubscription,
+    whitelist
 };
+
 
 /***/ }),
 /* 22 */

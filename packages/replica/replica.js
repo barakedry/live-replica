@@ -66,6 +66,12 @@ class Replica extends PatchDiff {
 
     [remoteApply](data) {
         super.apply(this[deserializeFunctions](data));
+
+        if (!this.isReady && this.awaitingReady.length !== 0) {
+            this.awaitingReady.forEach((cb) => { cb(); });
+        }
+
+        this.isReady = true;
     }
 
     // public
@@ -80,6 +86,7 @@ class Replica extends PatchDiff {
         this.remotePath = remotePath;
         this.id = ++replicaId;
         this.proxies = new WeakMap();
+        this.awaitingReady = [];
 
         if (this.options.subscribeRemoteOnCreate) {
             this.subscribeRemote(this.options.connection)
@@ -158,8 +165,16 @@ class Replica extends PatchDiff {
         });
     }
 
-    get existance() {
-        return this.getWhenExists();
+
+    async whenReady() {
+
+        if (this.isReady) {
+            return true;
+        }
+
+        return new Promise((accept) => {
+            this.awaitingReady.push(accept);
+        })
     }
 
     get data() {
