@@ -175,6 +175,12 @@ class PatchDiff extends EventEmitter {
         };
     }
 
+    getWhenExists(path) {
+        return new Promise(resolve => {
+            this.get(path, resolve);
+        });
+    }
+
     at(subPath) {
         let path = utils.concatPath(this._path, subPath);
         let at = Object.create(this);

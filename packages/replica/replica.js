@@ -153,12 +153,6 @@ class Replica extends PatchDiff {
         this.removeAllListeners();
     }
 
-    getWhenExists(path) {
-        return new Promise(resolve => {
-            this.get(path, resolve);
-        });
-    }
-
     get data() {
         if (!this.proxies.has(this)) {
             const proxy = PatcherProxy.create(this, '', null, !this.options.allowWrite);

@@ -1534,6 +1534,12 @@ class PatchDiff extends EventEmitter {
         };
     }
 
+    getWhenExists(path) {
+        return new Promise(resolve => {
+            this.get(path, resolve);
+        });
+    }
+
     at(subPath) {
         let path = utils.concatPath(this._path, subPath);
         let at = Object.create(this);
@@ -2293,7 +2299,7 @@ module.exports = PatchDiff;
   var root = freeGlobal || freeSelf || Function('return this')();
 
   /** Detect free variable `exports`. */
-  var freeExports =  true && exports && !exports.nodeType && exports;
+  var freeExports = true && exports && !exports.nodeType && exports;
 
   /** Detect free variable `module`. */
   var freeModule = freeExports && typeof module == 'object' && module && !module.nodeType && module;
@@ -19520,12 +19526,6 @@ class Replica extends PatchDiff {
     destroy() {
         this.unsubscribeRemote();
         this.removeAllListeners();
-    }
-
-    getWhenExists(path) {
-        return new Promise(resolve => {
-            this.get(path, resolve);
-        });
     }
 
     get data() {
