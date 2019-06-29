@@ -106,7 +106,7 @@ class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
     async update(data, query) {
         const document = {...query, data};
 
-        await this.dbCollection.updateOne(query, {$set: document});
+        await this.dbCollection.updateOne(query, {$set: document}, {upsert: true});
     }
 
     async deleteRecord(data, query) {
