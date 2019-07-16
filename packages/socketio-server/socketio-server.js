@@ -17,9 +17,9 @@ class Connection extends EventEmitter {
     }
 
 
-    send(event, payload) {
+    send(event, ...args) {
         event = eventName(event);
-        this.socket.emit(event, payload);
+        this.socket.emit(event, ...args);
     }
 
     addListener(event, handler) {

@@ -13,6 +13,7 @@ let replicaId = 1000;
 const deserializeFunctions  = Symbol('deserializeFunctions');
 const createRPCfunction     = Symbol('createRPCfunction');
 const remoteApply           = Symbol('remoteApply');
+const remoteOverride           = Symbol('remoteOverride');
 const bindToSocket           = Symbol('bindToSocket');
 
 class Replica extends PatchDiff {
@@ -20,8 +21,13 @@ class Replica extends PatchDiff {
     // private
     [bindToSocket]() {
 
-        this.connection.on(`apply:${this.id}`, (delta) => {
-            this[remoteApply](delta);
+        this.connection.on(`apply:${this.id}`, (delta, {snapshot}) => {
+            if (delta && snapshot) {
+                this[remoteOverride](delta);
+            } else {
+                this[remoteApply](delta);
+            }
+
             if (delta && !this._subscribed) {
                 this._subscribed = true;
                 this.emit('_subscribed', this.get());
@@ -66,6 +72,10 @@ class Replica extends PatchDiff {
 
     [remoteApply](data) {
         super.apply(this[deserializeFunctions](data));
+    }
+
+    [remoteOverride](data) {
+        super.set(this[deserializeFunctions](data));
     }
 
     // public
