@@ -1155,9 +1155,9 @@ class LiveReplicaServer extends PatchDiff {
         let invokeRpcListener, replicaApplyListener;
 
         let ownerChange = false;
-        const unsubscribeChanges = clientSubset.subscribe((patchData) => {
+        const unsubscribeChanges = clientSubset.subscribe((patchData, {snapshot}) => {
             if (!ownerChange) {
-                connection.send(applyEvent, serializeFunctions(patchData));
+                connection.send(applyEvent, serializeFunctions(patchData), snapshot ? {snapshot} : {snapshot : false});
             }
 
             ownerChange = false;
@@ -19407,6 +19407,7 @@ let replicaId = 1000;
 const deserializeFunctions  = Symbol('deserializeFunctions');
 const createRPCfunction     = Symbol('createRPCfunction');
 const remoteApply           = Symbol('remoteApply');
+const remoteOverride           = Symbol('remoteOverride');
 const bindToSocket           = Symbol('bindToSocket');
 
 class Replica extends PatchDiff {
@@ -19414,8 +19415,13 @@ class Replica extends PatchDiff {
     // private
     [bindToSocket]() {
 
-        this.connection.on(`apply:${this.id}`, (delta) => {
-            this[remoteApply](delta);
+        this.connection.on(`apply:${this.id}`, (delta, {snapshot}) => {
+            if (delta && snapshot) {
+                this[remoteOverride](delta);
+            } else {
+                this[remoteApply](delta);
+            }
+
             if (delta && !this._subscribed) {
                 this._subscribed = true;
                 this.emit('_subscribed', this.get());
@@ -19460,6 +19466,10 @@ class Replica extends PatchDiff {
 
     [remoteApply](data) {
         super.apply(this[deserializeFunctions](data));
+    }
+
+    [remoteOverride](data) {
+        super.set(this[deserializeFunctions](data));
     }
 
     // public
@@ -19778,12 +19788,12 @@ class Connection extends EventEmitter {
     }
 
 
-    send(event, payload) {
+    send(event, ...args) {
         event = eventName(event);
         global.postMessage({
             liveReplica: {
                 event,
-                payload
+                args
             }
         });
     }
@@ -19892,8 +19902,8 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
         this.worker = worker;
         this.onWorkerMessage = ({data}) => {
             if (data.liveReplica) {
-                const {event, payload} = data.liveReplica;
-                this._emitter.emit(event, payload);
+                const {event, args} = data.liveReplica;
+                this._emitter.emit(event, ...args);
             }
         };
 

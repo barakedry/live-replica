@@ -61,8 +61,8 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
         this.worker = worker;
         this.onWorkerMessage = ({data}) => {
             if (data.liveReplica) {
-                const {event, payload} = data.liveReplica;
-                this._emitter.emit(event, payload);
+                const {event, args} = data.liveReplica;
+                this._emitter.emit(event, ...args);
             }
         };
 
