@@ -19415,8 +19415,8 @@ class Replica extends PatchDiff {
     // private
     [bindToSocket]() {
 
-        this.connection.on(`apply:${this.id}`, (delta, {snapshot}) => {
-            if (delta && snapshot) {
+        this.connection.on(`apply:${this.id}`, (delta, meta = {}) => {
+            if (delta && meta.snapshot) {
                 this[remoteOverride](delta);
             } else {
                 this[remoteApply](delta);
