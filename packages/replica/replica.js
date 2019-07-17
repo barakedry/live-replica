@@ -21,7 +21,7 @@ class Replica extends PatchDiff {
     // private
     [bindToSocket]() {
 
-        this.connection.on(`apply:${this.id}`, (delta, meta = {}) => {
+        this.onApplyEvent = (delta, meta = {}) => {
             if (delta && meta.snapshot) {
                 this[remoteOverride](delta);
             } else {
@@ -32,7 +32,9 @@ class Replica extends PatchDiff {
                 this._subscribed = true;
                 this.emit('_subscribed', this.get());
             }
-        });
+        };
+
+        this.connection.on(`apply:${this.id}`, this.onApplyEvent);
 
         if (this.options.allowWrite) {
             this.subscribe((data, diff, options) => {
@@ -104,8 +106,17 @@ class Replica extends PatchDiff {
         }
 
         this._subscribed = false;
-        this.connection = connection;
-        this[bindToSocket]();
+        if (connection !== this.connection) {
+            this.connection = connection;
+            this[bindToSocket]();
+
+            this.onSocketReconnected = () => {
+                this.subscribeRemote(connection);
+            };
+
+            connection.on('reconnect', this.onSocketReconnected);
+        }
+
         this.connection.send('subscribe', {
             id: this.id,
             path: this.remotePath,
@@ -161,6 +172,12 @@ class Replica extends PatchDiff {
     destroy() {
         this.unsubscribeRemote();
         this.removeAllListeners();
+
+        if (this.connection) {
+            this.connection.off(`apply:${this.id}`, this.onApplyEvent);
+            this.connection.off('reconnect', this.onSocketReconnected);
+            delete this.connection;
+        }
     }
 
     get data() {
