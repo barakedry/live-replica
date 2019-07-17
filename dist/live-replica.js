@@ -1503,6 +1503,14 @@ class PatchDiff extends EventEmitter {
         return retVal;
     }
 
+    getClone(path) {
+        const obj = this.get(path);
+        if (obj) {
+            return JSON.parse(JSON.stringify(obj));
+        }
+        return undefined;
+    }
+
     on(path, fn) {
         path = utils.concatPath(this._path, path);
         super.on(path, fn);
@@ -2310,7 +2318,7 @@ module.exports = PatchDiff;
   var root = freeGlobal || freeSelf || Function('return this')();
 
   /** Detect free variable `exports`. */
-  var freeExports = true && exports && !exports.nodeType && exports;
+  var freeExports =  true && exports && !exports.nodeType && exports;
 
   /** Detect free variable `module`. */
   var freeModule = freeExports && typeof module == 'object' && module && !module.nodeType && module;
