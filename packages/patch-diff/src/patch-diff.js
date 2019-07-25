@@ -144,6 +144,14 @@ class PatchDiff extends EventEmitter {
         return retVal;
     }
 
+    getClone(path) {
+        const obj = this.get(path);
+        if (obj) {
+            return JSON.parse(JSON.stringify(obj));
+        }
+        return undefined;
+    }
+
     on(path, fn) {
         path = utils.concatPath(this._path, path);
         super.on(path, fn);
