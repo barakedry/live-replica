@@ -415,7 +415,9 @@ class PatchDiff extends EventEmitter {
         levelDiffs.hasDeletions = true;
         levelDiffs.hasDifferences = true;
 
-        this._emitInnerDeletions(path, existingValue, options);
+        if (_.isObject(existingValue)) {
+            levelDiffs.addChildTracking(this._emitInnerDeletions(path, existingValue, options), key)
+        }
 
         return levelDiffs;
     }
@@ -464,7 +466,7 @@ class PatchDiff extends EventEmitter {
         return Object.getPrototypeOf(object);
     }
 
-    _emitInnerDeletions(deletedObject, path, options) {
+    _emitInnerDeletions(path, deletedObject, options) {
         let levelDiffs,
             childDiffs;
 
@@ -481,14 +483,18 @@ class PatchDiff extends EventEmitter {
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
             if (_.isObject(deletedObject[key])) {
-                childDiffs = this._emitInnerDeletions(deletedObject[key], utils.concatPath(path, key), options);
+                childDiffs = this._emitInnerDeletions(utils.concatPath(path, key), deletedObject[key], options);
                 levelDiffs.addChildTracking(childDiffs, key);
+            } else {
+                levelDiffs.differences[key] = options.deleteKeyword;
             }
 
         }
 
         levelDiffs.hasDeletions = true;
+        levelDiffs.hasDifferences = true;
         levelDiffs.deletions = deletedObject;
+
         this.emit((path || '*'), levelDiffs, options);
 
         return levelDiffs;
