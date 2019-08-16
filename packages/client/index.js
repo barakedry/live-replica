@@ -7,6 +7,7 @@ const ReplicaServer = require('../server');
 const WorkerServer = require('../worker-server');
 const WorkerSocket = require('../worker-socket');
 const SocketIoClient = require('../socketio-client');
+const WebSocketClient = require('../ws-client');
 const {PolymerElementMixin, LitElementMixin} = require('../live-replica-polymer');
 
-module.exports = {Replica, ReplicaServer, PatchDiff, Proxy, WorkerServer, WorkerSocket, SocketIoClient, LitElementMixin, PolymerElementMixin};
+module.exports = {Replica, ReplicaServer, PatchDiff, Proxy, WorkerServer, WorkerSocket, WebSocketClient, SocketIoClient, LitElementMixin, PolymerElementMixin};
