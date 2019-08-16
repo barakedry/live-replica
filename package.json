@@ -39,7 +39,8 @@
   },
   "dependencies": {
     "debuglog": "latest",
-    "lodash": "latest"
+    "lodash": "latest",
+    "@msgpack/msgpack": "latest"
   },
   "main": "index.js"
 }
