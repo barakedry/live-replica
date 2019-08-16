@@ -1,8 +1,7 @@
 {
-  "npmClient": "npm",
-  "useWorkspaces": false,
+  "lerna": "3.16.2",
   "packages": [
     "packages/*"
   ],
-  "version": "0.0.0"
+  "version": "0.7.0"
 }
