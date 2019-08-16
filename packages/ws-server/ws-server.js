@@ -14,9 +14,9 @@ class Connection extends EventEmitter {
 
         this.setMaxListeners(50000);
 
-        this._socket = ws;
+        this.socket = ws;
 
-        this._socket.addEventListener('message', ({data}) => {
+        this.socket.addEventListener('message', ({data}) => {
             const msg = msgpack.decode(data);
             if (msg[LIVE_REPLICA_MSG]) {
                 const {event, payload, ack} = msg[LIVE_REPLICA_MSG];
@@ -46,7 +46,7 @@ class Connection extends EventEmitter {
         };
 
         const data = msgpack.encode(message);
-        this._socket.send(data);
+        this.socket.send(data);
     }
 
 
@@ -75,7 +75,7 @@ class LiveReplicaWebSocketsServer extends LiveReplicaServer {
     constructor(wsServer) {
         super();
 
-        wsServer.on('connect', (socket) => {
+        wsServer.on('connection', (socket) => {
             console.info(`LiveReplicaSocketIoServer - new socket.io connection ${socket.id}`);
             this.onConnect(new Connection(socket));
         });
