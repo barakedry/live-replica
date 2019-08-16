@@ -20133,32 +20133,17 @@ const msgpack = __webpack_require__(26);
 const LIVE_REPLICA_MSG = '$LR';
 const onMessage = Symbol('onWebsocketMessage');
 let acks = Date.now();
+
 /**
- *  LiveReplicaSocketIoClient
+ *  LiveReplicaWebSocketsClient
  */
 class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
 
     constructor(socket) {
-        super(socket);
-
-        if (!this._socket || !this._socket.binaryType || this._socket.binaryType !== 'arraybuffer') {
-            throw new TypeError(`socket must be a WebSocket with binaryType='arraybuffer' `);
-        }
-        
+        super();
+        this.socket = socket;
         this._emitter = new Events.EventEmitter();
         this._emitter.setMaxListeners(50000);
-
-        this[onMessage] = ({data}) => {
-            const msg = msgpack.decode(data);
-            if (msg[LIVE_REPLICA_MSG]) {
-                const {event, args} = msg[LIVE_REPLICA_MSG];
-                this._emitter.emit(event, ...args);
-            } else {
-                this._emitter.emit('message', msg);
-            }
-        };
-
-        this._socket.addEventListener('message', this[onMessage]);
     }
 
     // overrides
@@ -20197,12 +20182,43 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
         this._socket.send(msgpack.encode(message));
     }
 
+    set socket(socket) {
+
+        const isReconnect = this.isConnected();
+
+        this.disconnect();
+
+        if (!socket || !socket.binaryType || socket.binaryType !== 'arraybuffer') {
+            throw new TypeError(`socket must be a WebSocket with binaryType='arraybuffer' `);
+        }
+
+        this._socket = socket;
+
+        this[onMessage] = ({data}) => {
+            const msg = msgpack.decode(data);
+            if (msg[LIVE_REPLICA_MSG]) {
+                const {event, args} = msg[LIVE_REPLICA_MSG];
+                this._emitter.emit(event, ...args);
+            } else {
+                this._emitter.emit('message', msg);
+            }
+        };
+
+        this._socket.addEventListener('message', this[onMessage]);
+
+        if (isReconnect) {
+            this._emitter.emit('reconnect');
+        }
+    }
+
     get baseSocket() {
         return this._socket;
     }
 
     disconnect() {
-        this._socket.removeEventListener('message', this[onMessage]);
+        if (this._socket && this[onMessage]) {
+            this._socket.removeEventListener('message', this[onMessage]);
+        }
         delete this._socket;
     }
 
