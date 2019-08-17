@@ -7,6 +7,7 @@ const { EventEmitter }  = require('events');
 const LiveReplicaServer = require('../server');
 const msgpack = require('@msgpack/msgpack');
 const LIVE_REPLICA_MSG = '$LR';
+const nativeSocketEvents = {'disconnect': 'close'};
 
 class Connection extends EventEmitter {
     constructor(ws) {
@@ -57,11 +58,21 @@ class Connection extends EventEmitter {
     }
 
     addEventListener(event, handler) {
-        super.addEventListener(eventName(event), handler);
+        if (nativeSocketEvents[eventName]) {
+            event = nativeSocketEvents[event];
+            this.socket.addEventListener(event);
+        } else {
+            super.addEventListener(eventName(event), handler);
+        }
     }
 
     removeListener(event, handler) {
-        super.removeListener(eventName(event), handler);
+        if (nativeSocketEvents[event]) {
+            event = nativeSocketEvents[event];
+            this.socket.removeListener(event);
+        } else {
+            super.removeListener(eventName(event), handler);
+        }
     }
 
 }

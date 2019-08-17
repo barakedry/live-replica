@@ -9,6 +9,7 @@ const msgpack = require('@msgpack/msgpack');
 const LIVE_REPLICA_MSG = '$LR';
 const onMessage = Symbol('onWebsocketMessage');
 let acks = Date.now();
+const nativeSocketEvents = {'disconnect': 'close'};
 
 /**
  *  LiveReplicaWebSocketsClient
@@ -25,14 +26,36 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
     // overrides
 
     _addSocketEventListener(eventName, fn) {
-        this._emitter.on(eventName, fn);
+        if (nativeSocketEvents[eventName]) {
+            eventName = nativeSocketEvents[eventName];
+            this.socket.addEventListener(eventName);
+        } else {
+            this._emitter.on(eventName, fn);
+        }
     }
     _addSocketEventListenerOnce(eventName, fn) {
-        this._emitter.once(eventName, fn);
+        if (nativeSocketEvents[eventName]) {
+            eventName = nativeSocketEvents[eventName];
+            const once = (...args) => {
+                this.socket.removeEventListener(eventName, once);
+                fn.call(this.socket, ...args);
+            };
+
+            this.socket.addEventListener(eventName, once);
+        } else {
+            this._emitter.once(eventName, fn);
+        }
+
     }
 
     _removeSocketEventListener(eventName, fn) {
-        this._emitter.removeListener(eventName, fn);
+        if (nativeSocketEvents[eventName]) {
+            eventName = nativeSocketEvents[eventName];
+            this.socket.removeListener(eventName, fn);
+        } else {
+            this._emitter.removeListener(eventName, fn);
+        }
+
     }
 
     _socketSend(event, payload, ack) {
