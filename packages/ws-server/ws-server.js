@@ -52,14 +52,15 @@ class Connection extends EventEmitter {
 
 
     emit(event, ...args) {
+        //event = eventName(event);
         const callArgs = [event].concat(args);
         super.emit.apply(this, callArgs);
     }
 
     addListener(event, handler) {
-        if (nativeSocketEvents[eventName]) {
+        if (nativeSocketEvents[event]) {
             event = nativeSocketEvents[event];
-            this.socket.on(event);
+            this.socket.on(event, handler);
         } else {
             super.addListener(eventName(event), handler);
         }
@@ -68,7 +69,7 @@ class Connection extends EventEmitter {
     removeListener(event, handler) {
         if (nativeSocketEvents[event]) {
             event = nativeSocketEvents[event];
-            this.socket.removeListener(event);
+            this.socket.removeListener(event, handler);
         } else {
             super.removeListener(eventName(event), handler);
         }

@@ -28,7 +28,7 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
     _addSocketEventListener(eventName, fn) {
         if (nativeSocketEvents[eventName]) {
             eventName = nativeSocketEvents[eventName];
-            this.socket.addEventListener(eventName);
+            this.socket.addEventListener(eventName, fn);
         } else {
             this._emitter.on(eventName, fn);
         }
