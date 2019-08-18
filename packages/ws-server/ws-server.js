@@ -30,7 +30,7 @@ class Connection extends EventEmitter {
 
                 this.emit(event, payload, ackFunction);
             } else {
-                this._emitter.emit('message', msg);
+                this.emit('unkown-message', msg);
             }
         });
     }
@@ -57,12 +57,12 @@ class Connection extends EventEmitter {
         super.emit.apply(this, callArgs);
     }
 
-    addEventListener(event, handler) {
+    addListener(event, handler) {
         if (nativeSocketEvents[eventName]) {
             event = nativeSocketEvents[event];
-            this.socket.addEventListener(event);
+            this.socket.on(event);
         } else {
-            super.addEventListener(eventName(event), handler);
+            super.addListener(eventName(event), handler);
         }
     }
 
@@ -87,7 +87,7 @@ class LiveReplicaWebSocketsServer extends LiveReplicaServer {
         super();
 
         wsServer.on('connection', (socket) => {
-            console.info(`LiveReplicaSocketIoServer - new socket.io connection ${socket.id}`);
+            console.info(`LiveReplicaWebSocketsServer - new web socket connection ${socket.id}`);
             this.onConnect(new Connection(socket));
         });
     }
