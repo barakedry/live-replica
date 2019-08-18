@@ -52,7 +52,6 @@ class Connection extends EventEmitter {
 
 
     emit(event, ...args) {
-        event = eventName(event);
         const callArgs = [event].concat(args);
         super.emit.apply(this, callArgs);
     }
