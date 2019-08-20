@@ -19560,7 +19560,7 @@ const PatcherProxy = __webpack_require__(1);
 const LiveReplicaSocket = __webpack_require__(2);
 const concatPath = PatchDiff.utils.concatPath;
 
-let replicaId = 1000;
+let replicaId = Date.now();
 
 // privates
 const deserializeFunctions  = Symbol('deserializeFunctions');
@@ -20152,7 +20152,7 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
     _addSocketEventListener(eventName, fn) {
         if (nativeSocketEvents[eventName]) {
             eventName = nativeSocketEvents[eventName];
-            this.socket.addEventListener(eventName);
+            this.socket.addEventListener(eventName, fn);
         } else {
             this._emitter.on(eventName, fn);
         }

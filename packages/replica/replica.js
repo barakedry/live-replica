@@ -7,7 +7,7 @@ const PatcherProxy = require('../proxy');
 const LiveReplicaSocket = require('../socket');
 const concatPath = PatchDiff.utils.concatPath;
 
-let replicaId = 1000;
+let replicaId = Date.now();
 
 // privates
 const deserializeFunctions  = Symbol('deserializeFunctions');

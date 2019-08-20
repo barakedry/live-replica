@@ -16,6 +16,7 @@ class Connection extends EventEmitter {
         this.setMaxListeners(50000);
 
         this.socket = ws;
+        this.socket.setMaxListeners(50000);
 
         this.socket.addEventListener('message', ({data}) => {
             const msg = msgpack.decode(data);
