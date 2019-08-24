@@ -2001,7 +2001,9 @@ class PatchDiff extends EventEmitter {
             let key = keys[i];
             if (_.isObject(deletedObject[key])) {
                 childDiffs = this._emitInnerDeletions(utils.concatPath(path, key), deletedObject[key], options);
+                this.emit(utils.concatPath(path, key), childDiffs);
                 levelDiffs.addChildTracking(childDiffs, key);
+
             } else {
                 levelDiffs.differences[key] = options.deleteKeyword;
             }
@@ -2011,9 +2013,6 @@ class PatchDiff extends EventEmitter {
         levelDiffs.hasDeletions = true;
         levelDiffs.hasDifferences = true;
         levelDiffs.deletions = deletedObject;
-
-        this.emit((path || '*'), levelDiffs, options);
-
         return levelDiffs;
     }
 
@@ -19578,13 +19577,15 @@ class Replica extends PatchDiff {
     [bindToSocket]() {
 
         this.onApplyEvent = (delta, meta = {}) => {
-            if (delta && meta.snapshot) {
+            if (!delta) { return; }
+
+            if (meta.snapshot) {
                 this[remoteOverride](delta);
             } else {
                 this[remoteApply](delta);
             }
 
-            if (delta && !this._subscribed) {
+            if (!this._subscribed) {
                 this._subscribed = true;
                 this.emit('_subscribed', this.get());
             }

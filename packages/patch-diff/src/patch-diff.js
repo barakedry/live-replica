@@ -495,7 +495,9 @@ class PatchDiff extends EventEmitter {
             let key = keys[i];
             if (_.isObject(deletedObject[key])) {
                 childDiffs = this._emitInnerDeletions(utils.concatPath(path, key), deletedObject[key], options);
+                this.emit(utils.concatPath(path, key), childDiffs);
                 levelDiffs.addChildTracking(childDiffs, key);
+
             } else {
                 levelDiffs.differences[key] = options.deleteKeyword;
             }
@@ -505,9 +507,6 @@ class PatchDiff extends EventEmitter {
         levelDiffs.hasDeletions = true;
         levelDiffs.hasDifferences = true;
         levelDiffs.deletions = deletedObject;
-
-        this.emit((path || '*'), levelDiffs, options);
-
         return levelDiffs;
     }
 

@@ -22,13 +22,15 @@ class Replica extends PatchDiff {
     [bindToSocket]() {
 
         this.onApplyEvent = (delta, meta = {}) => {
-            if (delta && meta.snapshot) {
+            if (!delta) { return; }
+
+            if (meta.snapshot) {
                 this[remoteOverride](delta);
             } else {
                 this[remoteApply](delta);
             }
 
-            if (delta && !this._subscribed) {
+            if (!this._subscribed) {
                 this._subscribed = true;
                 this.emit('_subscribed', this.get());
             }
