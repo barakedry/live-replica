@@ -83,7 +83,7 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
 
     set socket(socket) {
 
-        const isReconnect = this.isConnected();
+        const isReconnect = !!this._socket;
 
         this.disconnect();
 
