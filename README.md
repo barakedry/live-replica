@@ -1,2 +1,4 @@
 # live-replica
-live replica js
+Efficient real-time state syncing
+
+Work in progress
