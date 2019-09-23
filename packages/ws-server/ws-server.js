@@ -19,19 +19,24 @@ class Connection extends EventEmitter {
         this.socket.setMaxListeners(50000);
 
         this.socket.addEventListener('message', ({data}) => {
-            const msg = msgpack.decode(data);
-            if (msg[LIVE_REPLICA_MSG]) {
-                const {event, payload, ack} = msg[LIVE_REPLICA_MSG];
-                let ackFunction;
-                if (ack) {
-                    ackFunction = (...args)=> {
-                        this.send(ack, ...args);
+            try {
+                const msg = msgpack.decode(data);
+                if (msg[LIVE_REPLICA_MSG]) {
+                    const {event, payload, ack} = msg[LIVE_REPLICA_MSG];
+                    let ackFunction;
+                    if (ack) {
+                        ackFunction = (...args)=> {
+                            this.send(ack, ...args);
+                        }
                     }
-                }
 
-                this.emit(event, payload, ackFunction);
-            } else {
-                this.emit('unkown-message', msg);
+                    this.emit(event, payload, ackFunction);
+                } else {
+                    this.emit('unkown-message', msg);
+                }
+            } catch(e) {
+                this.emit('decoding-error', e, data);
+                console.error('[LiveReplica] unable to decode msgpack from socket', e );
             }
         });
     }
