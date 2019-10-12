@@ -618,7 +618,7 @@ function get(target, path) {
         len;
 
     if (!path) {
-        return value;
+        return target;
     }
 
     levels = path.split('.');
