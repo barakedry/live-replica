@@ -344,7 +344,7 @@ const PatcherProxy = {
         if (realValue !== undefined) {
             // if real value is an object we must return accessor proxy
             if (typeof realValue === 'object') {
-                return this.create(properties.patcher, fullPath, this.getRoot(proxy), readonly);
+                return this.create(properties.patcher, fullPath, this.getRoot(proxy), readonly, properties.immediateFlush);
             }
 
             return realValue;
@@ -381,7 +381,7 @@ const PatcherProxy = {
 
         this.proxyProperties.get(root).dirty = true;
         set(this.proxyProperties.get(root).changes, fullPath, newval);
-        this.commit(root);
+        this.commit(root, properties.immediateFlush);
 
         return true;
     },
@@ -399,7 +399,7 @@ const PatcherProxy = {
             unset(rootChangeTracker, fullPath);
         }
 
-        this.commit(root);
+        this.commit(root, properties.immediateFlush);
 
         return true;
     },

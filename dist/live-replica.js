@@ -637,7 +637,7 @@ function get(target, path) {
 const PatcherProxy = {
     proxies: new WeakMap(),
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
-    create(patcher, path, root, readonly) {
+    create(patcher, path, root, readonly, immediateFlush = false) {
         let patcherRef = patcher.get(path);
 
         if (!patcherRef || typeof patcherRef !== 'object') {
@@ -685,6 +685,7 @@ const PatcherProxy = {
         proxy = new Proxy(patcherRef, handlers);
 
         let properties = {
+            immediateFlush,
             patcher,
             path,
             isArray: Array.isArray(patcherRef),
@@ -890,7 +891,7 @@ const PatcherProxy = {
         if (realValue !== undefined) {
             // if real value is an object we must return accessor proxy
             if (typeof realValue === 'object') {
-                return this.create(properties.patcher, fullPath, this.getRoot(proxy), readonly);
+                return this.create(properties.patcher, fullPath, this.getRoot(proxy), readonly, properties.immediateFlush);
             }
 
             return realValue;
@@ -918,7 +919,7 @@ const PatcherProxy = {
             }
 
 
-            let fixedPath = fullPath
+            let fixedPath = fullPath;
             if (properties.patcher && properties.patcher._path) {
                 fixedPath = [properties.patcher._path, fullPath].join('.');
             }
@@ -927,7 +928,7 @@ const PatcherProxy = {
 
         this.proxyProperties.get(root).dirty = true;
         set(this.proxyProperties.get(root).changes, fullPath, newval);
-        this.commit(root);
+        this.commit(root, properties.immediateFlush);
 
         return true;
     },
@@ -945,7 +946,7 @@ const PatcherProxy = {
             unset(rootChangeTracker, fullPath);
         }
 
-        this.commit(root);
+        this.commit(root, properties.immediateFlush);
 
         return true;
     },
@@ -19736,12 +19737,16 @@ class Replica extends PatchDiff {
         }
     }
 
-    get data() {
+    getData({immediateFlush} = {}) {
         if (!this.proxies.has(this)) {
-            const proxy = PatcherProxy.create(this, '', null, !this.options.allowWrite);
+            const proxy = PatcherProxy.create(this, '', null, !this.options.allowWrite, immediateFlush);
             this.proxies.set(this, proxy);
         }
         return this.proxies.get(this);
+    }
+
+    get data() {
+        this.getData();
     }
 
     get subscribed() {
