@@ -19746,7 +19746,7 @@ class Replica extends PatchDiff {
     }
 
     get data() {
-        this.getData();
+        return this.getData();
     }
 
     get subscribed() {
