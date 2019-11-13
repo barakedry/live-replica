@@ -1,0 +1,19 @@
+{
+  "name": "@live-replica/ws-server",
+  "version": "1.0.0",
+  "description": "websockets  server for live-replica",
+  "main": "ws-server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "peerDependencies": {
+    "ws": "^7.1.2"
+  },
+  "dependencies": {
+    "@live-replica/server": "*",
+    "@msgpack/msgpack": "^1.8.0",
+    "events": "latest"
+  },
+  "author": "",
+  "license": "Apache-2.0"
+}

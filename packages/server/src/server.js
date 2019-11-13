@@ -39,6 +39,8 @@ class LiveReplicaServer extends PatchDiff {
         options = Object.assign({}, options);
         super(options.dataObject || {}, options);
 
+        this.proxies = new WeakMap();
+
         this.middlewares = new Middlewares(this);
     }
 
@@ -91,9 +93,9 @@ class LiveReplicaServer extends PatchDiff {
         let invokeRpcListener, replicaApplyListener;
 
         let ownerChange = false;
-        const unsubscribeChanges = clientSubset.subscribe((patchData) => {
+        const unsubscribeChanges = clientSubset.subscribe((patchData, {snapshot}) => {
             if (!ownerChange) {
-                connection.send(applyEvent, serializeFunctions(patchData));
+                connection.send(applyEvent, serializeFunctions(patchData), snapshot ? {snapshot} : {snapshot : false});
             }
 
             ownerChange = false;
@@ -153,15 +155,11 @@ class LiveReplicaServer extends PatchDiff {
     }
 
     get data() {
-        if (this.options.readonly) {
-            return this._data;
-        } else {
-            if (!this.proxies.has(this)) {
-                const proxy = new PatcherProxy(this);
-                this.proxies.set(this, proxy);
-            }
-            return this.proxies.get(this);
+        if (!this.proxies.has(this)) {
+            const proxy = PatcherProxy.create(this, '', null, this.options.readonly);
+            this.proxies.set(this, proxy);
         }
+        return this.proxies.get(this);
     }
 }
 

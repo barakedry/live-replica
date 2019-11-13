@@ -28,7 +28,10 @@ function createDirective(replica, property) {
         } else {
 
             const unsub = replica.subscribe((diff) => {
-                if (diff[property] !== undefined) {
+                if (diff[property] === replica.options.deleteKeyword) {
+                    part.setValue(undefined);
+                    part.commit();
+                } else if (diff[property] !== undefined) {
                     part.setValue(replica.get(property));
                     part.commit();
                 }

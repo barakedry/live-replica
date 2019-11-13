@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@live-replica/live-replica",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "an easy to use real-time objects replica syncing",
   "directories": {
     "test": "tests"
@@ -26,20 +26,18 @@
   },
   "homepage": "https://github.com/barakedry/live-replica/",
   "devDependencies": {
-    "babel-plugin-transform-commonjs-es2015-modules": "^4.0.1",
-    "blanket": "latest",
+    "babel-plugin-transform-commonjs-es2015-modules": "latest",
     "chai": "latest",
-    "eslint": "latest",
-    "events": "^3.0.0",
-    "lerna": "^3.4.3",
+    "events": "latest",
     "mocha": "latest",
     "node.extend": "latest",
-    "webpack": "^4.16.2",
-    "webpack-cli": "^3.2.3"
+    "webpack": "latest",
+    "webpack-cli": "latest"
   },
   "dependencies": {
+    "@msgpack/msgpack": "latest",
     "debuglog": "latest",
-    "lodash": "latest"
+    "lodash": "^4.17.15"
   },
   "main": "index.js"
 }

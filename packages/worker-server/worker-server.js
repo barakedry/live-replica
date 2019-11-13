@@ -31,12 +31,12 @@ class Connection extends EventEmitter {
     }
 
 
-    send(event, payload) {
+    send(event, ...args) {
         event = eventName(event);
         global.postMessage({
             liveReplica: {
                 event,
-                payload
+                args
             }
         });
     }
