@@ -93,8 +93,10 @@ class LiveReplicaWebSocketsServer extends LiveReplicaServer {
         super();
 
         wsServer.on('connection', (socket) => {
-            console.info(`LiveReplicaWebSocketsServer - new web socket connection ${socket.id}`);
-            this.onConnect(new Connection(socket));
+            console.info(`LiveReplicaWebSocketsServer - new web socket connection ${socket}`);
+            const connection = new Connection(socket);
+            this.onConnect(connection);
+            connection.on('decoding-error', () => socket.terminate());
         });
     }
 
