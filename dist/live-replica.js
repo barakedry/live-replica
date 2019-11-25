@@ -637,7 +637,7 @@ function get(target, path) {
 const PatcherProxy = {
     proxies: new WeakMap(),
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
-    create(patcher, path, root, readonly) {
+    create(patcher, path, root, readonly, immediateFlush = false) {
         let patcherRef = patcher.get(path);
 
         if (!patcherRef || typeof patcherRef !== 'object') {
@@ -685,6 +685,7 @@ const PatcherProxy = {
         proxy = new Proxy(patcherRef, handlers);
 
         let properties = {
+            immediateFlush,
             patcher,
             path,
             isArray: Array.isArray(patcherRef),
@@ -918,7 +919,7 @@ const PatcherProxy = {
             }
 
 
-            let fixedPath = fullPath
+            let fixedPath = fullPath;
             if (properties.patcher && properties.patcher._path) {
                 fixedPath = [properties.patcher._path, fullPath].join('.');
             }
