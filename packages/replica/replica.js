@@ -182,12 +182,16 @@ class Replica extends PatchDiff {
         }
     }
 
-    get data() {
+    getData({immediateFlush} = {}) {
         if (!this.proxies.has(this)) {
-            const proxy = PatcherProxy.create(this, '', null, !this.options.allowWrite);
+            const proxy = PatcherProxy.create(this, '', null, !this.options.allowWrite, immediateFlush);
             this.proxies.set(this, proxy);
         }
         return this.proxies.get(this);
+    }
+
+    get data() {
+        return this.getData();
     }
 
     get subscribed() {
