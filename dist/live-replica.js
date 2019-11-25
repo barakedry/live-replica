@@ -19656,7 +19656,7 @@ class Replica extends PatchDiff {
         }
     }
 
-    subscribeRemote(connection = this.options.connection, connectionCallback = this.options.connectionCallback) {
+    subscribeRemote(connection = this.options.connection, subscribeSuccessCallback = this.options.subscribeSuccessCallback, subscribeRejectCallback = this.options.subscribeRejectCallback) {
 
         if (!(connection && connection instanceof LiveReplicaSocket)) {
             throw Error('undefined connection or not a LiveReplicaSocket');
@@ -19682,11 +19682,14 @@ class Replica extends PatchDiff {
         }, (result) => {
             if (result.success) {
                 console.info(`live-replica subscribed to remote path=${this.remotePath}`);
-                if (typeof connectionCallback === 'function') {
-                    connectionCallback(result);
+                if (typeof subscribeSuccessCallback === 'function') {
+                    subscribeSuccessCallback(result);
                 }
             } else {
                 console.error(`live-replica failed to subscribe remote path=${this.remotePath} reason=${result.rejectReason}`);
+                if (typeof subscribeRejectCallback === 'function') {
+                    subscribeRejectCallback(result.rejectReason);
+                }
             }
         });
     }
