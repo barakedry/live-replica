@@ -19,7 +19,7 @@ const debuglog = require('debuglog');
 const debug = debuglog('patch-diff');
 
 function index(key, levelDiffs) {
-    return Number(key) - (levelDiffs.arrayOffset || 0);
+    return Number(key) + (levelDiffs.arrayOffset || 0);
 }
 
 class PatchDiff extends EventEmitter {
