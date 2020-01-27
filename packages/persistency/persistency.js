@@ -4,6 +4,12 @@ const fs = require('fs');
 const util = require('util');
 const LiveReplicaPatchDiff = require('../patch-diff');
 
+const v8 = require('v8');
+
+const structuredClone = obj => {
+    return v8.deserialize(v8.serialize(obj));
+};
+
 class LiveReplicaPersistence {
     constructor(replica, key) {
         if (!(replica instanceof LiveReplicaPatchDiff)) {
@@ -42,7 +48,8 @@ class LiveReplicaPersistence {
         const data = this.replica.get();
 
         if (data) {
-            await this.update(data, this.key);
+            const clone = structuredClone(data);
+            await this.update(clone, this.key);
         }
     }
 
