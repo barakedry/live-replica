@@ -45,6 +45,8 @@ class PatchDiff extends EventEmitter {
 
         this._data = object || {};
         this.setMaxListeners(this.options.maxListeners);
+
+        this.mutationMiddlewaresByPath = {};
         //this.prototypes = []; // prototypes are stored in a special collection
     }
 
@@ -208,6 +210,65 @@ class PatchDiff extends EventEmitter {
         return at;
     }
 
+    addBeforeMutationMiddleware(path, middleware) {
+
+        if (typeof path === 'function') {
+            middleware = path;
+            path = '';
+        }
+
+        path = utils.concatPath(this._path, path);
+
+        const key = path || '*';
+        if (!this.mutationMiddlewaresByPath[key]) {
+            this.mutationMiddlewaresByPath[key] = [];
+        }
+
+        this.mutationMiddlewaresByPath[key].push(middleware);
+    }
+
+    _runMutationMiddlewares(path, patch) {
+
+        const middlewares = this.mutationMiddlewaresByPath[path];
+        const length = middlewares.length;
+
+        for (let i = 0; i < length; i++) {
+            if (!middlewares[i](patch)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    _createReversedPatch(target, patch, path, options) {
+        let levelDiffs;
+        let keys = _.keys(patch);
+        let length = keys.length;
+        let isTargetArray = _.isArray(target);
+
+        if (options.emitEvents) {
+            levelDiffs = DiffTracker.create(isTargetArray && target.length === 0 && _.isArray(patch));
+            levelDiffs.path = path;
+            levelDiffs.rejected = patch;
+            levelDiffs.hasRejections = true;
+        }
+
+        if (isTargetArray) {
+            levelDiffs = levelDiffs || {};
+        }
+
+        for (let i = 0; i < length; i++) {
+            let key = keys[i];
+            if (target[key] && patch[key] !== target[key]) {
+                levelDiffs.differences[key] = target[key]
+            } else if (target[key] === undefined) {
+                levelDiffs.differences[key] = this.options.deleteKeyword;
+            }
+        }
+
+        return levelDiffs;
+    }
 
     /************************************************************************************
      * The basic merging recursion implementation:
@@ -232,6 +293,13 @@ class PatchDiff extends EventEmitter {
             this.emit('error', new Error('Trying to apply too deep, stopping at level ' + level));
 
             return;
+        }
+
+        if (this.mutationMiddlewaresByPath[path || '*']) {
+            let result = this._runMutationMiddlewares(path, patch);
+            if (!result) {
+                return this._createReversedPatch(target, patch, path, options, level, override)
+            }
         }
 
         let levelDiffs;
@@ -260,6 +328,7 @@ class PatchDiff extends EventEmitter {
             let key = keys[i];
 
             if (utils.isValid(patch[key]) && patch[key] !== target[key]) {
+
                 levelDiffs = this._applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray);
             }
         }

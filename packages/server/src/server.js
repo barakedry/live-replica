@@ -93,9 +93,9 @@ class LiveReplicaServer extends PatchDiff {
         let invokeRpcListener, replicaApplyListener;
 
         let ownerChange = false;
-        const unsubscribeChanges = clientSubset.subscribe((patchData, {snapshot}) => {
-            if (!ownerChange) {
-                connection.send(applyEvent, serializeFunctions(patchData), snapshot ? {snapshot} : {snapshot : false});
+        const unsubscribeChanges = clientSubset.subscribe((patchData, {snapshot, hasRejections}) => {
+            if (!ownerChange || (ownerChange && hasRejections) ) {
+                connection.send(applyEvent, serializeFunctions(patchData), snapshot ? {snapshot} : {snapshot : false, hasRejections});
             }
 
             ownerChange = false;

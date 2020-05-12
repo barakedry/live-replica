@@ -23,6 +23,7 @@ function create(diffsAsArray) {
         hasDeletions: false,
         hasUpdates: false,
         hasDifferences: false,
+        hasRejections: false,
         additions: diffsAsArray ? [] : {},
         deletions: {},
         updates: {},
@@ -41,6 +42,10 @@ function create(diffsAsArray) {
             if (childTracker.hasUpdates) {
                 this.updates[key] = childTracker.updates;
                 this.hasUpdates = true;
+            }
+
+            if (childTracker.hasRejections) {
+                this.hasRejections = true;
             }
 
             if (childTracker.hasDifferences) {
