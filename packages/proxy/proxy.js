@@ -7,6 +7,10 @@ let arrayMutationMethods = {};
     arrayMutationMethods[method] = true;
 });
 
+function isObject(obj) {
+    return obj && typeof obj === 'object';
+}
+
 function set(target, path, value) {
 
     let levels,
@@ -93,8 +97,8 @@ const PatcherProxy = {
     create(patcher, path, root, readonly, immediateFlush = false) {
         let patcherRef = patcher.get(path);
 
-        if (!patcherRef || typeof patcherRef !== 'object') {
-            throw new Error('no object at path', path);
+        if (!patcherRef || !isObject(patcherRef)) {
+            throw new Error(`no object at path ${path}`);
         }
 
         let proxy;
@@ -343,7 +347,7 @@ const PatcherProxy = {
 
         if (realValue !== undefined) {
             // if real value is an object we must return accessor proxy
-            if (typeof realValue === 'object') {
+            if (isObject(realValue)) {
                 return this.create(properties.patcher, fullPath, this.getRoot(proxy), readonly, properties.immediateFlush);
             }
 
@@ -357,7 +361,7 @@ const PatcherProxy = {
         let properties = this.proxyProperties.get(proxy);
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
-        if (typeof newval === 'object' && typeof target[name] === 'object') {
+        if (isObject(newval) && isObject(target[name])) {
 
             // trying to assign a proxy for some reason
             if (this.proxyProperties.has(newval)) {
