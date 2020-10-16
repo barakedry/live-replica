@@ -193,6 +193,8 @@ const PatcherProxy = {
                     len--;
                 }
 
+                proxyServices.commit(root, true);
+
                 if (ret === copy) {
                     return proxy;
                 } else {
