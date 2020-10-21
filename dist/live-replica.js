@@ -19732,7 +19732,6 @@ class Replica extends PatchDiff {
     unsubscribeRemote() {
         if (!this.connection) { return; }
         this.connection.send(`unsubscribe:${this.id}`);
-        delete this.connection;
     }
 
 
@@ -19745,6 +19744,8 @@ class Replica extends PatchDiff {
             this.connection.off('reconnect', this.onSocketReconnected);
             delete this.connection;
         }
+
+        this.proxies.delete(this);
     }
 
     getData({immediateFlush} = {}) {
