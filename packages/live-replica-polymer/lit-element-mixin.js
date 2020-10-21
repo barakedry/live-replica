@@ -1,5 +1,7 @@
+const Replica = require('../replica');
 const utils = require('./utils');
-const PolymerBaseMixin = require('./polymer-mixin');
+const PatcherProxy = require('../proxy');
+
 const defferedDisconnections = new WeakMap();
 
 Object.byPath = function(object, path) {
@@ -17,22 +19,31 @@ Object.byPath = function(object, path) {
     return object;
 };
 
-function createDirective(replica, property) {
+function createDirective(replica, path, property) {
 
     const subscribersByPart = new Map();
+    const fullPath = utils.concatPath(path, property);
+    let baseObject = path ? replica.get(path) : replica.get();
 
     const directive = (part) => {
         // recalling the directive
         if (subscribersByPart.has(part)) {
-            part.setValue(replica.get(property));
+            part.setValue(replica.get(fullPath));
         } else {
 
-            const unsub = replica.subscribe((diff) => {
+            const unsub = replica.subscribe(path, (diff) => {
                 if (diff[property] === replica.options.deleteKeyword) {
                     part.setValue(undefined);
+                    baseObject = undefined;
                     part.commit();
                 } else if (diff[property] !== undefined) {
-                    part.setValue(replica.get(property));
+                    if (baseObject) {
+                        part.setValue(baseObject[property]);
+                    } else {
+                        part.setValue(replica.get(fullPath));
+                        baseObject = path ? replica.get(path) : replica.get();
+                    }
+
                     part.commit();
                 }
             });
@@ -49,83 +60,152 @@ function createDirective(replica, property) {
         delete directive.kill;
     };
     return directive;
+
 }
 
-function getDirective(data, path) {
 
-    if (typeof data !== 'object') {
-        throw new Error('live-replica lit-element directive data must be of type object');
-    }
-
-    let {replica, basePath} = this.replicaByData.call(this, data);
-
-    if (!replica) {
-        return function staticDirective(part) {
-            part.setValue(Object.byPath(data, path) || '');
-        };
-    }
-
-    if (!this.__replicaDirectivesCache) {
+class LiveReplicaElementUtilities {
+    constructor(element) {
+        this.__unsubscribers = new Set();
         this.__replicaDirectivesCache = new Map();
+        this.element = element;
     }
 
-    let property;
+    replicaByData(data) {
+        if (PatcherProxy.proxyProperties.has(data)) {
+            const root = PatcherProxy.getRoot(data);
+            const basePath = PatcherProxy.getPath(data);
+            const replica = PatcherProxy.proxyProperties.get(root).patcher;
 
-    ({path, property} = utils.extractBasePathAndProperty(utils.concatPath(basePath, path)));
-
-    if (path) {
-        replica = replica.at(path);
+            return {replica, basePath};
+        } else if (data instanceof Replica) {
+            return {replica: data, basePath: ''};
+        }
     }
 
-    let replicasDirectives = this.__replicaDirectivesCache.get(replica);
-    if (!replicasDirectives) {
-        replicasDirectives = {};
-        this.__replicaDirectivesCache.set(replica, replicasDirectives);
-    }
+    watch(data, path, cb) {
+        const { element } = this;
+        let { replica, basePath } = this.replicaByData(data);
+        let property;
+        ({path, property} = utils.extractBasePathAndProperty(path));
 
-    if (!replicasDirectives[property]) {
-        replicasDirectives[property] = createDirective(replica, property);
-    }
+        path = utils.concatPath(basePath, path);
+        if (path) {
+            replica = replica.at(path);
+        }
 
-    return replicasDirectives[property];
-}
+        const unsubscribe = replica.subscribe(function (patch, diff) {
 
-function cleanDirectives() {
-    if (!this.__replicaDirectivesCache) { return; }
+            let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
 
-    this.__replicaDirectivesCache.forEach((directives, replica) => {
-        const pathes = Object.keys(directives);
-        pathes.forEach((path) => {
-            if (directives[path].kill) {
-                directives[path].kill();
+            if (!lengthChanged && (property && !patch[property])) { return; }
+
+            let doRender = true;
+
+            if (cb) {
+                const cbReturn = cb.call(element, patch, diff, replica.get(property));
+                if (cbReturn === false) {
+                    doRender = false;
+                }
             }
 
-            delete directives[path];
+            if (doRender && typeof element.requestUpdate === 'function') {
+                element.requestUpdate();
+            }
         });
 
-        this.__replicaDirectivesCache.delete(replica);
-    });
-}
+        const unwatch = () => {
+            this.__unsubscribers.delete(unsubscribe);
+            unsubscribe();
+        };
 
-function getBinder(replicaOrProxy) {
-    return (path) => { // used as tagging
-        return this.directive(replicaOrProxy, path[0]);
+        this.__unsubscribers.add(() => {
+            console.log('unsubscribed', path);
+            unsubscribe();
+        });
+
+        return unwatch;
+    }
+
+    cleanup() {
+        this.cleanDirectives();
+        this.__unsubscribers.forEach(unsubscribe => unsubscribe());
+        this.__unsubscribers.clear();
+        delete this.element;
+    }
+
+    directive(data, path) {
+
+        if (typeof data !== 'object') {
+            throw new Error('live-replica lit-element directive data must be of type object');
+        }
+
+        let {replica, basePath} = this.replicaByData.call(this, data);
+
+        if (!replica) {
+            return function staticDirective(part) {
+                part.setValue(Object.byPath(data, path) || '');
+            };
+        }
+
+        let property;
+        const fullPath = utils.concatPath(basePath, path);
+
+        let replicasDirectives = this.__replicaDirectivesCache.get(replica);
+        if (!replicasDirectives) {
+            replicasDirectives = {};
+            this.__replicaDirectivesCache.set(replica, replicasDirectives);
+        }
+
+        ({path, property} = utils.extractBasePathAndProperty(fullPath));
+
+
+        if (!replicasDirectives[fullPath]) {
+            replicasDirectives[fullPath] = createDirective(replica, path, property);
+        }
+
+        return replicasDirectives[fullPath];
+    }
+
+    cleanDirectives() {
+        this.__replicaDirectivesCache.forEach((directives, replica) => {
+            const pathes = Object.keys(directives);
+            pathes.forEach((path) => {
+                if (directives[path].kill) {
+                    directives[path].kill();
+                }
+
+                delete directives[path];
+            });
+
+            this.__replicaDirectivesCache.delete(replica);
+        });
     }
 }
 
 function LitElementMixin(base) {
-    return class extends PolymerBaseMixin(base) {
+    return class LitElementMixinClass extends base {
         constructor() {
             super();
+            const liveReplicaUtils = new LiveReplicaElementUtilities(this);
 
-            this.liveReplica.render = (diff, data) => {
-                this.requestUpdate();
+            //this.liveReplica.directive = LitElementMixin.directive(getDirective.bind(this.liveReplica));
+            //this.liveReplica.binder = getBinder.bind(this.liveReplica);
+            //this.liveReplica.cleanDirectives = cleanDirectives.bind(this.liveReplica);
+
+            const directivesWrappers = new WeakMap();
+            liveReplicaUtils.binder = function getBinder(replicaOrProxy) {
+                if (!directivesWrappers.has(replicaOrProxy)) {
+                    directivesWrappers.set(replicaOrProxy, LitElementMixin.directive((path) => { // used as tagging
+                        return liveReplicaUtils.directive(replicaOrProxy, path[0]);
+                    }));
+                }
+
+
+                return directivesWrappers.get(replicaOrProxy);
             };
 
-
-            this.liveReplica.directive = LitElementMixin.directive(getDirective.bind(this.liveReplica));
-            this.liveReplica.binder = getBinder.bind(this.liveReplica);
-            this.liveReplica.cleanDirectives = cleanDirectives.bind(this.liveReplica);
+            this.liveReplica = liveReplicaUtils;
         }
 
         connectedCallback() {
@@ -138,7 +218,7 @@ function LitElementMixin(base) {
 
         disconnectedCallback() {
             defferedDisconnections.set(this, setTimeout(() => {
-                this.liveReplica.cleanDirectives();
+                this.liveReplica.cleanup();
             }, 0));
 
             super.disconnectedCallback();
