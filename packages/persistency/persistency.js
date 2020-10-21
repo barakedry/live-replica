@@ -1,4 +1,4 @@
-const lodash = require('lodash');
+const _debounce = require('lodash/debounce');
 const path = require('path');
 const fs = require('fs');
 const util = require('util');
