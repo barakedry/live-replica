@@ -115,14 +115,12 @@ class LiveReplicaElementUtilities {
         });
 
         const unwatch = () => {
-            this.__unsubscribers.delete(unsubscribe);
+            this.__unsubscribers.delete(unwatch);
+            console.log('unsubscribed', path);
             unsubscribe();
         };
 
-        this.__unsubscribers.add(() => {
-            console.log('unsubscribed', path);
-            unsubscribe();
-        });
+        this.__unsubscribers.add(unwatch);
 
         return unwatch;
     }
@@ -219,6 +217,7 @@ function LitElementMixin(base) {
         disconnectedCallback() {
             defferedDisconnections.set(this, setTimeout(() => {
                 this.liveReplica.cleanup();
+                delete this.liveReplica;
             }, 0));
 
             super.disconnectedCallback();

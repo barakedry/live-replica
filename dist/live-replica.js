@@ -1263,6 +1263,17 @@ const PatcherProxy = {
             properties.nextChangeTimeout = 0;
         }
         properties.nextChangeTimeout = setTimeout(cb, 0);
+    },
+
+    destroy(proxy) {
+        setTimeout(() => {
+            let properties = this.proxyProperties.get(proxy);
+            properties.pullChanges();
+            delete properties.patcher;
+            delete properties.root;
+            this.proxies.delete(proxy);
+            this.proxyProperties.delete(proxy);
+        }, 0);
     }
 };
 
@@ -2194,9 +2205,9 @@ const SharedWorkerServer = __webpack_require__(106);
 const WorkerSocket = __webpack_require__(107);
 const SocketIoClient = __webpack_require__(108);
 const WebSocketClient = __webpack_require__(109);
-const {PolymerElementMixin, LitElementMixin} = __webpack_require__(111);
+const {LitElementMixin} = __webpack_require__(111);
 
-module.exports = {Replica, ReplicaServer, PatchDiff, Proxy, WorkerServer, WorkerSocket, SharedWorkerServer, WebSocketClient, SocketIoClient, LitElementMixin, PolymerElementMixin};
+module.exports = {Replica, ReplicaServer, PatchDiff, Proxy, WorkerServer, WorkerSocket, SharedWorkerServer, WebSocketClient, SocketIoClient, LitElementMixin};
 
 /***/ }),
 /* 31 */
@@ -5223,7 +5234,11 @@ class Replica extends PatchDiff {
             delete this.connection;
         }
 
-        this.proxies.delete(this);
+        if (this.proxies.has(this)) {
+            PatcherProxy.destroy(this.proxies.get(this));
+            this.proxies.delete(this);
+        }
+
     }
 
     getData({immediateFlush} = {}) {
@@ -5966,14 +5981,12 @@ class LiveReplicaElementUtilities {
         });
 
         const unwatch = () => {
-            this.__unsubscribers.delete(unsubscribe);
+            this.__unsubscribers.delete(unwatch);
+            console.log('unsubscribed', path);
             unsubscribe();
         };
 
-        this.__unsubscribers.add(() => {
-            console.log('unsubscribed', path);
-            unsubscribe();
-        });
+        this.__unsubscribers.add(unwatch);
 
         return unwatch;
     }
@@ -6070,6 +6083,7 @@ function LitElementMixin(base) {
         disconnectedCallback() {
             defferedDisconnections.set(this, setTimeout(() => {
                 this.liveReplica.cleanup();
+                delete this.liveReplica;
             }, 0));
 
             super.disconnectedCallback();

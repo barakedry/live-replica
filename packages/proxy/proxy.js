@@ -466,6 +466,17 @@ const PatcherProxy = {
             properties.nextChangeTimeout = 0;
         }
         properties.nextChangeTimeout = setTimeout(cb, 0);
+    },
+
+    destroy(proxy) {
+        setTimeout(() => {
+            let properties = this.proxyProperties.get(proxy);
+            properties.pullChanges();
+            delete properties.patcher;
+            delete properties.root;
+            this.proxies.delete(proxy);
+            this.proxyProperties.delete(proxy);
+        }, 0);
     }
 };
 
