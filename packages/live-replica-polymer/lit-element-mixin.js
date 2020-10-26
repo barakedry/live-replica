@@ -2,8 +2,6 @@ const Replica = require('../replica');
 const utils = require('./utils');
 const PatcherProxy = require('../proxy');
 
-const defferedDisconnections = new WeakMap();
-
 Object.byPath = function(object, path) {
     path = path.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
     path = path.replace(/^\./, '');           // strip a leading dot
@@ -19,13 +17,28 @@ Object.byPath = function(object, path) {
     return object;
 };
 
+function replicaByData(data) {
+    if (PatcherProxy.proxyProperties.has(data)) {
+        const root = PatcherProxy.getRoot(data);
+        const basePath = PatcherProxy.getPath(data);
+        const replica = PatcherProxy.proxyProperties.get(root).patcher;
+
+        return {replica, basePath};
+    } else if (data instanceof Replica) {
+        return {replica: data, basePath: ''};
+    }
+}
+
 function createDirective(replica, path, property) {
 
-    const subscribersByPart = new Map();
+    let subscribersByPart = new Map();
     const fullPath = utils.concatPath(path, property);
     let baseObject = replica.get(path);
 
     const directive = (part) => {
+
+        if (!subscribersByPart) { return; }
+
         // recalling the directive
         if (subscribersByPart.has(part)) {
             part.setValue(replica.get(fullPath));
@@ -59,39 +72,29 @@ function createDirective(replica, path, property) {
         subscribersByPart.forEach((unsub, part) => {
             unsub();
             part.setValue(undefined);
+            baseObject = undefined;
             part.commit();
             subscribersByPart.delete(part);
-            baseObject = undefined;
         });
+
+        subscribersByPart = undefined;
+
         delete directive.kill;
     };
     return directive;
 
 }
 
-
 class LiveReplicaElementUtilities {
     constructor(element) {
-        this.__unsubscribers = new Set();
-        this.__replicaDirectivesCache = new Map();
         this.element = element;
-    }
-
-    replicaByData(data) {
-        if (PatcherProxy.proxyProperties.has(data)) {
-            const root = PatcherProxy.getRoot(data);
-            const basePath = PatcherProxy.getPath(data);
-            const replica = PatcherProxy.proxyProperties.get(root).patcher;
-
-            return {replica, basePath};
-        } else if (data instanceof Replica) {
-            return {replica: data, basePath: ''};
-        }
+        this._unwatchers = new Set();
+        this._replicaToDirectives = new Map();
     }
 
     watch(data, path, cb) {
         const { element } = this;
-        let { replica, basePath } = this.replicaByData(data);
+        let { replica, basePath } = replicaByData(data);
         let property;
         ({path, property} = utils.extractBasePathAndProperty(path));
 
@@ -100,7 +103,7 @@ class LiveReplicaElementUtilities {
             replica = replica.at(path);
         }
 
-        const unsubscribe = replica.subscribe(function (patch, diff) {
+        let unsubscribe = replica.subscribe(function (patch, diff) {
 
             let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
 
@@ -121,21 +124,17 @@ class LiveReplicaElementUtilities {
         });
 
         const unwatch = () => {
-            this.__unsubscribers.delete(unwatch);
-            console.log('unsubscribed', path);
-            unsubscribe();
+            if (unsubscribe) {
+                unsubscribe();
+                console.log('unsubscribed', path);
+                unsubscribe = null;
+            }
+            this._unwatchers.delete(unwatch);
         };
 
-        this.__unsubscribers.add(unwatch);
+        this._unwatchers.add(unwatch);
 
         return unwatch;
-    }
-
-    cleanup() {
-        this.cleanDirectives();
-        this.__unsubscribers.forEach(unsubscribe => unsubscribe());
-        this.__unsubscribers.clear();
-        delete this.element;
     }
 
     directive(data, path) {
@@ -144,7 +143,7 @@ class LiveReplicaElementUtilities {
             throw new Error('live-replica lit-element directive data must be of type object');
         }
 
-        let {replica, basePath} = this.replicaByData.call(this, data);
+        let {replica, basePath} = replicaByData(data);
 
         if (!replica) {
             return function staticDirective(part) {
@@ -155,10 +154,10 @@ class LiveReplicaElementUtilities {
         let property;
         const fullPath = utils.concatPath(basePath, path);
 
-        let replicasDirectives = this.__replicaDirectivesCache.get(replica);
+        let replicasDirectives = this._replicaToDirectives.get(replica);
         if (!replicasDirectives) {
             replicasDirectives = {};
-            this.__replicaDirectivesCache.set(replica, replicasDirectives);
+            this._replicaToDirectives.set(replica, replicasDirectives);
         }
 
         ({path, property} = utils.extractBasePathAndProperty(fullPath));
@@ -172,7 +171,7 @@ class LiveReplicaElementUtilities {
     }
 
     cleanDirectives() {
-        this.__replicaDirectivesCache.forEach((directives, replica) => {
+        this._replicaToDirectives.forEach((directives, replica) => {
             const pathes = Object.keys(directives);
             pathes.forEach((path) => {
                 if (directives[path].kill) {
@@ -182,20 +181,26 @@ class LiveReplicaElementUtilities {
                 delete directives[path];
             });
 
-            this.__replicaDirectivesCache.delete(replica);
+            this._replicaToDirectives.delete(replica);
         });
+
+        this._replicaToDirectives.clear();
+    }
+
+    cleanup() {
+        this.cleanDirectives();
+        this._unwatchers.forEach(unsubscribe => unsubscribe());
+        this._unwatchers.clear();
+        delete this.element;
     }
 }
 
+const deferredDisconnections = new WeakMap();
 function LitElementMixin(base) {
     return class LitElementMixinClass extends base {
         constructor() {
             super();
             const liveReplicaUtils = new LiveReplicaElementUtilities(this);
-
-            //this.liveReplica.directive = LitElementMixin.directive(getDirective.bind(this.liveReplica));
-            //this.liveReplica.binder = getBinder.bind(this.liveReplica);
-            //this.liveReplica.cleanDirectives = cleanDirectives.bind(this.liveReplica);
 
             const directivesWrappers = new WeakMap();
             liveReplicaUtils.binder = function getBinder(replicaOrProxy) {
@@ -214,14 +219,14 @@ function LitElementMixin(base) {
 
         connectedCallback() {
             super.connectedCallback();
-            if (defferedDisconnections.has(this)) {
-                clearTimeout(defferedDisconnections.get(this));
-                defferedDisconnections.delete(this);
+            if (deferredDisconnections.has(this)) {
+                clearTimeout(deferredDisconnections.get(this));
+                deferredDisconnections.delete(this);
             }
         }
 
         disconnectedCallback() {
-            defferedDisconnections.set(this, setTimeout(() => {
+            deferredDisconnections.set(this, setTimeout(() => {
                 this.liveReplica.cleanup();
                 delete this.liveReplica;
             }, 0));
