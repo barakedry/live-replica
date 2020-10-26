@@ -23,7 +23,7 @@ function createDirective(replica, path, property) {
 
     const subscribersByPart = new Map();
     const fullPath = utils.concatPath(path, property);
-    let baseObject = path ? replica.get(path) : replica.get();
+    let baseObject = replica.get(path);
 
     const directive = (part) => {
         // recalling the directive
@@ -37,13 +37,16 @@ function createDirective(replica, path, property) {
                     baseObject = undefined;
                     part.commit();
                 } else if (diff[property] !== undefined) {
-                    if (baseObject) {
-                        part.setValue(baseObject[property]);
+                    const value = baseObject ? baseObject[property] : replica.get(fullPath);
+
+                    // force full reading next time
+                    if (value === undefined) {
+                        baseObject = undefined;
                     } else {
-                        part.setValue(replica.get(fullPath));
-                        baseObject = path ? replica.get(path) : replica.get();
+                        baseObject = replica.get(path);
                     }
 
+                    part.setValue(value);
                     part.commit();
                 }
             });
@@ -55,7 +58,10 @@ function createDirective(replica, path, property) {
     directive.kill = () => {
         subscribersByPart.forEach((unsub, part) => {
             unsub();
+            part.setValue(undefined);
+            part.commit();
             subscribersByPart.delete(part);
+            baseObject = undefined;
         });
         delete directive.kill;
     };
