@@ -200,6 +200,9 @@ function LitElementMixin(base) {
     return class LitElementMixinClass extends base {
         constructor() {
             super();
+
+            if (this.liveReplica) { return; }
+
             const liveReplicaUtils = new LiveReplicaElementUtilities(this);
 
             const directivesWrappers = new WeakMap();
