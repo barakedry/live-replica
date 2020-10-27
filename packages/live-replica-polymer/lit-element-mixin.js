@@ -86,123 +86,121 @@ function createDirective(replica, path, property) {
 }
 
 function elementUtilities(element) {
-    return {
-        _unwatchers: new Set(),
-        _replicaToDirectives: new Map(),
+return {
+    _unwatchers: new Set(),
+    _replicaToDirectives: new Map(),
 
-        watch(data, path, cb) {
-            let { replica, basePath } = replicaByData(data);
-            let property;
-            ({path, property} = utils.extractBasePathAndProperty(path));
+    watch(data, path, cb) {
+        let { replica, basePath } = replicaByData(data);
+        let property;
+        ({path, property} = utils.extractBasePathAndProperty(path));
 
-            path = utils.concatPath(basePath, path);
-            if (path) {
-                replica = replica.at(path);
-            }
-
-            let unsubscribe = replica.subscribe(function (patch, diff) {
-
-                let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
-
-                if (!lengthChanged && (property && !patch[property])) { return; }
-
-                let doRender = true;
-
-                if (cb) {
-                    const cbReturn = cb.call(element, patch, diff, replica.get(property));
-                    if (cbReturn === false) {
-                        doRender = false;
-                    }
-                }
-
-                if (doRender && typeof element.requestUpdate === 'function') {
-                    element.requestUpdate();
-                }
-            });
-
-            const unwatch = () => {
-                if (unsubscribe) {
-                    unsubscribe();
-                    console.log('unsubscribed', path);
-                    unsubscribe = null;
-                }
-                this._unwatchers.delete(unwatch);
-            };
-
-            this._unwatchers.add(unwatch);
-
-            return unwatch;
-        },
-
-        getDirective(data, path) {
-
-            if (typeof data !== 'object') {
-                throw new Error('live-replica lit-element directive data must be of type object');
-            }
-
-            let {replica, basePath} = replicaByData(data);
-
-            if (!replica) {
-                return function staticDirective(part) {
-                    part.setValue(Object.byPath(data, path) || '');
-                };
-            }
-
-            let property;
-            const fullPath = utils.concatPath(basePath, path);
-
-            let replicasDirectives = this._replicaToDirectives.get(replica);
-            if (!replicasDirectives) {
-                replicasDirectives = {};
-                this._replicaToDirectives.set(replica, replicasDirectives);
-            }
-
-            ({path, property} = utils.extractBasePathAndProperty(fullPath));
-
-
-            if (!replicasDirectives[fullPath]) {
-                replicasDirectives[fullPath] = createDirective(replica, path, property);
-            }
-
-            return replicasDirectives[fullPath];
-        },
-
-        cleanDirectives() {
-            this._replicaToDirectives.forEach((directives, replica) => {
-                const pathes = Object.keys(directives);
-                pathes.forEach((path) => {
-                    if (directives[path].kill) {
-                        directives[path].kill();
-                    }
-
-                    delete directives[path];
-                });
-
-                this._replicaToDirectives.delete(replica);
-            });
-
-            this._replicaToDirectives.clear();
-        },
-
-        clearAll() {
-            this.cleanDirectives();
-            this._unwatchers.forEach(unsubscribe => unsubscribe());
-            this._unwatchers.clear();
+        path = utils.concatPath(basePath, path);
+        if (path) {
+            replica = replica.at(path);
         }
-    };
+
+        let unsubscribe = replica.subscribe(function (patch, diff) {
+
+            let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
+
+            if (!lengthChanged && (property && !patch[property])) { return; }
+
+            let doRender = true;
+
+            if (cb) {
+                const cbReturn = cb.call(element, patch, diff, replica.get(property));
+                if (cbReturn === false) {
+                    doRender = false;
+                }
+            }
+
+            if (doRender && typeof element.requestUpdate === 'function') {
+                element.requestUpdate();
+            }
+        });
+
+        const unwatch = () => {
+            if (unsubscribe) {
+                unsubscribe();
+                console.log('unsubscribed', path);
+                unsubscribe = null;
+            }
+            this._unwatchers.delete(unwatch);
+        };
+
+        this._unwatchers.add(unwatch);
+
+        return unwatch;
+    },
+
+    getDirective(data, path) {
+
+        if (typeof data !== 'object') {
+            throw new Error('live-replica lit-element directive data must be of type object');
+        }
+
+        let {replica, basePath} = replicaByData(data);
+
+        if (!replica) {
+            return function staticDirective(part) {
+                part.setValue(Object.byPath(data, path) || '');
+            };
+        }
+
+        let property;
+        const fullPath = utils.concatPath(basePath, path);
+
+        let replicasDirectives = this._replicaToDirectives.get(replica);
+        if (!replicasDirectives) {
+            replicasDirectives = {};
+            this._replicaToDirectives.set(replica, replicasDirectives);
+        }
+
+        ({path, property} = utils.extractBasePathAndProperty(fullPath));
+
+
+        if (!replicasDirectives[fullPath]) {
+            replicasDirectives[fullPath] = createDirective(replica, path, property);
+        }
+
+        return replicasDirectives[fullPath];
+    },
+
+    cleanDirectives() {
+        this._replicaToDirectives.forEach((directives, replica) => {
+            const pathes = Object.keys(directives);
+            pathes.forEach((path) => {
+                if (directives[path].kill) {
+                    directives[path].kill();
+                }
+
+                delete directives[path];
+            });
+
+            this._replicaToDirectives.delete(replica);
+        });
+
+        this._replicaToDirectives.clear();
+    },
+
+    cleanup() {
+        this.cleanDirectives();
+        this._unwatchers.forEach(unsubscribe => unsubscribe());
+        this._unwatchers.clear();
+    }
+};
 }
 
 const deferredDisconnections = new WeakMap();
 function LitElementMixin(base) {
-    return class extends base {
+    return class LitElementMixinClass extends base {
         constructor() {
             super();
 
-            const liveReplicaUtils = elementUtilities(this);
+            if (this.liveReplica) { return; }
 
-            // this.liveReplica.render = (diff, data) => {
-            //     this.requestUpdate();
-            // };
+            const liveReplicaUtils = elementUtilities(this);
 
             const directivesWrappers = new WeakMap();
             liveReplicaUtils.binder = function getBinder(replicaOrProxy) {
@@ -217,8 +215,6 @@ function LitElementMixin(base) {
             };
 
             this.liveReplica = liveReplicaUtils;
-            // this.liveReplica.directive = LitElementMixin.directive(this.liveReplica.getDirective.bind(this.liveReplica));
-            // this.liveReplica.binder = getBinder.bind(this.liveReplica);
         }
 
         connectedCallback() {
@@ -231,7 +227,8 @@ function LitElementMixin(base) {
 
         disconnectedCallback() {
             deferredDisconnections.set(this, setTimeout(() => {
-                this.liveReplica.clearAll();
+                this.liveReplica.cleanup();
+                delete this.liveReplica;
             }, 0));
 
             super.disconnectedCallback();
