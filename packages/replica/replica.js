@@ -184,7 +184,7 @@ class Replica extends PatchDiff {
         }
 
         if (this.proxies.has(this)) {
-            //PatcherProxy.destroy(this.proxies.get(this));
+            PatcherProxy.destroy(this.proxies.get(this));
             this.proxies.delete(this);
         }
 

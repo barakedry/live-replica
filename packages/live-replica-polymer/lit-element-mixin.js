@@ -88,6 +88,7 @@ function createDirective(replica, path, property) {
 function elementUtilities(element) {
     return {
         _unwatchers: new Set(),
+        _replicaToDirectives: new Map(),
 
         watch(data, path, cb) {
             let { replica, basePath } = replicaByData(data);
@@ -137,10 +138,6 @@ function elementUtilities(element) {
 
             if (typeof data !== 'object') {
                 throw new Error('live-replica lit-element directive data must be of type object');
-            }
-
-            if (!this._replicaToDirectives) {
-                this._replicaToDirectives = new Map();
             }
 
             let {replica, basePath} = replicaByData(data);
@@ -193,13 +190,6 @@ function elementUtilities(element) {
             this._unwatchers.clear();
         }
     };
-}
-
-
-function getBinder(replicaOrProxy) {
-    return (path) => { // used as tagging
-        return this.directive(replicaOrProxy, path[0]);
-    }
 }
 
 const deferredDisconnections = new WeakMap();
