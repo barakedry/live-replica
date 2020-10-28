@@ -2648,7 +2648,8 @@ class PatchDiff extends EventEmitter {
 
         if (_isObject(existingValue)) {
             //levelDiffs.addChildTracking(this._emitInnerDeletions(path, existingValue, options), key)
-            this._emitInnerDeletions(utils.concatPath(path, key), existingValue, options);
+            const childDiffs = this._emitInnerDeletions(utils.concatPath(path, key), existingValue, options);
+            this.emit(utils.concatPath(path, key), childDiffs);
         }
 
         return levelDiffs;
