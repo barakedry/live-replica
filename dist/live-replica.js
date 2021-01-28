@@ -1715,12 +1715,14 @@ class LiveReplicaServer extends PatchDiff {
 
             connection.removeListener(unsubscribeEvent, onUnsubscribe);
             connection.removeListener('disconnect', onUnsubscribe);
+            connection.removeListener('close', onUnsubscribe);
 
             this.emit('replica-unsubscribe', request);
         });
 
         connection.on(unsubscribeEvent, onUnsubscribe);
         connection.on('disconnect', onUnsubscribe);
+        connection.on('close', onUnsubscribe);
     }
 
     use(fn) {
@@ -2538,6 +2540,10 @@ class PatchDiff extends EventEmitter {
             }
         }
 
+        if (isTargetArray) {
+            srcKey = index(srcKey, levelDiffs);
+        }
+
         // new
         if (!target.hasOwnProperty(srcKey)) {
             if (options.patchAdditions && patch[key] !== options.deleteKeyword) {
@@ -2548,10 +2554,6 @@ class PatchDiff extends EventEmitter {
 
                 // add new object
                 if (isPatchValueObject) {
-
-                    if (isTargetArray) {
-                        srcKey = index(srcKey, levelDiffs);
-                    }
 
                     target[srcKey] = patchValue.constructor.call(Object.create(Object.getPrototypeOf(patchValue)));
 
