@@ -2674,7 +2674,7 @@ class PatchDiff extends EventEmitter {
                 this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray);
             }
             else if (typeof patch[key] === 'object') {
-                const diffs = DiffTracker.create(_isArray(patch[key]));
+                const diffs = DiffTracker.create(_isArray(target[key]) && target[key].length === 0 && _isArray(patch[key]));
                 this._detectDeletionsAtLevel(target[key], patch[key], diffs, [path, key].join('.'), options, Array.isArray(target[key]));
                 levelDiffs.addChildTracking(diffs, key);
             }
