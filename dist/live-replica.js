@@ -2673,13 +2673,11 @@ class PatchDiff extends EventEmitter {
                 existingValue = target[key];
                 this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray);
             }
-
-            // else if (typeof patch[key] === 'object') {
-            //
-            //     const diffs = DiffTracker.create(_isArray(patch[key]));
-            //     this._detectDeletionsAtLevel(target[key], patch[key], diffs, [path, key].join('.'), options, Array.isArray(target[key]));
-            //     levelDiffs.addChildTracking(diffs, key);
-            // }
+            else if (typeof patch[key] === 'object') {
+                const diffs = DiffTracker.create(_isArray(patch[key]));
+                this._detectDeletionsAtLevel(target[key], patch[key], diffs, [path, key].join('.'), options, Array.isArray(target[key]));
+                levelDiffs.addChildTracking(diffs, key);
+            }
 
         }
 
