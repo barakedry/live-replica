@@ -170,7 +170,6 @@ class Replica extends PatchDiff {
     unsubscribeRemote() {
         if (!this.connection) { return; }
         this.connection.send(`unsubscribe:${this.id}`);
-        delete this.connection;
     }
 
 
@@ -183,6 +182,12 @@ class Replica extends PatchDiff {
             this.connection.off('reconnect', this.onSocketReconnected);
             delete this.connection;
         }
+
+        if (this.proxies.has(this)) {
+            PatcherProxy.destroy(this.proxies.get(this));
+            this.proxies.delete(this);
+        }
+
     }
 
     getData({immediateFlush} = {}) {

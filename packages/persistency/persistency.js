@@ -1,4 +1,4 @@
-const lodash = require('lodash');
+const _debounce = require('lodash/debounce');
 const path = require('path');
 const fs = require('fs');
 const util = require('util');
@@ -18,7 +18,7 @@ class LiveReplicaPersistence {
 
         this.replica = replica;
         this.key = key;
-        this.debouncedPersist = lodash.debounce(() => this.persist(), 1500, {leading: true, maxWait: 10000});
+        this.debouncedPersist = _debounce(() => this.persist(), 1500, {leading: true, maxWait: 10000});
     }
 
     // @protected abstract (should be overridden)

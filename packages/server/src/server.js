@@ -142,12 +142,14 @@ class LiveReplicaServer extends PatchDiff {
 
             connection.removeListener(unsubscribeEvent, onUnsubscribe);
             connection.removeListener('disconnect', onUnsubscribe);
+            connection.removeListener('close', onUnsubscribe);
 
             this.emit('replica-unsubscribe', request);
         });
 
         connection.on(unsubscribeEvent, onUnsubscribe);
         connection.on('disconnect', onUnsubscribe);
+        connection.on('close', onUnsubscribe);
     }
 
     use(fn) {
