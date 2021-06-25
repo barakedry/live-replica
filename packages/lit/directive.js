@@ -49,7 +49,7 @@ class LiveReplicaDirective extends AsyncDirective {
                     baseObject = replica.get(path);
                 }
 
-                part.setValue(value);
+                this.setValue(value);
             }
 
         });
