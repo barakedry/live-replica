@@ -37,6 +37,7 @@
   "dependencies": {
     "@msgpack/msgpack": "latest",
     "debuglog": "latest",
+    "lit": "^2.0.0-rc.2",
     "lodash": "^4.17.15"
   },
   "main": "index.js"
