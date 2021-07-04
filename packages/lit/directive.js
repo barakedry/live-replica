@@ -1,37 +1,7 @@
 import {directive} from 'lit/directive.js';
 import {AsyncDirective} from 'lit-html/async-directive.js';
 import {noChange} from 'lit';
-
-function replicaByData(data) {
-    if (LiveReplica.Proxy.proxyProperties.has(data)) {
-        const root = LiveReplica.Proxy.getRoot(data);
-        const basePath = LiveReplica.Proxy.getPath(data);
-        const replica = LiveReplica.Proxy.proxyProperties.get(root).patcher;
-
-        return {replica, basePath};
-    } else if (data instanceof LiveReplica.Replica) {
-        return {replica: data, basePath: ''};
-    }
-}
-
-function concatPath(path, suffix) {
-    if (path && suffix) {
-        return [path, suffix].join('.');
-    }
-
-    return path || suffix;
-}
-
-function extractBasePathAndProperty(path = '') {
-    const lastPart = path.lastIndexOf('.');
-    if (lastPart === -1) {
-        return {property: path, path: ''};
-    }
-
-    let property = path.substr(lastPart + 1);
-    path = path.substr(0, lastPart);
-    return {path, property};
-}
+import {replicaByData, extractBasePathAndProperty, concatPath} from "./utils.js";
 
 class LiveReplicaDirective extends AsyncDirective {
     // When the observable changes, unsubscribe to the old one and
@@ -39,23 +9,17 @@ class LiveReplicaDirective extends AsyncDirective {
 
     render(dataOrReplica, relativePath) {
         if (this.replica && this.replica === dataOrReplica && relativePath === this.path) {
-            return noChange;
+            return this.__lastVal;
         }
 
         this.subscribe(dataOrReplica, relativePath);
     }
 
     subscribe(dataOrReplica, relativePath) {
-
-        if (this.unsubscribe) {
-            console.warn('!unsubsribing', this.path , relativePath);
-        }
         this.unsubscribe?.();
 
         this.replica = dataOrReplica;
         this.path = relativePath;
-
-        console.warn('SUBBING', this.path , dataOrReplica);
 
         let { replica, basePath } = replicaByData(dataOrReplica);
         let property;
@@ -96,11 +60,8 @@ class LiveReplicaDirective extends AsyncDirective {
     // When the directive is disconnected from the DOM, unsubscribe to ensure
     // the directive instance can be garbage collected
     disconnected() {
-        console.warn('disconnected', this.path);
         this.unsubscribe?.();
         delete this.unsubscribe;
-        delete this.replica;
-        delete this.path;
         delete this.baseObject;
         delete this.property;
     }
