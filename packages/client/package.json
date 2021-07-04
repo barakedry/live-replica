@@ -11,8 +11,7 @@
         "@live-replica/proxy": "*",
         "@live-replica/socket": "*",
         "@live-replica/worker-server": "*",
-        "@live-replica/worker-socket": "*",
-        "@live-replica/live-replica-polymer": "*"
+        "@live-replica/worker-socket": "*"
     },
   "author": "Barak Edry",
   "license": "Apache-2.0"

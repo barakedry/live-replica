@@ -32,13 +32,13 @@
     "mocha": "latest",
     "node.extend": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "^4.7.2"
   },
   "dependencies": {
     "@msgpack/msgpack": "latest",
     "debuglog": "latest",
     "lit": "^2.0.0-rc.2",
-    "lodash": "^4.17.15"
+    "lodash": "latest"
   },
   "main": "index.js"
 }
