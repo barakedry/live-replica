@@ -67,35 +67,6 @@ module.exports = __webpack_require__(7136);
 
 /***/ }),
 
-/***/ 4397:
-/***/ ((module, exports, __webpack_require__) => {
-
-var util = __webpack_require__(7961);
-
-module.exports = (util && util.debuglog) || debuglog;
-
-var debugs = {};
-var debugEnviron = process.env.NODE_DEBUG || '';
-
-function debuglog(set) {
-  set = set.toUpperCase();
-  if (!debugs[set]) {
-    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
-      var pid = process.pid;
-      debugs[set] = function() {
-        var msg = util.format.apply(exports, arguments);
-        console.error('%s %d: %s', set, pid, msg);
-      };
-    } else {
-      debugs[set] = function() {};
-    }
-  }
-  return debugs[set];
-};
-
-
-/***/ }),
-
 /***/ 2852:
 /***/ ((module) => {
 
@@ -3434,8 +3405,9 @@ module.exports = {create};
 const {EventEmitter} = __webpack_require__(2852);
 const utils = __webpack_require__(9491);
 const DiffTracker = __webpack_require__(1409);
-const debuglog = __webpack_require__(4397);
-const debug = debuglog('patch-diff');
+//const debuglog = require('debuglog');
+//const debug = debuglog('patch-diff');
+const debug = (msg) => {};
 const _defaults = __webpack_require__(6946);
 const _isObject = __webpack_require__(6482);
 const _isString = __webpack_require__(7938);
@@ -7639,13 +7611,6 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
 }
 
 module.exports = LiveReplicaWebSocketsClient;
-
-/***/ }),
-
-/***/ 7961:
-/***/ (() => {
-
-/* (ignored) */
 
 /***/ })
 
