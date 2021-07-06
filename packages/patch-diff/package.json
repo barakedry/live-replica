@@ -28,13 +28,13 @@
     "url": "https://github.com/barakedry/live-replica/issues"
   },
   "homepage": "https://github.com/barakedry/live-replica/diff-patch",
-    "devDependencies": {
-        "blanket": "latest",
-        "chai": "latest",
-        "mocha": "latest",
-        "mocha-lcov-reporter": "latest",
-        "node.extend": "latest"
-    },
+  "devDependencies": {
+    "blanket": "latest",
+    "chai": "latest",
+    "mocha": "latest",
+    "mocha-lcov-reporter": "latest",
+    "node.extend": "latest"
+  },
   "dependencies": {
     "events": "^3.0.0",
     "debuglog": "latest",

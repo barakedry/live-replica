@@ -5576,31 +5576,52 @@ function unwrapListeners(arr) {
 
 function once(emitter, name) {
   return new Promise(function (resolve, reject) {
-    function eventListener() {
-      if (errorListener !== undefined) {
+    function errorListener(err) {
+      emitter.removeListener(name, resolver);
+      reject(err);
+    }
+
+    function resolver() {
+      if (typeof emitter.removeListener === 'function') {
         emitter.removeListener('error', errorListener);
       }
       resolve([].slice.call(arguments));
     };
-    var errorListener;
 
-    // Adding an error listener is not optional because
-    // if an error is thrown on an event emitter we cannot
-    // guarantee that the actual event we are waiting will
-    // be fired. The result could be a silent way to create
-    // memory or file descriptor leaks, which is something
-    // we should avoid.
+    eventTargetAgnosticAddListener(emitter, name, resolver, { once: true });
     if (name !== 'error') {
-      errorListener = function errorListener(err) {
-        emitter.removeListener(name, eventListener);
-        reject(err);
-      };
-
-      emitter.once('error', errorListener);
+      addErrorHandlerIfEventEmitter(emitter, errorListener, { once: true });
     }
-
-    emitter.once(name, eventListener);
   });
+}
+
+function addErrorHandlerIfEventEmitter(emitter, handler, flags) {
+  if (typeof emitter.on === 'function') {
+    eventTargetAgnosticAddListener(emitter, 'error', handler, flags);
+  }
+}
+
+function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
+  if (typeof emitter.on === 'function') {
+    if (flags.once) {
+      emitter.once(name, listener);
+    } else {
+      emitter.on(name, listener);
+    }
+  } else if (typeof emitter.addEventListener === 'function') {
+    // EventTarget does not have `error` event semantics like Node
+    // EventEmitters, we do not listen for `error` events here.
+    emitter.addEventListener(name, function wrapListener(arg) {
+      // IE does not have builtin `{ once: true }` support so we
+      // have to do it manually.
+      if (flags.once) {
+        emitter.removeEventListener(name, wrapListener);
+      }
+      listener(arg);
+    });
+  } else {
+    throw new TypeError('The "emitter" argument must be of type EventEmitter. Received type ' + typeof emitter);
+  }
 }
 
 
@@ -5852,6 +5873,7 @@ function EventEmitter() {
   EventEmitter.init.call(this);
 }
 module.exports = EventEmitter;
+module.exports.once = once;
 
 // Backwards-compat with node 0.10.x
 EventEmitter.EventEmitter = EventEmitter;
@@ -5863,6 +5885,12 @@ EventEmitter.prototype._maxListeners = undefined;
 // By default EventEmitters will print a warning if more than 10 listeners are
 // added to it. This is a useful default which helps finding memory leaks.
 var defaultMaxListeners = 10;
+
+function checkListener(listener) {
+  if (typeof listener !== 'function') {
+    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
+  }
+}
 
 Object.defineProperty(EventEmitter, 'defaultMaxListeners', {
   enumerable: true,
@@ -5898,14 +5926,14 @@ EventEmitter.prototype.setMaxListeners = function setMaxListeners(n) {
   return this;
 };
 
-function $getMaxListeners(that) {
+function _getMaxListeners(that) {
   if (that._maxListeners === undefined)
     return EventEmitter.defaultMaxListeners;
   return that._maxListeners;
 }
 
 EventEmitter.prototype.getMaxListeners = function getMaxListeners() {
-  return $getMaxListeners(this);
+  return _getMaxListeners(this);
 };
 
 EventEmitter.prototype.emit = function emit(type) {
@@ -5957,9 +5985,7 @@ function _addListener(target, type, listener, prepend) {
   var events;
   var existing;
 
-  if (typeof listener !== 'function') {
-    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
-  }
+  checkListener(listener);
 
   events = target._events;
   if (events === undefined) {
@@ -5996,7 +6022,7 @@ function _addListener(target, type, listener, prepend) {
     }
 
     // Check for listener leak
-    m = $getMaxListeners(target);
+    m = _getMaxListeners(target);
     if (m > 0 && existing.length > m && !existing.warned) {
       existing.warned = true;
       // No error code for this since it is a Warning
@@ -6028,12 +6054,12 @@ EventEmitter.prototype.prependListener =
     };
 
 function onceWrapper() {
-  var args = [];
-  for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);
   if (!this.fired) {
     this.target.removeListener(this.type, this.wrapFn);
     this.fired = true;
-    ReflectApply(this.listener, this.target, args);
+    if (arguments.length === 0)
+      return this.listener.call(this.target);
+    return this.listener.apply(this.target, arguments);
   }
 }
 
@@ -6046,18 +6072,14 @@ function _onceWrap(target, type, listener) {
 }
 
 EventEmitter.prototype.once = function once(type, listener) {
-  if (typeof listener !== 'function') {
-    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
-  }
+  checkListener(listener);
   this.on(type, _onceWrap(this, type, listener));
   return this;
 };
 
 EventEmitter.prototype.prependOnceListener =
     function prependOnceListener(type, listener) {
-      if (typeof listener !== 'function') {
-        throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
-      }
+      checkListener(listener);
       this.prependListener(type, _onceWrap(this, type, listener));
       return this;
     };
@@ -6067,9 +6089,7 @@ EventEmitter.prototype.removeListener =
     function removeListener(type, listener) {
       var list, events, position, i, originalListener;
 
-      if (typeof listener !== 'function') {
-        throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
-      }
+      checkListener(listener);
 
       events = this._events;
       if (events === undefined)
@@ -6243,6 +6263,56 @@ function unwrapListeners(arr) {
     ret[i] = arr[i].listener || arr[i];
   }
   return ret;
+}
+
+function once(emitter, name) {
+  return new Promise(function (resolve, reject) {
+    function errorListener(err) {
+      emitter.removeListener(name, resolver);
+      reject(err);
+    }
+
+    function resolver() {
+      if (typeof emitter.removeListener === 'function') {
+        emitter.removeListener('error', errorListener);
+      }
+      resolve([].slice.call(arguments));
+    };
+
+    eventTargetAgnosticAddListener(emitter, name, resolver, { once: true });
+    if (name !== 'error') {
+      addErrorHandlerIfEventEmitter(emitter, errorListener, { once: true });
+    }
+  });
+}
+
+function addErrorHandlerIfEventEmitter(emitter, handler, flags) {
+  if (typeof emitter.on === 'function') {
+    eventTargetAgnosticAddListener(emitter, 'error', handler, flags);
+  }
+}
+
+function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
+  if (typeof emitter.on === 'function') {
+    if (flags.once) {
+      emitter.once(name, listener);
+    } else {
+      emitter.on(name, listener);
+    }
+  } else if (typeof emitter.addEventListener === 'function') {
+    // EventTarget does not have `error` event semantics like Node
+    // EventEmitters, we do not listen for `error` events here.
+    emitter.addEventListener(name, function wrapListener(arg) {
+      // IE does not have builtin `{ once: true }` support so we
+      // have to do it manually.
+      if (flags.once) {
+        emitter.removeEventListener(name, wrapListener);
+      }
+      listener(arg);
+    });
+  } else {
+    throw new TypeError('The "emitter" argument must be of type EventEmitter. Received type ' + typeof emitter);
+  }
 }
 
 
@@ -6392,6 +6462,7 @@ function EventEmitter() {
   EventEmitter.init.call(this);
 }
 module.exports = EventEmitter;
+module.exports.once = once;
 
 // Backwards-compat with node 0.10.x
 EventEmitter.EventEmitter = EventEmitter;
@@ -6403,6 +6474,12 @@ EventEmitter.prototype._maxListeners = undefined;
 // By default EventEmitters will print a warning if more than 10 listeners are
 // added to it. This is a useful default which helps finding memory leaks.
 var defaultMaxListeners = 10;
+
+function checkListener(listener) {
+  if (typeof listener !== 'function') {
+    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
+  }
+}
 
 Object.defineProperty(EventEmitter, 'defaultMaxListeners', {
   enumerable: true,
@@ -6438,14 +6515,14 @@ EventEmitter.prototype.setMaxListeners = function setMaxListeners(n) {
   return this;
 };
 
-function $getMaxListeners(that) {
+function _getMaxListeners(that) {
   if (that._maxListeners === undefined)
     return EventEmitter.defaultMaxListeners;
   return that._maxListeners;
 }
 
 EventEmitter.prototype.getMaxListeners = function getMaxListeners() {
-  return $getMaxListeners(this);
+  return _getMaxListeners(this);
 };
 
 EventEmitter.prototype.emit = function emit(type) {
@@ -6497,9 +6574,7 @@ function _addListener(target, type, listener, prepend) {
   var events;
   var existing;
 
-  if (typeof listener !== 'function') {
-    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
-  }
+  checkListener(listener);
 
   events = target._events;
   if (events === undefined) {
@@ -6536,7 +6611,7 @@ function _addListener(target, type, listener, prepend) {
     }
 
     // Check for listener leak
-    m = $getMaxListeners(target);
+    m = _getMaxListeners(target);
     if (m > 0 && existing.length > m && !existing.warned) {
       existing.warned = true;
       // No error code for this since it is a Warning
@@ -6568,12 +6643,12 @@ EventEmitter.prototype.prependListener =
     };
 
 function onceWrapper() {
-  var args = [];
-  for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);
   if (!this.fired) {
     this.target.removeListener(this.type, this.wrapFn);
     this.fired = true;
-    ReflectApply(this.listener, this.target, args);
+    if (arguments.length === 0)
+      return this.listener.call(this.target);
+    return this.listener.apply(this.target, arguments);
   }
 }
 
@@ -6586,18 +6661,14 @@ function _onceWrap(target, type, listener) {
 }
 
 EventEmitter.prototype.once = function once(type, listener) {
-  if (typeof listener !== 'function') {
-    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
-  }
+  checkListener(listener);
   this.on(type, _onceWrap(this, type, listener));
   return this;
 };
 
 EventEmitter.prototype.prependOnceListener =
     function prependOnceListener(type, listener) {
-      if (typeof listener !== 'function') {
-        throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
-      }
+      checkListener(listener);
       this.prependListener(type, _onceWrap(this, type, listener));
       return this;
     };
@@ -6607,9 +6678,7 @@ EventEmitter.prototype.removeListener =
     function removeListener(type, listener) {
       var list, events, position, i, originalListener;
 
-      if (typeof listener !== 'function') {
-        throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
-      }
+      checkListener(listener);
 
       events = this._events;
       if (events === undefined)
@@ -6783,6 +6852,56 @@ function unwrapListeners(arr) {
     ret[i] = arr[i].listener || arr[i];
   }
   return ret;
+}
+
+function once(emitter, name) {
+  return new Promise(function (resolve, reject) {
+    function errorListener(err) {
+      emitter.removeListener(name, resolver);
+      reject(err);
+    }
+
+    function resolver() {
+      if (typeof emitter.removeListener === 'function') {
+        emitter.removeListener('error', errorListener);
+      }
+      resolve([].slice.call(arguments));
+    };
+
+    eventTargetAgnosticAddListener(emitter, name, resolver, { once: true });
+    if (name !== 'error') {
+      addErrorHandlerIfEventEmitter(emitter, errorListener, { once: true });
+    }
+  });
+}
+
+function addErrorHandlerIfEventEmitter(emitter, handler, flags) {
+  if (typeof emitter.on === 'function') {
+    eventTargetAgnosticAddListener(emitter, 'error', handler, flags);
+  }
+}
+
+function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
+  if (typeof emitter.on === 'function') {
+    if (flags.once) {
+      emitter.once(name, listener);
+    } else {
+      emitter.on(name, listener);
+    }
+  } else if (typeof emitter.addEventListener === 'function') {
+    // EventTarget does not have `error` event semantics like Node
+    // EventEmitters, we do not listen for `error` events here.
+    emitter.addEventListener(name, function wrapListener(arg) {
+      // IE does not have builtin `{ once: true }` support so we
+      // have to do it manually.
+      if (flags.once) {
+        emitter.removeEventListener(name, wrapListener);
+      }
+      listener(arg);
+    });
+  } else {
+    throw new TypeError('The "emitter" argument must be of type EventEmitter. Received type ' + typeof emitter);
+  }
 }
 
 
@@ -6943,6 +7062,7 @@ function EventEmitter() {
   EventEmitter.init.call(this);
 }
 module.exports = EventEmitter;
+module.exports.once = once;
 
 // Backwards-compat with node 0.10.x
 EventEmitter.EventEmitter = EventEmitter;
@@ -6954,6 +7074,12 @@ EventEmitter.prototype._maxListeners = undefined;
 // By default EventEmitters will print a warning if more than 10 listeners are
 // added to it. This is a useful default which helps finding memory leaks.
 var defaultMaxListeners = 10;
+
+function checkListener(listener) {
+  if (typeof listener !== 'function') {
+    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
+  }
+}
 
 Object.defineProperty(EventEmitter, 'defaultMaxListeners', {
   enumerable: true,
@@ -6989,14 +7115,14 @@ EventEmitter.prototype.setMaxListeners = function setMaxListeners(n) {
   return this;
 };
 
-function $getMaxListeners(that) {
+function _getMaxListeners(that) {
   if (that._maxListeners === undefined)
     return EventEmitter.defaultMaxListeners;
   return that._maxListeners;
 }
 
 EventEmitter.prototype.getMaxListeners = function getMaxListeners() {
-  return $getMaxListeners(this);
+  return _getMaxListeners(this);
 };
 
 EventEmitter.prototype.emit = function emit(type) {
@@ -7048,9 +7174,7 @@ function _addListener(target, type, listener, prepend) {
   var events;
   var existing;
 
-  if (typeof listener !== 'function') {
-    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
-  }
+  checkListener(listener);
 
   events = target._events;
   if (events === undefined) {
@@ -7087,7 +7211,7 @@ function _addListener(target, type, listener, prepend) {
     }
 
     // Check for listener leak
-    m = $getMaxListeners(target);
+    m = _getMaxListeners(target);
     if (m > 0 && existing.length > m && !existing.warned) {
       existing.warned = true;
       // No error code for this since it is a Warning
@@ -7119,12 +7243,12 @@ EventEmitter.prototype.prependListener =
     };
 
 function onceWrapper() {
-  var args = [];
-  for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);
   if (!this.fired) {
     this.target.removeListener(this.type, this.wrapFn);
     this.fired = true;
-    ReflectApply(this.listener, this.target, args);
+    if (arguments.length === 0)
+      return this.listener.call(this.target);
+    return this.listener.apply(this.target, arguments);
   }
 }
 
@@ -7137,18 +7261,14 @@ function _onceWrap(target, type, listener) {
 }
 
 EventEmitter.prototype.once = function once(type, listener) {
-  if (typeof listener !== 'function') {
-    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
-  }
+  checkListener(listener);
   this.on(type, _onceWrap(this, type, listener));
   return this;
 };
 
 EventEmitter.prototype.prependOnceListener =
     function prependOnceListener(type, listener) {
-      if (typeof listener !== 'function') {
-        throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
-      }
+      checkListener(listener);
       this.prependListener(type, _onceWrap(this, type, listener));
       return this;
     };
@@ -7158,9 +7278,7 @@ EventEmitter.prototype.removeListener =
     function removeListener(type, listener) {
       var list, events, position, i, originalListener;
 
-      if (typeof listener !== 'function') {
-        throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
-      }
+      checkListener(listener);
 
       events = this._events;
       if (events === undefined)
@@ -7334,6 +7452,56 @@ function unwrapListeners(arr) {
     ret[i] = arr[i].listener || arr[i];
   }
   return ret;
+}
+
+function once(emitter, name) {
+  return new Promise(function (resolve, reject) {
+    function errorListener(err) {
+      emitter.removeListener(name, resolver);
+      reject(err);
+    }
+
+    function resolver() {
+      if (typeof emitter.removeListener === 'function') {
+        emitter.removeListener('error', errorListener);
+      }
+      resolve([].slice.call(arguments));
+    };
+
+    eventTargetAgnosticAddListener(emitter, name, resolver, { once: true });
+    if (name !== 'error') {
+      addErrorHandlerIfEventEmitter(emitter, errorListener, { once: true });
+    }
+  });
+}
+
+function addErrorHandlerIfEventEmitter(emitter, handler, flags) {
+  if (typeof emitter.on === 'function') {
+    eventTargetAgnosticAddListener(emitter, 'error', handler, flags);
+  }
+}
+
+function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
+  if (typeof emitter.on === 'function') {
+    if (flags.once) {
+      emitter.once(name, listener);
+    } else {
+      emitter.on(name, listener);
+    }
+  } else if (typeof emitter.addEventListener === 'function') {
+    // EventTarget does not have `error` event semantics like Node
+    // EventEmitters, we do not listen for `error` events here.
+    emitter.addEventListener(name, function wrapListener(arg) {
+      // IE does not have builtin `{ once: true }` support so we
+      // have to do it manually.
+      if (flags.once) {
+        emitter.removeEventListener(name, wrapListener);
+      }
+      listener(arg);
+    });
+  } else {
+    throw new TypeError('The "emitter" argument must be of type EventEmitter. Received type ' + typeof emitter);
+  }
 }
 
 
