@@ -1,12 +1,21 @@
-import {LitElement, html} from 'lit';
+import {LitElement, html, css} from 'lit';
+import {LiveReplicaController} from './controller.js';
 
+const styles = css`
 
-const css =`
+:host {
+    font-size: 13px;
+}
+
+input {
+    font-family: Consolas, Menlo, Monaco, 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace, serif;
+    font-size: 12px;
+}
+
 ul li {
     padding: 0;
     margin: 0;    
 }
-
 
 ul, ul * {
     box-sizing: border-box;
@@ -23,12 +32,6 @@ ul {
     -ms-user-select: none;
 }
 
-input {
-    font-family: Consolas, Menlo, Monaco, 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace, serif;
-    font-size: 12px;
-
-}
-
 li {
     margin: 1px;
     margin-top: 2px;
@@ -37,6 +40,7 @@ li {
 }
 
 button {
+    outline: blue;
     border: none;
     padding: 0;
     margin: 0;
@@ -63,7 +67,9 @@ button.duplicate {
 }
 
 button.add {
-    opacity: 0;
+
+
+
 }
 
 li:hover > button,
@@ -75,8 +81,8 @@ ul:hover > li > button.add {
 
 
 ul:hover {
-    transition: background 0.55s linear 1s;
-    background-color: rgba(0,0,0,0.02);
+    transition: background 0.55s linear 0.75s;
+    background-color: rgba(0,0,0,0.03);
 }
 
 
@@ -95,16 +101,28 @@ button.delete {
 }
 
 button.add {
+    cursor: pointer;
+    visibility: hidden;
     height: 18px;
-    border-radius: 3px;
-    color: #444;
-    padding: 1px 10px 1px 20px;
+    color: rgb(68, 68, 68);
+    padding: 1px 10px 1px 22px;
     width: auto;
-    margin-left: 30px;
+    margin-left: 19px;
+    font-size: 11px;
+    font-weight: bold;
+    vertical-align: middle;
+    line-height: 10px;
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAlwSFlzAAALEwAACxMBAJqcGAAABCJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDUuNC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIgogICAgICAgICAgICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+CiAgICAgICAgIDx0aWZmOlJlc29sdXRpb25Vbml0PjE8L3RpZmY6UmVzb2x1dGlvblVuaXQ+CiAgICAgICAgIDx0aWZmOkNvbXByZXNzaW9uPjU8L3RpZmY6Q29tcHJlc3Npb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpZUmVzb2x1dGlvbj43MjwvdGlmZjpZUmVzb2x1dGlvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjE2PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6Q29sb3JTcGFjZT4xPC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj4xNjwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgICAgIDxkYzpzdWJqZWN0PgogICAgICAgICAgICA8cmRmOkJhZy8+CiAgICAgICAgIDwvZGM6c3ViamVjdD4KICAgICAgICAgPHhtcDpNb2RpZnlEYXRlPjIwMTQ6MDg6MTUgMjI6MDg6MTA8L3htcDpNb2RpZnlEYXRlPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPlBpeGVsbWF0b3IgMy4yPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgoqgMGxAAAA8klEQVQ4EaVTKxICMQx9hbUMR+AEOAQKAViGO+A5zXrugAcEagWOE3CEHSxMaRrSpsvAbJeapkle8vIp8OcxH/g9Bhhi6/RTGEy83eLi7go1Sqxx15g0wBFz9LFzwJF2CrLFDU9ssMBJdDEAgQscnCHqxCu9LR5YShB2ZtrXZmY7sx5qzo2YxKTGmMrpeQ+q+RvtNDu/yJf7BA5ADcs/HlN4nHTbPYS2jqd1oZw3Rhho/yyZGdCcDVaEDBmcLJm1LkTn3Qg9qIKhveAxXAJtGI2m7eExluQeB9xxkWITaT1pw34xIZvawpSB0M/8TALrfL8ADMFGq64HOtYAAAAASUVORK5CYII=);
-    background-color: rgba(0,0,0,0.08);
 }
 
+button.add:hover {
+    border-radius: 3px;
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+[expanded] > ul:hover  > li > .add {
+    visibility: visible;
+}
 
 button.duplicate {
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAlwSFlzAAALEwAACxMBAJqcGAAABCJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDUuNC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIgogICAgICAgICAgICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+CiAgICAgICAgIDx0aWZmOlJlc29sdXRpb25Vbml0PjE8L3RpZmY6UmVzb2x1dGlvblVuaXQ+CiAgICAgICAgIDx0aWZmOkNvbXByZXNzaW9uPjU8L3RpZmY6Q29tcHJlc3Npb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpZUmVzb2x1dGlvbj43MjwvdGlmZjpZUmVzb2x1dGlvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjE2PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6Q29sb3JTcGFjZT4xPC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj4xNjwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgICAgIDxkYzpzdWJqZWN0PgogICAgICAgICAgICA8cmRmOkJhZy8+CiAgICAgICAgIDwvZGM6c3ViamVjdD4KICAgICAgICAgPHhtcDpNb2RpZnlEYXRlPjIwMTQ6MDg6MTUgMjI6MDg6NTY8L3htcDpNb2RpZnlEYXRlPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPlBpeGVsbWF0b3IgMy4yPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgrv6qAEAAABBElEQVQ4EWNgGGjAiMsBLkELrjMwMmqgyP/7G8DI/v/07hXJz2DiTDAGBg3UvHtNHAMMS0nwMgANlBMT4H/gFjFPFqYetwEwFVCakZGR4d9/hh8vX34p//eL0RYmzQJjYHPysVOPGNRVRRiEBbkYwgO0GbbvvTOL4f9/huu334C0LYPpBdMuwQv/I4O47HX/12+99h9Ev3rzBVnqP0gtTDNOL4CczMrKzODnrs5w+dpLmHoMGu4FdBmokxlgTnayVUJXAubjNMDTWZUBhEHANWQRmMZG4PQCNsXYxHC6AF0xiiv+/78BkyfagD1r47GmWip6AegsoDNR0z7MnUhOhglRjQYAhqlrkfq/jTwAAAAASUVORK5CYII=);
@@ -125,9 +143,21 @@ button.expandCollapse,
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAlwSFlzAAALEwAACxMBAJqcGAAABCJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDUuNC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIgogICAgICAgICAgICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+CiAgICAgICAgIDx0aWZmOlJlc29sdXRpb25Vbml0PjE8L3RpZmY6UmVzb2x1dGlvblVuaXQ+CiAgICAgICAgIDx0aWZmOkNvbXByZXNzaW9uPjU8L3RpZmY6Q29tcHJlc3Npb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpZUmVzb2x1dGlvbj43MjwvdGlmZjpZUmVzb2x1dGlvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjE2PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6Q29sb3JTcGFjZT4xPC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj4xNjwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgICAgIDxkYzpzdWJqZWN0PgogICAgICAgICAgICA8cmRmOkJhZy8+CiAgICAgICAgIDwvZGM6c3ViamVjdD4KICAgICAgICAgPHhtcDpNb2RpZnlEYXRlPjIwMTQ6MDg6MTUgMjI6MDg6NjI8L3htcDpNb2RpZnlEYXRlPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPlBpeGVsbWF0b3IgMy4yPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgquNgPlAAAAs0lEQVQ4EWNgGJ7Az89PnFifMWFTyMHBkRkWFnYgPDxcH5s8shhWA0AKGBkZ7YHUOaBBM0JDQ0WRNSGzcRoAVcQENCgdiG8DDSo0NjZmRdYMYhMyAKweaAA/EPcpKytfDgkJ8UQ2hCgDUDQwMTEi81mQObjY/////wiUa7x79+6Us2fP/kZWR8iAf0DFc4AG1Kxevfo1skYYG6cBQE0Hgf7OX7ly5UWYYqJpUhIS0YYOXoUAuOIpy79fu1UAAAAASUVORK5CYII=);
 }
 
-.expanded > button.expandCollapse {
+[expanded] > button.expandCollapse {
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAlwSFlzAAALEwAACxMBAJqcGAAABCJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDUuNC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIgogICAgICAgICAgICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+CiAgICAgICAgIDx0aWZmOlJlc29sdXRpb25Vbml0PjE8L3RpZmY6UmVzb2x1dGlvblVuaXQ+CiAgICAgICAgIDx0aWZmOkNvbXByZXNzaW9uPjU8L3RpZmY6Q29tcHJlc3Npb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpZUmVzb2x1dGlvbj43MjwvdGlmZjpZUmVzb2x1dGlvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjE2PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6Q29sb3JTcGFjZT4xPC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj4xNjwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgICAgIDxkYzpzdWJqZWN0PgogICAgICAgICAgICA8cmRmOkJhZy8+CiAgICAgICAgIDwvZGM6c3ViamVjdD4KICAgICAgICAgPHhtcDpNb2RpZnlEYXRlPjIwMTQ6MDg6MTUgMjI6MDg6NDY8L3htcDpNb2RpZnlEYXRlPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPlBpeGVsbWF0b3IgMy4yPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgqNDgGLAAAAwElEQVQ4EWNgGAUUhwAjsgl+fn7iHBwcmchi6OwfP35M37Rp00uYOIoBIMGwsLADjIyM9jAFyPT///8Prlq1ygFZjAmZA2IDNecDqX/o4iAxqByKFIYBK1euvAi0aTaKKiAHJAaSQxfHMACkAKi4Fog/whSD2CAxGB+ZZkbmwNjXrl37pq2t/RPoZHeoWNXq1av3wuSRaawuACm4e/fuFKCtN0EYxEbWhMxmQeYgs8+ePftbUVGxECQGYiPLDTM2ALbCTJh2U9L+AAAAAElFTkSuQmCC);
 }
+
+li ul {
+    display: none;
+}
+
+li[expanded] > ul {
+    display: block;
+}
+
+li[expanded] > .keyValuePair > .summary {
+    display: none;
+} 
 
 .number button.expandCollapse,
 .string button.expandCollapse,
@@ -137,7 +167,6 @@ button.expandCollapse,
     visibility: hidden;
 }
 
-
 [data-type=string] {
     color: darkgreen;
 }
@@ -146,24 +175,13 @@ button.expandCollapse,
     color: blue;
 }
 
-[data-type=array] .textValue,
-[data-type=object] .textValue {
+.textValue[data-type=array],
+.textValue[data-type=object] {
     color: #888;
     font-style: italic;
 }
 
-
-
-.expanded [data-type=array .textValue,
-.expanded [data-type=object .textValue {
-    display: none;
-}
-
-.collapsed ul {
-    display: none;
-}
-
-.type input {
+input {
     display: none;
     padding: 0;
     border-width: 1px;
@@ -176,9 +194,10 @@ button.expandCollapse,
     -ms-user-select: text;
 }
 
-[editing] .textValue {
+[editing] .textValue:not([data-type=boolean]) {
     display: none;
 }
+
 
 [data-type=boolean] input {
     display: inline;
@@ -201,8 +220,8 @@ span,
     display: inline-block;
 }
 
-[data-type=number] .textValue,  input[type='number'],
-[data-type=string] .textValue,  input[type='text'] {
+[data-type=number] .textValue,  input[data-type='number'],
+[data-type=string] .textValue,  input[data-type='text'] {
     min-width: 40px;
     min-height: 12px;
     cursor: text;
@@ -214,6 +233,18 @@ span,
     background-color: rgba(255,255,255, 0.8);
 }
 
+span.textValue {
+    display: inline-block;
+    margin-left: 4px;
+}
+
+.textValue[data-type=string]::before {
+    content: '"'
+}
+
+.textValue[data-type=string]::after {
+    content: '"'
+}
 
 .end {
     display: inline-block;
@@ -241,13 +272,30 @@ span,
 #objecteditor-types-menu li:hover {
     background: #eee;
 }
+
+.summary {
+    color: grey;
+    font-style: italic;
+    cursor: pointer;
+}
+
+.summary:hover {
+    text-decoration: underline;
+    color: black;
+}
+
 `;
 
 
-function expandCollapse({target}) {
-    const propertyElement = target.parentElement;
-    const isExpanded = !!propertyElement.getAttribute('expanded');
-    if (isExpanded) {
+const inputTypeForValueType = {
+    string: 'text',
+    number: 'number',
+    boolean: 'checkbox'
+}
+
+function expandCollapse({currentTarget}) {
+    const propertyElement = currentTarget.parentElement;
+    if (propertyElement.hasAttribute('expanded')) {
         propertyElement.removeAttribute('expanded');
     } else {
         propertyElement.setAttribute('expanded','');
@@ -267,6 +315,22 @@ class ReplicaInspector extends LitElement {
     static get properties() {
         return {
             replica: Object
+        }
+    }
+
+    static get styles() {
+        return styles;
+    }
+    constructor() {
+        super();
+        this.liveReplica = new LiveReplicaController(this);
+    }
+
+    update(updatedProperties) {
+        super.update(updatedProperties);
+        if (updatedProperties.has('replica') && this.replica) {
+            this.unwatch?.();
+            this.unwatch = this.liveReplica.watch(this.replica);
         }
     }
 
@@ -296,23 +360,68 @@ class ReplicaInspector extends LitElement {
     }
 
     renderObject(obj) {
+
+        if (obj === null) {
+            return;
+        }
+
         const keys = Object.keys(obj);
         const isArray = Array.isArray(obj);
 
         return html`
-            <ul>            
-                ${keys.map(key => this.renderProperty(obj, key))};
+            <ul data-type=${isArray ? 'array' : 'object'}>            
+                ${keys.map(key => this.renderProperty(obj, key))}
                 <li><button class="add" @click="${(e) => this.openTypesMenu(e, obj, isArray)}">Add ${isArray ? 'Value' : 'Property'}</button></li>
             </ul>
-        `
+        `;
+    }
+
+    stopEditing({currentTarget}) {
+        const editingLabel = currentTarget.parentElement;
+
+        if (editingLabel.hasAttribute('editing')) {
+            editingLabel.removeAttribute('editing');
+        }
+
+    }
+
+    startEditing({currentTarget}) {
+        const editingLabel =currentTarget.parentElement;
+
+        if (!editingLabel.hasAttribute('editing')) {
+            editingLabel.setAttribute('editing', '');
+            editingLabel.querySelector('input').select();
+        }
     }
 
     renderPrimitive(value, type) {
 
+        const inputType = inputTypeForValueType[type] || 'text';
+
+        return html`
+            <label>
+                <input type=${inputType} value=${value} @blur="${this.stopEditing}">
+                <span class="textValue" data-type=${type} @click=${this.startEditing}>${value}</span>
+            </label>            
+        `;
     }
 
-    renderValueByType(parent, key, value, type) {
+    renderValueByType(value, type) {
 
+        if (value === null) {
+            return 'null';
+        }
+
+        if (type === 'object') {
+            const maxChar = 50;
+            let stringified = JSON.stringify(value).substr(0, maxChar);
+            if (stringified.length === maxChar) {
+                stringified = stringified + '... ' + (Array.isArray(value) ? ']' : '}');
+            }
+            return html`<span class='summary'>${stringified}</span>`
+        }
+
+        return this.renderPrimitive(value, type);
     }
 
     deleteProperty(parent, key) {
@@ -323,15 +432,17 @@ class ReplicaInspector extends LitElement {
     renderProperty(parent, key) {
         const value = parent[key];
         const type = typeof value;
-
-
-        html`
-            <li class="${type}" data-type="${type}">
-                <button class='delete' title='Delete' @click="${this.deleteProperty(parent, key)}"></button>
-                <button class="expandCollapse" @click=${expandCollapse}></button>
-                <label class="key">${key}:</label>
-                <span class="type"></span>
-                ${this.renderValueByType(parent, key, value)}
+        const dataType = (type === 'object' && Array.isArray(value)) || type;
+        const textValue = JSON.stringify(value);
+        return html`
+            <li class="${type}" data-type="${dataType}">
+                <button class='delete' title='Delete' @click="${() => this.deleteProperty(parent, key)}"></button>
+                <button class="expandCollapse" @click=${expandCollapse}></button>                                
+                <span class="keyValuePair" @click=${expandCollapse}>
+                    <label class="key">${key}:</label>
+                    ${this.renderValueByType(value, type)}
+                </span>                                
+                ${type === 'object' ? this.renderObject(value) : ''}
             </li>`;
     }
 
@@ -356,6 +467,8 @@ class ReplicaInspector extends LitElement {
         return html`
             ${this.renderObject(replica)}
             ${this.addingTo ? this.renderTypesMenu() : ``}
-        `
+        `;
     }
 }
+
+customElements.define('replica-inspector', ReplicaInspector);
