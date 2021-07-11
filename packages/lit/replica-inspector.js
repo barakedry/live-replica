@@ -126,12 +126,7 @@ button.add:hover {
 
 button.duplicate {
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAlwSFlzAAALEwAACxMBAJqcGAAABCJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDUuNC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIgogICAgICAgICAgICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+CiAgICAgICAgIDx0aWZmOlJlc29sdXRpb25Vbml0PjE8L3RpZmY6UmVzb2x1dGlvblVuaXQ+CiAgICAgICAgIDx0aWZmOkNvbXByZXNzaW9uPjU8L3RpZmY6Q29tcHJlc3Npb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpZUmVzb2x1dGlvbj43MjwvdGlmZjpZUmVzb2x1dGlvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjE2PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6Q29sb3JTcGFjZT4xPC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj4xNjwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgICAgIDxkYzpzdWJqZWN0PgogICAgICAgICAgICA8cmRmOkJhZy8+CiAgICAgICAgIDwvZGM6c3ViamVjdD4KICAgICAgICAgPHhtcDpNb2RpZnlEYXRlPjIwMTQ6MDg6MTUgMjI6MDg6NTY8L3htcDpNb2RpZnlEYXRlPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPlBpeGVsbWF0b3IgMy4yPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgrv6qAEAAABBElEQVQ4EWNgGGjAiMsBLkELrjMwMmqgyP/7G8DI/v/07hXJz2DiTDAGBg3UvHtNHAMMS0nwMgANlBMT4H/gFjFPFqYetwEwFVCakZGR4d9/hh8vX34p//eL0RYmzQJjYHPysVOPGNRVRRiEBbkYwgO0GbbvvTOL4f9/huu334C0LYPpBdMuwQv/I4O47HX/12+99h9Ev3rzBVnqP0gtTDNOL4CczMrKzODnrs5w+dpLmHoMGu4FdBmokxlgTnayVUJXAubjNMDTWZUBhEHANWQRmMZG4PQCNsXYxHC6AF0xiiv+/78BkyfagD1r47GmWip6AegsoDNR0z7MnUhOhglRjQYAhqlrkfq/jTwAAAAASUVORK5CYII=);
-    margin-left: 12px;
-    width: 70px;
-    background-color: rgba(0,0,0,0.08);
-    padding: 1px 10px 1px 20px;
-    border-radius: 3px;
-    overflow: hidden;
+    margin-left: 20px;
 }
 
 button.duplicate:hover {
@@ -284,6 +279,22 @@ span.textValue {
     color: black;
 }
 
+#typesMenu {
+    padding: 0;
+    position: absolute;
+    border: 1px solid #ccc;   
+    list-style: none;
+}
+
+#typesMenu li {
+    margin: 0;
+    padding: 3px 8px;
+}
+
+#typesMenu li:hover {
+    background-color: #eee;
+}
+
 `;
 
 
@@ -291,6 +302,14 @@ const inputTypeForValueType = {
     string: 'text',
     number: 'number',
     boolean: 'checkbox'
+}
+
+function getValueFromInputByType(input, type) {
+    return {
+        string: (i) => i.value,
+        boolean: (i) => i.checked,
+        number: (i) => Number(i.value)
+    }[type](input);
 }
 
 function expandCollapse({currentTarget}) {
@@ -324,6 +343,19 @@ class ReplicaInspector extends LitElement {
     constructor() {
         super();
         this.liveReplica = new LiveReplicaController(this);
+        this.addEventListener('click', async ({path}) => {
+            if (!this.addingTo) { return; }
+
+            for (let i = 0; i  < path; i++) {
+                if (path[i].id === 'typesMenu') {
+                    return;
+                }
+            }
+
+            await this.updateComplete;
+
+            setTimeout(() => this.closeMenu(), 0);
+        }, true);
     }
 
     update(updatedProperties) {
@@ -337,13 +369,18 @@ class ReplicaInspector extends LitElement {
     addProperty(type, isArray) {
         const {addingTo, isAddingToArray} = this;
 
-        if (addingTo) { return; }
+        if (!addingTo) { return; }
 
-        if (!isAddingToArray) {
-            const key = prompt('Key Name?');
+        let key;
+        if (isAddingToArray) {
+            addingTo.push(defaultValueByType[type]);
+        } else {
+            key = prompt('Key Name?');
+            if (!key) { return; }
+            addingTo[key] = defaultValueByType[type];
+
         }
 
-        addingTo[key] = defaultValueByType[type];
         this.requestUpdate();
     }
 
@@ -353,7 +390,9 @@ class ReplicaInspector extends LitElement {
         this.requestUpdate();
     }
 
-    openTypesMenu({target}, obj, isArray) {
+    openTypesMenu({currentTarget}, obj, isArray) {
+        this.menuTop = currentTarget.offsetTop + currentTarget.clientHeight;
+        this.menuLeft = currentTarget.offsetLeft;
         this.addingTo = obj;
         this.isAddingToArray = isArray;
         this.requestUpdate();
@@ -394,19 +433,24 @@ class ReplicaInspector extends LitElement {
         }
     }
 
-    renderPrimitive(value, type) {
+    setValue(input, parent, key, type) {
+        parent[key] = getValueFromInputByType(input, type);
+        this.requestUpdate();
+    }
+
+    renderPrimitive(value, type, parent, key) {
 
         const inputType = inputTypeForValueType[type] || 'text';
 
         return html`
             <label>
-                <input type=${inputType} value=${value} @blur="${this.stopEditing}">
+                <input type=${inputType} value=${value} @blur="${this.stopEditing}" ?checked=${value} @input=${({currentTarget}) => this.setValue(currentTarget, parent, key, type) }>
                 <span class="textValue" data-type=${type} @click=${this.startEditing}>${value}</span>
             </label>            
         `;
     }
 
-    renderValueByType(value, type) {
+    renderValueByType(value, type, parent, key) {
 
         if (value === null) {
             return 'null';
@@ -421,12 +465,33 @@ class ReplicaInspector extends LitElement {
             return html`<span class='summary'>${stringified}</span>`
         }
 
-        return this.renderPrimitive(value, type);
+        return this.renderPrimitive(value, type, parent, key);
     }
 
     deleteProperty(parent, key) {
         delete parent[key];
         this.requestUpdate();
+    }
+
+    async duplicateProperty(parent, value) {
+
+        if (Array.isArray(parent)) {
+            parent.push(JSON.parse(JSON.stringify(value)));
+        } else {
+            const key = prompt('Key Name?');
+            if (!key) { return; }
+
+            if (parent.hasOwnProperty(key)) {
+                alert(`${key} Already exists`);
+                return;
+            }
+            const copy = JSON.parse(JSON.stringify(value));
+            parent[key] = copy;
+        }
+
+
+        await (new Promise(a => setTimeout(a, 0)));
+        this.requestUpdate()
     }
 
     renderProperty(parent, key) {
@@ -440,15 +505,16 @@ class ReplicaInspector extends LitElement {
                 <button class="expandCollapse" @click=${expandCollapse}></button>                                
                 <span class="keyValuePair" @click=${expandCollapse}>
                     <label class="key">${key}:</label>
-                    ${this.renderValueByType(value, type)}
+                    ${this.renderValueByType(value, type, parent, key)}                    
                 </span>                                
+                <button class="duplicate" @click=${() => this.duplicateProperty(parent, value)}></button>
                 ${type === 'object' ? this.renderObject(value) : ''}
             </li>`;
     }
 
     renderTypesMenu() {
         return html`
-            <ul>
+            <ul id="typesMenu" style="top: ${this.menuTop}px; left:${this.menuLeft}px" >
                 <li @click=${() => this.addProperty('object')} >Object</li>
                 <li @click=${() => this.addProperty('array')} >Array</li>
                 <li @click=${() => this.addProperty('string')} >String</li>
