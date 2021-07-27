@@ -10,7 +10,6 @@ const cluster = require('cluster');
 class Connection extends EventEmitter {
     constructor(worker) {
         super();
-
         this.setMaxListeners(50000);
 
         this.socket = worker;
@@ -34,7 +33,6 @@ class Connection extends EventEmitter {
         this.socket.on('message', this.messageFromWorkerProcess);
     }
 
-
     send(event, ...args) {
         event = eventName(event);
         this.socket.send({
@@ -52,11 +50,17 @@ class Connection extends EventEmitter {
         super.emit.apply(this, callArgs);
     }
 
-    addEventListener(event, handler) {
+    _addListener(event, handler) {
+        this.addListener(eventName(event), handler);
         this.socket.on(eventName(event), handler);
     }
 
+    on(event, handler) {
+        this._addListener(eventName(event), handler);
+    }
+
     removeListener(event, handler) {
+        super.removeListener(eventName(event), handler);
         this.socket.removeListener(eventName(event), handler);
     }
 
