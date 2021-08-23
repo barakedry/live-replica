@@ -14,8 +14,9 @@
 const {EventEmitter} = require('events');
 const utils = require('./utils');
 const DiffTracker = require('./diff-tracker');
-const debuglog = require('debuglog');
-const debug = debuglog('patch-diff');
+//const debuglog = require('debuglog');
+//const debug = debuglog('patch-diff');
+const debug = (msg) => {};
 const _defaults = require('lodash/defaults');
 const _isObject = require('lodash/isObject');
 const _isString = require('lodash/isString');
