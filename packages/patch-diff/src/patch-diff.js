@@ -196,7 +196,7 @@ class PatchDiff extends EventEmitter {
         });
     }
 
-    whenAnything(path) {
+    whenAnything(path, acceptEmptyObject) {
         return new Promise(resolve => {
             const unsub = this.subscribe(path, data => {
                 if (typeof data === 'object' && Object.keys(data).length !== 0) {
