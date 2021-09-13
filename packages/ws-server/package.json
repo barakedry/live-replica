@@ -4,7 +4,7 @@
   "description": "websockets  server for live-replica",
   "main": "ws-server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test:ci": "jest"
   },
   "peerDependencies": {
     "ws": "^7.1.2"

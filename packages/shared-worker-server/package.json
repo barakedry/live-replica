@@ -4,7 +4,7 @@
   "description": "shared worker server for live-replica",
   "main": "shared-worker-server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "dependencies": {
       "@live-replica/server": "*",

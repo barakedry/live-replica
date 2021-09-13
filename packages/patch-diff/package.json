@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "grunt test",
+    "test": "jest",
     "localtest": "grunt localtest"
   },
   "repository": {
@@ -33,7 +33,8 @@
     "chai": "latest",
     "mocha": "latest",
     "mocha-lcov-reporter": "latest",
-    "node.extend": "latest"
+    "node.extend": "latest",
+    "event-emitter-enhancer": "^2.0.0"
   },
   "dependencies": {
     "events": "^3.0.0",

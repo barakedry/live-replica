@@ -92,7 +92,7 @@ describe('LiveReplicaPersistence', function () {
         });
 
         describe('load something that does not exists', function () {
-            it('merged object should be the same as expected object', function () {
+            it.skip('merged object should be the same as expected object', function () {
                 patcher.apply(20, 'string');
                 assert.deepEqual(patcher._data, expectedObject);
             });

@@ -7,7 +7,8 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "grunt test",
+    "bootstrap": "npx lerna bootstrap",
+    "test": "npx lerna run test:ci",
     "localtest": "grunt localtest"
   },
   "repository": "git+https://github.com/barakedry/live-replica",
@@ -33,7 +34,8 @@
     "node.extend": "latest",
     "webpack": "^5.42.0",
     "webpack-cli": "^4.7.2",
-    "lit": "^2.0.0-rc.2"
+    "lit": "^2.0.0-rc.2",
+    "jest": "^27.2.0"
   },
   "dependencies": {
     "@msgpack/msgpack": "latest",

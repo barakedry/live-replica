@@ -4,7 +4,7 @@
   "description": "socket abstraction for live-replica",
   "main": "socket.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "author": "",
   "license": "Apache-2.0"
