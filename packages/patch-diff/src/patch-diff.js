@@ -232,14 +232,14 @@ class PatchDiff extends EventEmitter {
             debug('invalid apply, target and patch must be objects');
             this.emit('error', new Error('invalid apply, target and patch must be objects'));
 
-            return;
+            return {};
         }
 
         if (level > options.maxLevels) {
             debug('Trying to apply too deep, stopping at level %d', level);
             this.emit('error', new Error('Trying to apply too deep, stopping at level ' + level));
 
-            return;
+            return {};
         }
 
         let levelDiffs;

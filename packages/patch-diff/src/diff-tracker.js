@@ -44,7 +44,6 @@ function create(diffsAsArray) {
             }
 
             if (childTracker.hasDifferences) {
-
                 if (this.differences.hasOwnProperty(key) && typeof this.differences[key] === 'object') {
                     deepAssign(this.differences[key], childTracker.differences);
                 } else if (!this.differences.hasOwnProperty(key)) {

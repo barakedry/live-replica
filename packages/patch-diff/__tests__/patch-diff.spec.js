@@ -10,7 +10,7 @@ const assert = chai.assert;
 const extend = require('node.extend');
 // const EventEmitterEnhancer = require('event-emitter-enhancer');
 
-describe('apply-diff', function () {
+describe.skip('apply-diff', function () {
     function createBaseObject() {
         return {
             string: 'string',
