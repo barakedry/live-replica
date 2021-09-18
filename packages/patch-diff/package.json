@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "test:ci": "jest",
+    "test": "jest",
     "localtest": "grunt localtest"
   },
   "repository": {
