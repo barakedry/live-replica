@@ -33,8 +33,7 @@
     "chai": "latest",
     "mocha": "latest",
     "mocha-lcov-reporter": "latest",
-    "node.extend": "latest",
-    "event-emitter-enhancer": "^2.0.0"
+    "node.extend": "latest"
   },
   "dependencies": {
     "events": "^3.0.0",
