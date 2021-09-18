@@ -8,7 +8,7 @@
   },
   "scripts": {
     "bootstrap": "npx lerna bootstrap",
-    "test": "npx lerna run test:ci",
+    "test": "jest",
     "localtest": "grunt localtest"
   },
   "repository": "git+https://github.com/barakedry/live-replica",

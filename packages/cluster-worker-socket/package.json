@@ -4,7 +4,7 @@
   "description": "node.js cluster worker socket for live-replica",
   "main": "cluster-worker-socket.js",
   "scripts": {
-    "test:ci": "jest"
+    "test": "jest"
   },
   "dependencies": {
     "@live-replica/server": "*",

@@ -4,7 +4,7 @@
   "description": "node.js cluster master worker server for live-replica",
   "main": "cluster-master-server.js",
   "scripts": {
-    "test:ci": "jest"
+    "test": "jest"
   },
   "dependencies": {
     "@live-replica/server": "*",
