@@ -12,7 +12,10 @@ class LiveReplicaDirective extends AsyncDirective {
             return this.__lastVal;
         }
 
-        this.subscribe(dataOrReplica, relativePath);
+        if (this.isConnected)  {
+            this.subscribe(dataOrReplica, relativePath);
+        }
+        return noChange;
     }
 
     subscribe(dataOrReplica, relativePath) {
@@ -64,6 +67,8 @@ class LiveReplicaDirective extends AsyncDirective {
         delete this.unsubscribe;
         delete this.baseObject;
         delete this.property;
+        delete this.replica;
+        delete this.path;
     }
     // If the subtree the directive is in was disconneted and subsequently
     // re-connected, re-subscribe to make the directive operable again
