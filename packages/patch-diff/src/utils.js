@@ -15,6 +15,97 @@ const Utils = {
 
         return path || suffix;
     },
+    pushKeyToPath: function (path = '', key = '', isIndex = !isNaN(key)) {
+
+        if (isIndex) {
+            return `${path}[${key}]`;
+        } else {
+            return this.concatPath(path, key);
+        }
+    },
+
+    pathParts: function pathParts(path) {
+        const parts = [];
+        let part = '';
+        let i = 0;
+        const len = path.length;
+        while (i < len) {
+            let char = path[i];
+            switch (char) {
+                case '[': {
+                    let num = '';
+                    i++;
+                    char = path[i]
+                    console.log('num', num);
+                    while (char !== ']' && i < len) {
+                        num = `${num}${char}`;
+                        i++;
+                        char = path[i];
+                    }
+
+                    console.log('num', num);
+
+                    parts.push(Number(num));
+                    part = '';
+                    break;
+                }
+                case '.': {
+                    if (part !== '') {
+                        parts.push(part);
+                        part = '';
+                    }
+                    break;
+                }
+                default: {
+                    part += char;
+                }
+
+            }
+
+            i++;
+        }
+
+        parts.push(part);
+
+        return parts;
+    },
+
+
+    splitPathAndLastKey: function(fullPath) {
+        let key, path, index;
+        const dotIndex = fullPath.lastIndexOf('.');
+        const bracketIndex = fullPath.lastIndexOf('[');
+        if (dotIndex > bracketIndex) {
+            key = fullPath.substring(dotIndex + 1);
+            path = fullPath.substring(0, dotIndex);
+        } else {
+            key = fullPath.substring(bracketIndex + 1, fullPath.length -1);
+            path = fullPath.substring(0, bracketIndex);
+            index = Number(key);
+        }
+
+        return  {path, key, index};
+    },
+
+    lastPathKey: function(path) {
+        const dotIndex = path.lastIndexOf('.');
+        const bracketIndex = path.lastIndexOf('[');
+        if (dotIndex > bracketIndex) {
+            return path.substring(dotIndex + 1);
+        } else {
+            return Number(path.substring(bracketIndex + 1, path.length -1));
+        }
+    },
+
+    parentPath(path) {
+        const dotIndex = path.lastIndexOf('.');
+        const bracketIndex = path.lastIndexOf('[');
+        if (dotIndex > bracketIndex) {
+            return path.substring(0, dotIndex);
+        }
+        return path.substring(0, bracketIndex);
+    },
+
     wrapByPath: function wrapByPath(value, path) {
 
         let levels,
@@ -27,7 +118,7 @@ const Utils = {
             return value;
         }
 
-        levels = path.split('.');
+        levels = this.pathParts(path);
         len = levels.length;
         i = 0;
         wrapper = {};

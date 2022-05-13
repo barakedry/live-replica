@@ -135,7 +135,7 @@ class PatchDiff extends EventEmitter {
                 // subscribe for first data
                 let unsub;
                 let once;
-                const parent = path.substring(0, path.lastIndexOf('.'));
+                const parent = utils.parentPath(path);
                 unsub = this.subscribe(parent, () => {
                     if (!once) {
                         const value = _get(this._data, fullPath);
@@ -342,7 +342,7 @@ class PatchDiff extends EventEmitter {
 
                     childDiffs = this._applyObject(target[srcKey],
                         patchValue,
-                        utils.concatPath(path, key),
+                        utils.pushKeyToPath(path, key),
                         options,
                         level + 1,
                         override,
@@ -388,7 +388,7 @@ class PatchDiff extends EventEmitter {
 
                 childDiffs = this._applyObject(target[srcKey],
                     patchValue,
-                    utils.concatPath(path, key),
+                    utils.pushKeyToPath(path, key),
                     options,
                     level + 1,
                     override);
@@ -433,8 +433,8 @@ class PatchDiff extends EventEmitter {
 
         if (_isObject(existingValue)) {
             //levelDiffs.addChildTracking(this._emitInnerDeletions(path, existingValue, options), key)
-            const childDiffs = this._emitInnerDeletions(utils.concatPath(path, key), existingValue, options);
-            this.emit(utils.concatPath(path, key), childDiffs);
+            const childDiffs = this._emitInnerDeletions(utils.pushKeyToPath(path, key), existingValue, options);
+            this.emit(utils.pushKeyToPath(path, key), childDiffs);
         }
 
         return levelDiffs;
@@ -458,7 +458,7 @@ class PatchDiff extends EventEmitter {
             }
             else if (typeof patch[key] === 'object') {
                 const diffs = DiffTracker.create(_isArray(target[key]) && target[key].length === 0 && _isArray(patch[key]));
-                this._detectDeletionsAtLevel(target[key], patch[key], diffs, [path, key].join('.'), options, Array.isArray(target[key]));
+                this._detectDeletionsAtLevel(target[key], patch[key], diffs, utils.pushKeyToPath(path, key, isArray), options, Array.isArray(target[key]));
                 levelDiffs.addChildTracking(diffs, key);
             }
 
@@ -501,9 +501,9 @@ class PatchDiff extends EventEmitter {
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
             if (_isObject(deletedObject[key])) {
-                childDiffs = this._emitInnerDeletions(utils.concatPath(path, key), deletedObject[key], options);
+                childDiffs = this._emitInnerDeletions(utils.pushKeyToPath(path, key), deletedObject[key], options);
                 levelDiffs.addChildTracking(childDiffs, key);
-                this.emit(utils.concatPath(path, key), childDiffs);
+                this.emit(utils.pushKeyToPath(path, key), childDiffs);
             }
 
             levelDiffs.differences[key] = options.deleteKeyword;
@@ -513,26 +513,6 @@ class PatchDiff extends EventEmitter {
         levelDiffs.hasDifferences = true;
         levelDiffs.deletions = deletedObject;
         return levelDiffs;
-    }
-
-    _emitFrom(path, diff) {
-
-        if (!path) {
-            this.emit('*', diff);
-
-            return;
-        }
-
-        let pindex = path.lastIndexOf('.');
-        while (pindex > 0) {
-            const key = path.substring(pindex + 1);
-            path = path.substring(0, pindex);
-            diff = { [key]: diff };
-            this.emit(path, diff);
-
-            pindex = path.lastIndexOf('.');
-        }
-        this.emit('*', { [path]: diff });
     }
 }
 

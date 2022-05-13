@@ -3,6 +3,7 @@
  */
 'use strict';
 let arrayMutationMethods = {};
+const utils = require('../patch-diff/src/utils.js');
 ['copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'].forEach((method) => {
     arrayMutationMethods[method] = true;
 });
@@ -22,7 +23,7 @@ function set(target, path, value) {
         return value;
     }
 
-    levels = path.split('.');
+    levels = Utils.pathParts(path);
     len = levels.length;
     i = 0;
     target = target || {};
@@ -52,7 +53,7 @@ function unset(target, path) {
         return value;
     }
 
-    levels = path.split('.');
+    levels = Utils.pathParts(path);
     len = levels.length;
     i = 0;
     curr = target;
@@ -78,7 +79,7 @@ function get(target, path) {
         return target;
     }
 
-    levels = path.split('.');
+    levels = Utils.pathParts(path)
     len = levels.length;
     i = 0;
     curr = target;
@@ -279,7 +280,7 @@ const PatcherProxy = {
 
         if (properties.path) {
             if (key) {
-                return [properties.path, key].join('.');
+                return Utils.pushKeyToPath(properties.path, key);
             } else {
                 return properties.path;
             }
