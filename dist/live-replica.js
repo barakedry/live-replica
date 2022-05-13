@@ -3526,7 +3526,7 @@ class PatchDiff extends EventEmitter {
                 // subscribe for first data
                 let unsub;
                 let once;
-                const parent = path.substring(0, path.lastIndexOf('.'));
+                const parent = utils.parentPath(path);
                 unsub = this.subscribe(parent, () => {
                     if (!once) {
                         const value = _get(this._data, fullPath);
@@ -3733,7 +3733,7 @@ class PatchDiff extends EventEmitter {
 
                     childDiffs = this._applyObject(target[srcKey],
                         patchValue,
-                        utils.concatPath(path, key),
+                        utils.pushKeyToPath(path, key),
                         options,
                         level + 1,
                         override,
@@ -3779,7 +3779,7 @@ class PatchDiff extends EventEmitter {
 
                 childDiffs = this._applyObject(target[srcKey],
                     patchValue,
-                    utils.concatPath(path, key),
+                    utils.pushKeyToPath(path, key),
                     options,
                     level + 1,
                     override);
@@ -3824,8 +3824,8 @@ class PatchDiff extends EventEmitter {
 
         if (_isObject(existingValue)) {
             //levelDiffs.addChildTracking(this._emitInnerDeletions(path, existingValue, options), key)
-            const childDiffs = this._emitInnerDeletions(utils.concatPath(path, key), existingValue, options);
-            this.emit(utils.concatPath(path, key), childDiffs);
+            const childDiffs = this._emitInnerDeletions(utils.pushKeyToPath(path, key), existingValue, options);
+            this.emit(utils.pushKeyToPath(path, key), childDiffs);
         }
 
         return levelDiffs;
@@ -3849,7 +3849,7 @@ class PatchDiff extends EventEmitter {
             }
             else if (typeof patch[key] === 'object') {
                 const diffs = DiffTracker.create(_isArray(target[key]) && target[key].length === 0 && _isArray(patch[key]));
-                this._detectDeletionsAtLevel(target[key], patch[key], diffs, [path, key].join('.'), options, Array.isArray(target[key]));
+                this._detectDeletionsAtLevel(target[key], patch[key], diffs, utils.pushKeyToPath(path, key, isArray), options, Array.isArray(target[key]));
                 levelDiffs.addChildTracking(diffs, key);
             }
 
@@ -3892,9 +3892,9 @@ class PatchDiff extends EventEmitter {
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
             if (_isObject(deletedObject[key])) {
-                childDiffs = this._emitInnerDeletions(utils.concatPath(path, key), deletedObject[key], options);
+                childDiffs = this._emitInnerDeletions(utils.pushKeyToPath(path, key), deletedObject[key], options);
                 levelDiffs.addChildTracking(childDiffs, key);
-                this.emit(utils.concatPath(path, key), childDiffs);
+                this.emit(utils.pushKeyToPath(path, key), childDiffs);
             }
 
             levelDiffs.differences[key] = options.deleteKeyword;
@@ -3904,26 +3904,6 @@ class PatchDiff extends EventEmitter {
         levelDiffs.hasDifferences = true;
         levelDiffs.deletions = deletedObject;
         return levelDiffs;
-    }
-
-    _emitFrom(path, diff) {
-
-        if (!path) {
-            this.emit('*', diff);
-
-            return;
-        }
-
-        let pindex = path.lastIndexOf('.');
-        while (pindex > 0) {
-            const key = path.substring(pindex + 1);
-            path = path.substring(0, pindex);
-            diff = { [key]: diff };
-            this.emit(path, diff);
-
-            pindex = path.lastIndexOf('.');
-        }
-        this.emit('*', { [path]: diff });
     }
 }
 
@@ -3958,6 +3938,97 @@ const Utils = {
 
         return path || suffix;
     },
+    pushKeyToPath: function (path = '', key = '', isIndex = !isNaN(key)) {
+
+        if (isIndex) {
+            return `${path}[${key}]`;
+        } else {
+            return this.concatPath(path, key);
+        }
+    },
+
+    pathParts: function pathParts(path) {
+        const parts = [];
+        let part = '';
+        let i = 0;
+        const len = path.length;
+        while (i < len) {
+            let char = path[i];
+            switch (char) {
+                case '[': {
+                    let num = '';
+                    i++;
+                    char = path[i]
+                    console.log('num', num);
+                    while (char !== ']' && i < len) {
+                        num = `${num}${char}`;
+                        i++;
+                        char = path[i];
+                    }
+
+                    console.log('num', num);
+
+                    parts.push(Number(num));
+                    part = '';
+                    break;
+                }
+                case '.': {
+                    if (part !== '') {
+                        parts.push(part);
+                        part = '';
+                    }
+                    break;
+                }
+                default: {
+                    part += char;
+                }
+
+            }
+
+            i++;
+        }
+
+        parts.push(part);
+
+        return parts;
+    },
+
+
+    splitPathAndLastKey: function(fullPath) {
+        let key, path, index;
+        const dotIndex = fullPath.lastIndexOf('.');
+        const bracketIndex = fullPath.lastIndexOf('[');
+        if (dotIndex > bracketIndex) {
+            key = fullPath.substring(dotIndex + 1);
+            path = fullPath.substring(0, dotIndex);
+        } else {
+            key = fullPath.substring(bracketIndex + 1, fullPath.length -1);
+            path = fullPath.substring(0, bracketIndex);
+            index = Number(key);
+        }
+
+        return  {path, key, index};
+    },
+
+    lastPathKey: function(path) {
+        const dotIndex = path.lastIndexOf('.');
+        const bracketIndex = path.lastIndexOf('[');
+        if (dotIndex > bracketIndex) {
+            return path.substring(dotIndex + 1);
+        } else {
+            return Number(path.substring(bracketIndex + 1, path.length -1));
+        }
+    },
+
+    parentPath(path) {
+        const dotIndex = path.lastIndexOf('.');
+        const bracketIndex = path.lastIndexOf('[');
+        if (dotIndex > bracketIndex) {
+            return path.substring(0, dotIndex);
+        }
+        return path.substring(0, bracketIndex);
+    },
+
     wrapByPath: function wrapByPath(value, path) {
 
         let levels,
@@ -3970,7 +4041,7 @@ const Utils = {
             return value;
         }
 
-        levels = path.split('.');
+        levels = this.pathParts(path);
         len = levels.length;
         i = 0;
         wrapper = {};
@@ -4012,7 +4083,7 @@ module.exports = Utils;
 /***/ }),
 
 /***/ 34:
-/***/ ((module) => {
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 "use strict";
 /**
@@ -4020,6 +4091,7 @@ module.exports = Utils;
  */
 
 let arrayMutationMethods = {};
+const utils = __webpack_require__(9491);
 ['copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'].forEach((method) => {
     arrayMutationMethods[method] = true;
 });
@@ -4039,7 +4111,7 @@ function set(target, path, value) {
         return value;
     }
 
-    levels = path.split('.');
+    levels = Utils.pathParts(path);
     len = levels.length;
     i = 0;
     target = target || {};
@@ -4069,7 +4141,7 @@ function unset(target, path) {
         return value;
     }
 
-    levels = path.split('.');
+    levels = Utils.pathParts(path);
     len = levels.length;
     i = 0;
     curr = target;
@@ -4095,7 +4167,7 @@ function get(target, path) {
         return target;
     }
 
-    levels = path.split('.');
+    levels = Utils.pathParts(path)
     len = levels.length;
     i = 0;
     curr = target;
@@ -4296,7 +4368,7 @@ const PatcherProxy = {
 
         if (properties.path) {
             if (key) {
-                return [properties.path, key].join('.');
+                return Utils.pushKeyToPath(properties.path, key);
             } else {
                 return properties.path;
             }
