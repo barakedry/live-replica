@@ -13,12 +13,12 @@ export class LiveReplicaDirective extends AsyncDirective {
         }
 
         if (this.isConnected)  {
-            this.subscribe(dataOrReplica, relativePath);
+            this.subscribe(dataOrReplica, relativePath, transformer);
         }
-        return noChange;
+        return transformer(noChange);
     }
 
-    subscribe(dataOrReplica, relativePath) {
+    subscribe(dataOrReplica, relativePath, transformer) {
         this.unsubscribe?.();
 
         this.replica = dataOrReplica;
