@@ -3,11 +3,11 @@ import {AsyncDirective} from 'lit-html/async-directive.js';
 import {noChange} from 'lit';
 import {replicaByData, extractBasePathAndProperty, concatPath} from "./utils.js";
 
-class LiveReplicaDirective extends AsyncDirective {
+export class LiveReplicaDirective extends AsyncDirective {
     // When the observable changes, unsubscribe to the old one and
     // subscribe to the new one
 
-    render(dataOrReplica, relativePath) {
+    render(dataOrReplica, relativePath, transformer = (v) => v) {
         if (this.replica && this.replica === dataOrReplica && relativePath === this.path) {
             return this.__lastVal;
         }
@@ -40,7 +40,7 @@ class LiveReplicaDirective extends AsyncDirective {
         this.unsubscribe = replica.subscribe('', (diff) => {
 
             if (diff[property] === replica.options.deleteKeyword) {
-                this.setValue(undefined);
+                this.setValue(transformer(undefined));
                 this.baseObject = undefined;
                 this.__lastVal = undefined;
             } else if (diff[property] !== undefined) {
@@ -54,7 +54,7 @@ class LiveReplicaDirective extends AsyncDirective {
                 }
 
                 this.__lastVal = value;
-                this.setValue(value);
+                this.setValue(transformer(value));
             }
 
         });
