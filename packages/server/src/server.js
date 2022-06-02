@@ -1,11 +1,7 @@
-/**
- * Created by barakedry on 02/06/2018.
- */
-'use strict';
-const PatchDiff = require('../../patch-diff');
-const PatcherProxy = require('../../proxy');
-const Middlewares = require('./middleware-chain.js');
-const utils = PatchDiff.utils;
+import { PatchDiff } from '../../patch-diff/index.js';
+import { PatcherProxy } from '../../proxy/proxy.js';
+import { MiddlewareChain } from './middleware-chain.js';
+import { Utils } from '../../utils/utils.js';
 
 function serializeFunctions(data) {
 
@@ -22,7 +18,7 @@ function serializeFunctions(data) {
         const value = data[key];
 
         if (typeof value === 'function') {
-            ret[key] = utils.SERIALIZED_FUNCTION;
+            ret[key] = Utils.SERIALIZED_FUNCTION;
         } else if (typeof value === 'object' && value !== null) {
             ret[key] = serializeFunctions(value);
         } else {
@@ -33,7 +29,7 @@ function serializeFunctions(data) {
 
 }
 
-class LiveReplicaServer extends PatchDiff {
+export class LiveReplicaServer extends PatchDiff {
 
     constructor(options) {
         options = Object.assign({}, options);
@@ -41,7 +37,7 @@ class LiveReplicaServer extends PatchDiff {
 
         this.proxies = new WeakMap();
 
-        this.middlewares = new Middlewares(this);
+        this.middlewares = new MiddlewareChain(this);
     }
 
     onConnect(connection) {
@@ -134,7 +130,7 @@ class LiveReplicaServer extends PatchDiff {
             connection.on(invokeRpcEvent, invokeRpcListener);
         }
 
-        const onUnsubscribe = utils.once(() => {
+        const onUnsubscribe = Utils.once(() => {
             unsubscribeChanges();
 
             if (replicaApplyListener) { connection.removeListener(invokeRpcEvent, replicaApplyListener); }
@@ -165,6 +161,4 @@ class LiveReplicaServer extends PatchDiff {
     }
 }
 
-LiveReplicaServer.middlewares = require('./middlewares');
-
-module.exports = LiveReplicaServer;
+export default LiveReplicaServer;

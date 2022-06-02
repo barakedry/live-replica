@@ -1,9 +1,6 @@
-/**
- * Created by barakedry on 31/03/2017.
- */
-'use strict';
-let arrayMutationMethods = {};
-const utils = require('../patch-diff/src/utils.js');
+import {Utils} from '../utils/utils.js';
+
+const arrayMutationMethods = {};
 ['copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'].forEach((method) => {
     arrayMutationMethods[method] = true;
 });
@@ -92,7 +89,7 @@ function get(target, path) {
     return curr;
 }
 
-const PatcherProxy = {
+export const PatcherProxy = {
     proxies: new WeakMap(),
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
     create(patcher, path, root, readonly, immediateFlush = false) {
@@ -481,5 +478,4 @@ const PatcherProxy = {
     }
 };
 
-// export default Proxy;
-module.exports = PatcherProxy;
+export default PatcherProxy;

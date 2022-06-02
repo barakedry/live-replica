@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "websocket client for live-replica",
   "main": "ws-client.js",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },

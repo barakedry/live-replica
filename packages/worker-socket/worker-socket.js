@@ -2,7 +2,7 @@
  * Created by barakedry on 06/07/2018.
  */
 'use strict';
-const LiveReplicaEvents = require('../common/events');
+const LiveReplicaEvents = require('../common/event-name');
 const Events = require('events');
 const LiveReplicaSocket = require('../socket');
 let acks = 1;

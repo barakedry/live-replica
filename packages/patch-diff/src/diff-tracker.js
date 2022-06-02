@@ -57,4 +57,4 @@ function create(diffsAsArray) {
     };
 }
 
-module.exports = {create};
+export const DiffTracker = {create};

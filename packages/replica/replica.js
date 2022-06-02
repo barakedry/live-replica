@@ -2,10 +2,11 @@
  * Created by barakedry on 28/04/2018.
  */
 'use strict';
-const PatchDiff = require('../patch-diff');
-const PatcherProxy = require('../proxy');
-const LiveReplicaSocket = require('../socket');
-const concatPath = PatchDiff.utils.concatPath;
+import { PatchDiff } from "@live-replica/patch-diff";
+import { PatcherProxy } from "@live-replica/proxy";
+import { LiveReplicaSocket } from '../socket/socket.js';
+import { Utils } from '../utils/utils.js';
+const { concatPath } = Utils;
 
 let replicaId = Date.now();
 
@@ -16,7 +17,7 @@ const remoteApply           = Symbol('remoteApply');
 const remoteOverride           = Symbol('remoteOverride');
 const bindToSocket           = Symbol('bindToSocket');
 
-class Replica extends PatchDiff {
+export class Replica extends PatchDiff {
 
     // private
     [bindToSocket]() {
@@ -216,5 +217,4 @@ class Replica extends PatchDiff {
 
 Replica.prototype.override = Replica.prototype.set;
 
-// export default Replica;
-module.exports = Replica;
+export default Replica;

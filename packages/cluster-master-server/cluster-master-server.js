@@ -1,11 +1,7 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const eventName = require('../common/events');
-const { EventEmitter }  = require('events');
-const LiveReplicaServer = require('../server');
-const cluster = require('cluster');
+import { eventName} from "../common/event-name.js";
+import { EventEmitter } from '../events/events.js';
+import { LiveReplicaServer } from '../server/index.js';
+import * as cluster from "node:cluster";
 
 class Connection extends EventEmitter {
     constructor(worker) {
@@ -67,9 +63,9 @@ class Connection extends EventEmitter {
 }
 
 /**
- *  LiveReplicaWorkerSocket
+ *  NodeClusterServer
  */
-class LiveReplicaNodeClusterServer extends LiveReplicaServer {
+export class NodeClusterServer extends LiveReplicaServer {
     constructor() {
         if (!cluster.isMaster) {
             throw new Error('LiveReplicaNodeClusterServer can be initiated only on a node.js cluster master process')
@@ -85,4 +81,4 @@ class LiveReplicaNodeClusterServer extends LiveReplicaServer {
 
 }
 
-module.exports = LiveReplicaNodeClusterServer;
+export default NodeClusterServer;

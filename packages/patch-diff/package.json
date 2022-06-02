@@ -2,6 +2,7 @@
   "name": "@live-replica/patch-diff",
   "version": "0.1.0",
   "description": "Emits diff events.",
+  "type": "module",
   "main": "index.js",
   "directories": {
     "test": "tests"

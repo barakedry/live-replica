@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "node.js cluster master worker server for live-replica",
   "main": "cluster-master-server.js",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },

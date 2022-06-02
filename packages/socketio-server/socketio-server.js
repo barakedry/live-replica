@@ -2,7 +2,7 @@
  * Created by barakedry on 06/07/2018.
  */
 'use strict';
-const eventName = require('../common/events');
+const eventName = require('../common/event-name');
 const { EventEmitter }  = require('events');
 const LiveReplicaServer = require('../server');
 

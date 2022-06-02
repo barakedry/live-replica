@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "server for live-replica.js",
   "main": "src/server.js",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },

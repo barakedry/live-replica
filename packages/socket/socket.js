@@ -1,13 +1,6 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const eventName = require('../common/events');
+import { eventName } from "../common/event-name.js";
 
-/**
- *  LiveReplicaSocket
- */
-class LiveReplicaSocket {
+export class LiveReplicaSocket {
 
     constructor(baseSocket) {
         this._socket = baseSocket;
@@ -72,4 +65,4 @@ class LiveReplicaSocket {
 
 LiveReplicaSocket.instances = 0;
 
-module.exports = LiveReplicaSocket;
+export default LiveReplicaSocket;

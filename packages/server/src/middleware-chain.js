@@ -1,9 +1,4 @@
-/**
- * Created by barakedry on 02/06/2018.
- */
-'use strict';
-
-class MiddlewareChain {
+export class MiddlewareChain {
     constructor(owner) {
         this.chain = [];
         this.owner = owner || this;
@@ -47,5 +42,4 @@ class MiddlewareChain {
 
 MiddlewareChain.prototype.use = MiddlewareChain.prototype.add;
 
-// export default MiddlewareChain;
-module.exports = MiddlewareChain;
+export default MiddlewareChain;

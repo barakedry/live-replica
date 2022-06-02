@@ -1,11 +1,8 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const LiveReplicaSocket = require('../socket');
-const LiveReplicaEvents = require('../common/events');
-const Events = require('events');
-const msgpack = require('@msgpack/msgpack');
+import { LiveReplicaSocket } from '../socket/socket.js';
+import {EventEmitter} from "../events/events.js";
+import msgpack from "@msgpack/msgpack";
+
+
 const LIVE_REPLICA_MSG = '$LR';
 const onMessage = Symbol('onWebsocketMessage');
 let acks = Date.now();
@@ -19,7 +16,7 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
     constructor(socket) {
         super();
         this.socket = socket;
-        this._emitter = new Events.EventEmitter();
+        this._emitter = new EventEmitter();
         this._emitter.setMaxListeners(50000);
     }
 

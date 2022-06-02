@@ -1,10 +1,9 @@
-const _debounce = require('lodash/debounce');
-const path = require('path');
-const fs = require('fs');
-const util = require('util');
-const LiveReplicaPatchDiff = require('../patch-diff');
+import _debounce from 'lodash/debounce';
+import path from 'node:path';
+import fs from 'node:fs';
+import { util } from  'node:util';
+import { PatchDiff } from '../patch-diff/index.js';
 
-const v8 = require('v8');
 
 const structuredClone = obj => {
     return v8.deserialize(v8.serialize(obj));
@@ -12,7 +11,7 @@ const structuredClone = obj => {
 
 class LiveReplicaPersistence {
     constructor(replica, key) {
-        if (!(replica instanceof LiveReplicaPatchDiff)) {
+        if (!(replica instanceof PatchDiff)) {
             throw new TypeError('the "replica" argument must be an instance of LiveReplica');
         }
 

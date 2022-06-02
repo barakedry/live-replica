@@ -1,9 +1,3 @@
-/**
- * Created by barakedry on 05/07/2018.
- */
-'use strict';
-/*
-import Replica from "./replica";
+import Replica from "./index.js";
 export default Replica;
-*/
-module.exports = require('./replica');
+export * from "./index.js";

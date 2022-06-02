@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "web worker socket for live-replica",
   "main": "socketio-client.js",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },

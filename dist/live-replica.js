@@ -276,7 +276,7 @@ function _addListener(target, type, listener, prepend) {
       existing.warned = true;
       // No error code for this since it is a Warning
       // eslint-disable-next-line no-restricted-syntax
-      var w = new Error('Possible EventEmitter memory leak detected. ' +
+      var w = new Error('Possible events memory leak detected. ' +
                           existing.length + ' ' + String(type) + ' listeners ' +
                           'added. Use emitter.setMaxListeners() to ' +
                           'increase limit');
@@ -3395,7 +3395,7 @@ module.exports = {create};
 /* eslint max-params: 'off' */
 
 
-// import {EventEmitter} from 'events';
+// import {events} from 'events';
 // import _ from 'lodash';
 // import utils from './utils';
 // import DiffTracker from './diff-tracker';
@@ -5380,7 +5380,7 @@ function _addListener(target, type, listener, prepend) {
       existing.warned = true;
       // No error code for this since it is a Warning
       // eslint-disable-next-line no-restricted-syntax
-      var w = new Error('Possible EventEmitter memory leak detected. ' +
+      var w = new Error('Possible events memory leak detected. ' +
                           existing.length + ' ' + String(type) + ' listeners ' +
                           'added. Use emitter.setMaxListeners() to ' +
                           'increase limit');
@@ -5664,7 +5664,7 @@ function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
       listener(arg);
     });
   } else {
-    throw new TypeError('The "emitter" argument must be of type EventEmitter. Received type ' + typeof emitter);
+    throw new TypeError('The "emitter" argument must be of type events. Received type ' + typeof emitter);
   }
 }
 
@@ -6071,7 +6071,7 @@ function _addListener(target, type, listener, prepend) {
       existing.warned = true;
       // No error code for this since it is a Warning
       // eslint-disable-next-line no-restricted-syntax
-      var w = new Error('Possible EventEmitter memory leak detected. ' +
+      var w = new Error('Possible events memory leak detected. ' +
                           existing.length + ' ' + String(type) + ' listeners ' +
                           'added. Use emitter.setMaxListeners() to ' +
                           'increase limit');
@@ -6355,7 +6355,7 @@ function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
       listener(arg);
     });
   } else {
-    throw new TypeError('The "emitter" argument must be of type EventEmitter. Received type ' + typeof emitter);
+    throw new TypeError('The "emitter" argument must be of type events. Received type ' + typeof emitter);
   }
 }
 
@@ -6660,7 +6660,7 @@ function _addListener(target, type, listener, prepend) {
       existing.warned = true;
       // No error code for this since it is a Warning
       // eslint-disable-next-line no-restricted-syntax
-      var w = new Error('Possible EventEmitter memory leak detected. ' +
+      var w = new Error('Possible events memory leak detected. ' +
                           existing.length + ' ' + String(type) + ' listeners ' +
                           'added. Use emitter.setMaxListeners() to ' +
                           'increase limit');
@@ -6944,7 +6944,7 @@ function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
       listener(arg);
     });
   } else {
-    throw new TypeError('The "emitter" argument must be of type EventEmitter. Received type ' + typeof emitter);
+    throw new TypeError('The "emitter" argument must be of type events. Received type ' + typeof emitter);
   }
 }
 
@@ -7260,7 +7260,7 @@ function _addListener(target, type, listener, prepend) {
       existing.warned = true;
       // No error code for this since it is a Warning
       // eslint-disable-next-line no-restricted-syntax
-      var w = new Error('Possible EventEmitter memory leak detected. ' +
+      var w = new Error('Possible events memory leak detected. ' +
                           existing.length + ' ' + String(type) + ' listeners ' +
                           'added. Use emitter.setMaxListeners() to ' +
                           'increase limit');
@@ -7544,7 +7544,7 @@ function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
       listener(arg);
     });
   } else {
-    throw new TypeError('The "emitter" argument must be of type EventEmitter. Received type ' + typeof emitter);
+    throw new TypeError('The "emitter" argument must be of type events. Received type ' + typeof emitter);
   }
 }
 

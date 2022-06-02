@@ -1,15 +1,9 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const LiveReplicaSocket = require('../socket');
+import {LiveReplicaSocket} from '../socket/socket.js';
 /**
  *  LiveReplicaSocketIoClient
  */
-class LiveReplicaSocketIoClient extends LiveReplicaSocket {
+export class LiveReplicaSocketIoClient extends LiveReplicaSocket {
 
     // overrides
     isConnected() { return !!this._socket; }
 }
-
-module.exports = LiveReplicaSocketIoClient;

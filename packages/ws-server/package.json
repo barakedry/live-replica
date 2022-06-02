@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "websockets  server for live-replica",
   "main": "ws-server.js",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },

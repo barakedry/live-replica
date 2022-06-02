@@ -1,11 +1,8 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const eventName = require('../common/events');
-const { EventEmitter }  = require('events');
-const LiveReplicaServer = require('../server');
-const msgpack = require('@msgpack/msgpack');
+import {eventName} from "../common/event-name.js";
+import { EventEmitter} from "../events/events.js";
+import {LiveReplicaServer} from '../server/index.js';
+import msgpack from '@msgpack/msgpack';
+
 const LIVE_REPLICA_MSG = '$LR';
 const nativeSocketEvents = {'disconnect': 'close'};
 
@@ -88,7 +85,7 @@ Connection.prototype.on = Connection.prototype.addListener;
 /**
  *  LiveReplicaWorkerSocket
  */
-class LiveReplicaWebSocketsServer extends LiveReplicaServer {
+export class LiveReplicaWebSocketsServer extends LiveReplicaServer {
     constructor(wsServer) {
         super();
 
@@ -101,4 +98,4 @@ class LiveReplicaWebSocketsServer extends LiveReplicaServer {
 
 }
 
-module.exports = LiveReplicaWebSocketsServer;
+export default LiveReplicaWebSocketsServer;

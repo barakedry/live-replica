@@ -1,11 +1,7 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const LiveReplicaEvents = require('../common/events');
-const Events = require('events');
-const LiveReplicaSocket = require('../socket');
-const cluster = require('cluster');
+import { EventEmitter } from '../events/events.js';
+import { LiveReplicaSocket } from '../socket/socket.js';
+import * as cluster from "node:cluster";
+
 let acks = 1;
 /**
  *  LiveReplicaWorkerSocket
@@ -25,7 +21,7 @@ class LiveReplicaClusterWorkerSocket extends LiveReplicaSocket {
             throw new Error('LiveReplicaClusterWorkerSocket can be initiated only on a node.js cluster worker process')
         }
         super();
-        this._emitter = new Events.EventEmitter();
+        this._emitter = new EventEmitter();
         this._emitter.setMaxListeners(50000);
 
         process.on('message', (msg) => {

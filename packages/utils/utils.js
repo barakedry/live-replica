@@ -3,7 +3,7 @@
  */
 'use strict';
 
-const Utils = {
+export const Utils = {
     isValid: function (val) {
         // val === val for cases val is NaN value
         return val === val;
@@ -153,6 +153,3 @@ const Utils = {
 
     SERIALIZED_FUNCTION: 'function()'
 };
-
-// export default Utils;
-module.exports = Utils;

@@ -1,6 +1,4 @@
-module.exports = {
-    Server: require('./packages/server'),
-    Proxy: require('./packages/proxy'),
-    Replica: require('./packages/replica'),
-    PatchDiff: require('./packages/patch-diff')
-};
+export * from './packages/patch-diff/index.js';
+export * from './packages/patch-diff/index.js';
+export * from './packages/patch-diff/index.js';
+export * from './packages/patch-diff/index.js';
