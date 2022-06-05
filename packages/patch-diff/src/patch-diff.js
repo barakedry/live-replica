@@ -4,14 +4,14 @@ import { DiffTracker } from "./diff-tracker.js";
 
 const debug = (msg) => {};
 
-import _defaults from 'lodash/defaults.js';
-import _isObject from 'lodash/isObject.js';
-import _isString from 'lodash/isString.js';
-import _get from 'lodash/get.js';
-import _keys from 'lodash/keys.js';
-import _isArray from 'lodash/isArray.js';
-import _isUndefined from 'lodash/isUndefined.js';
-import _isFunction from 'lodash/isFunction.js';
+import _defaults from 'lodash-es/defaults.js';
+import _isObject from 'lodash-es/isObject.js';
+import _isString from 'lodash-es/isString.js';
+import _get from 'lodash-es/get.js';
+import _keys from 'lodash-es/keys.js';
+import _isArray from 'lodash-es/isArray.js';
+import _isUndefined from 'lodash-es/isUndefined.js';
+import _isFunction from 'lodash-es/isFunction.js';
 
 function index(key, levelDiffs) {
     return Number(key) + (levelDiffs.arrayOffset || 0);

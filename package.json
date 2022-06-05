@@ -33,15 +33,13 @@
     "events": "latest",
     "mocha": "latest",
     "node.extend": "latest",
-    "webpack": "^5.42.0",
-    "webpack-cli": "^4.7.2",
     "lit": "^2.0.0-rc.2",
     "jest": "^27.2.0"
   },
   "dependencies": {
     "@msgpack/msgpack": "latest",
     "debuglog": "latest",
-    "lodash": "latest"
+    "lodash-es": "latest"
   },
   "main": "index.js"
 }

@@ -2,8 +2,8 @@
  * Created by barakedry on 28/04/2018.
  */
 'use strict';
-import { PatchDiff } from "@live-replica/patch-diff";
-import { PatcherProxy } from "@live-replica/proxy";
+import { PatchDiff } from "../patch-diff/index.js";
+import { PatcherProxy } from "../proxy/proxy.js";
 import { LiveReplicaSocket } from '../socket/socket.js';
 import { Utils } from '../utils/utils.js';
 const { concatPath } = Utils;
