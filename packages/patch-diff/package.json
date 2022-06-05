@@ -8,8 +8,7 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "jest",
-    "localtest": "grunt localtest"
+    "test": "jest"
   },
   "repository": {
     "type": "git",

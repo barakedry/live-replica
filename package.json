@@ -9,8 +9,7 @@
   },
   "scripts": {
     "bootstrap": "npx lerna bootstrap",
-    "test": "jest",
-    "localtest": "grunt localtest"
+    "test": "jest"
   },
   "repository": "git+https://github.com/barakedry/live-replica",
   "keywords": [
@@ -28,9 +27,7 @@
   },
   "homepage": "https://github.com/barakedry/live-replica/",
   "devDependencies": {
-    "babel-plugin-transform-commonjs-es2015-modules": "latest",
     "chai": "latest",
-    "events": "latest",
     "mocha": "latest",
     "node.extend": "latest",
     "lit": "^2.0.0-rc.2",

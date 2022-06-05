@@ -68,3 +68,5 @@ export class WorkerServer extends LiveReplicaServer {
         this.onConnect(this._masterConnection)
     }
 }
+
+export default WorkerServer;

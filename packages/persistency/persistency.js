@@ -1,4 +1,4 @@
-import _debounce from 'lodash/debounce';
+import _debounce from 'lodash_es/debounce.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import { util } from  'node:util';

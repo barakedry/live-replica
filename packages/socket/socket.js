@@ -1,5 +1,4 @@
 import { eventName } from "../common/event-name.js";
-
 export class LiveReplicaSocket {
 
     constructor(baseSocket) {

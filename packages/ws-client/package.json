@@ -9,8 +9,8 @@
   },
   "dependencies": {
     "@live-replica/socket": "*",
-    "@msgpack/msgpack": "^1.9.0",
-    "events": "latest"
+    "@live-replica/events": "*",
+    "@msgpack/msgpack": "^1.9.0"
   },
   "author": "",
   "license": "Apache-2.0"

@@ -1,7 +1,7 @@
 import {eventName} from "../common/event-name.js";
 import { EventEmitter} from "../events/events.js";
 import {LiveReplicaServer} from '../server/index.js';
-import msgpack from '@msgpack/msgpack';
+import {encode, decode} from '../../node_modules/@msgpack/msgpack/dist.es5+esm/index.mjs';
 
 const LIVE_REPLICA_MSG = '$LR';
 const nativeSocketEvents = {'disconnect': 'close'};
@@ -17,7 +17,7 @@ class Connection extends EventEmitter {
 
         this.socket.addEventListener('message', ({data}) => {
             try {
-                const msg = msgpack.decode(data);
+                const msg = decode(data);
                 if (msg[LIVE_REPLICA_MSG]) {
                     const {event, payload, ack} = msg[LIVE_REPLICA_MSG];
                     let ackFunction;
@@ -49,7 +49,7 @@ class Connection extends EventEmitter {
             }
         };
 
-        const data = msgpack.encode(message);
+        const data = encode(message);
         this.socket.send(data);
     }
 

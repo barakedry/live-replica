@@ -1,17 +1,13 @@
+import { EventEmitter } from "../events/events.js";
 import { LiveReplicaSocket } from '../socket/socket.js';
-import {EventEmitter} from "../events/events.js";
-import msgpack from "@msgpack/msgpack";
-
+import {encode, decode} from '../../node_modules/@msgpack/msgpack/dist.es5+esm/index.mjs';
 
 const LIVE_REPLICA_MSG = '$LR';
 const onMessage = Symbol('onWebsocketMessage');
 let acks = Date.now();
 const nativeSocketEvents = {'disconnect': 'close'};
 
-/**
- *  LiveReplicaWebSocketsClient
- */
-class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
+export class WebSocketsClient extends LiveReplicaSocket {
 
     constructor(socket) {
         super();
@@ -75,7 +71,7 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
             }
         };
 
-        this._socket.send(msgpack.encode(message));
+        this._socket.send(encode(message));
     }
 
     set socket(socket) {
@@ -91,7 +87,7 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
         this._socket = socket;
 
         this[onMessage] = ({data}) => {
-            const msg = msgpack.decode(data);
+            const msg = decode(data);
             if (msg[LIVE_REPLICA_MSG]) {
                 const {event, args} = msg[LIVE_REPLICA_MSG];
                 this._emitter.emit(event, ...args);
@@ -122,4 +118,4 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
     
 }
 
-module.exports = LiveReplicaWebSocketsClient;
+export default WebSocketsClient;

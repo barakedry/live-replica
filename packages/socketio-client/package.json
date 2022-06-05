@@ -9,7 +9,7 @@
   },
   "dependencies": {
       "@live-replica/socket": "*",
-      "events": "latest"
+      "@live-replica/events": "*"
   },
   "author": "",
   "license": "Apache-2.0"
