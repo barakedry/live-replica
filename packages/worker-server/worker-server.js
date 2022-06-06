@@ -23,13 +23,13 @@ class Connection extends EventEmitter {
             }
         };
 
-        global.addEventListener('message', this.messageFromMaster);
+        self.addEventListener('message', this.messageFromMaster);
     }
 
 
     send(event, ...args) {
         event = eventName(event);
-        global.postMessage({
+        self.postMessage({
             liveReplica: {
                 event,
                 args
@@ -59,8 +59,8 @@ class Connection extends EventEmitter {
  */
 export class WorkerServer extends LiveReplicaServer {
     constructor() {
-        if (typeof onmessage !== 'function') {
-            throw new Error('LiveReplicaWorkerServer can be initiated only inside a web worker')
+        if (!self) {
+            throw new Error('WorkerServer can be initiated only inside a web worker')
         }
         super();
 

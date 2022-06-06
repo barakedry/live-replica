@@ -7,7 +7,7 @@ const onMessage = Symbol('onWebsocketMessage');
 let acks = Date.now();
 const nativeSocketEvents = {'disconnect': 'close'};
 
-export class WebSocketsClient extends LiveReplicaSocket {
+export class WebSocketClient extends LiveReplicaSocket {
 
     constructor(socket) {
         super();
@@ -118,4 +118,4 @@ export class WebSocketsClient extends LiveReplicaSocket {
     
 }
 
-export default WebSocketsClient;
+export default WebSocketClient;

@@ -1,8 +1,3 @@
-/**
- * Created by barakedry on 6/19/15.
- */
-'use strict';
-
 export const Utils = {
     isValid: function (val) {
         // val === val for cases val is NaN value

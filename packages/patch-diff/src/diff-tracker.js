@@ -1,8 +1,3 @@
-/**
- * Created by barakedry on 6/20/15.
- */
-'use strict';
-
 function deepAssign(target, patch) {
     const keys = Object.keys(patch);
     for (let i = 0; i < keys.length; i++) {
@@ -57,4 +52,4 @@ function create(diffsAsArray) {
     };
 }
 
-export const DiffTracker = {create};
+export const DiffTracker = { create };

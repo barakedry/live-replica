@@ -45,7 +45,7 @@ export class EventEmitter {
 
     once(event, cb) {
         const off = this.on(event, (...args) => {
-            off();
+            off?.();
             cb.call(this, ...args);
         });
     }
