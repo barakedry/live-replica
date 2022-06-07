@@ -2,7 +2,7 @@
   "private": true,
   "name": "@live-replica/live-replica",
   "type": "module",
-  "version": "0.3.6",
+  "version": "0.5.0",
   "description": "an easy to use real-time objects replica syncing",
   "directories": {
     "test": "tests"
@@ -35,8 +35,11 @@
   },
   "dependencies": {
     "@msgpack/msgpack": "latest",
-    "debuglog": "latest",
     "lodash-es": "latest"
   },
+  "bundledDependencies": [
+    "@msgpack/msgpack",
+    "lodash-es"
+  ],
   "main": "index.js"
 }

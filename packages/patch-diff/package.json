@@ -36,8 +36,6 @@
     "node.extend": "latest"
   },
   "dependencies": {
-    "events": "^3.0.0",
-    "debuglog": "latest",
     "lodash": "latest"
   }
 }
