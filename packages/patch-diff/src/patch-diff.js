@@ -329,7 +329,7 @@ export class PatchDiff extends EventEmitter {
 
                     childDiffs = this._applyObject(target[srcKey],
                         patchValue,
-                        Utils.pushKeyToPath(path, key),
+                        Utils.pushKeyToPath(path, key, isTargetArray),
                         options,
                         level + 1,
                         override,
@@ -375,7 +375,7 @@ export class PatchDiff extends EventEmitter {
 
                 childDiffs = this._applyObject(target[srcKey],
                     patchValue,
-                    Utils.pushKeyToPath(path, key),
+                    Utils.pushKeyToPath(path, key, isExistingValueArray),
                     options,
                     level + 1,
                     override);
@@ -420,7 +420,7 @@ export class PatchDiff extends EventEmitter {
 
         if (_isObject(existingValue)) {
             //levelDiffs.addChildTracking(this._emitInnerDeletions(path, existingValue, options), key)
-            const childDiffs = this._emitInnerDeletions(Utils.pushKeyToPath(path, key), existingValue, options);
+            const childDiffs = this._emitInnerDeletions(Utils.pushKeyToPath(path, key, isArray), existingValue, options);
             this.emit(Utils.pushKeyToPath(path, key), childDiffs);
         }
 
@@ -485,12 +485,14 @@ export class PatchDiff extends EventEmitter {
         }
 
         let keys = _keys(deletedObject);
+        const isArray = _isArray(deletedObject);
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
             if (_isObject(deletedObject[key])) {
-                childDiffs = this._emitInnerDeletions(Utils.pushKeyToPath(path, key), deletedObject[key], options);
+                const innerPath = Utils.pushKeyToPath(path, key, isArray);
+                childDiffs = this._emitInnerDeletions(innerPath, deletedObject[key], options);
                 levelDiffs.addChildTracking(childDiffs, key);
-                this.emit(Utils.pushKeyToPath(path, key), childDiffs);
+                this.emit(innerPath, childDiffs);
             }
 
             levelDiffs.differences[key] = options.deleteKeyword;

@@ -31,14 +31,11 @@ export const Utils = {
                     let num = '';
                     i++;
                     char = path[i]
-                    console.log('num', num);
                     while (char !== ']' && i < len) {
                         num = `${num}${char}`;
                         i++;
                         char = path[i];
                     }
-
-                    console.log('num', num);
 
                     parts.push(Number(num));
                     part = '';
