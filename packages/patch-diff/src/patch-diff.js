@@ -293,6 +293,7 @@ export class PatchDiff extends EventEmitter {
             levelDiffs.hasUpdates = true;
             levelDiffs.hasDifferences = true;
             levelDiffs.differences[key] = appliedValue;
+
             return levelDiffs;
         }
 
@@ -349,6 +350,8 @@ export class PatchDiff extends EventEmitter {
                     target[srcKey] = patchValue;
                     levelDiffs.additions[key] = appliedValue;
                     levelDiffs.differences[key] = appliedValue;
+                    const leafPath =  Utils.pushKeyToPath(path, srcKey, isTargetArray);
+                    this.emit((leafPath || '*'),  appliedValue, {type: 'addition',});
                 }
             }
         // existing
@@ -394,6 +397,8 @@ export class PatchDiff extends EventEmitter {
                     newVal: appliedValue
                 };
                 levelDiffs.differences[key] = appliedValue;
+                const leafPath =  Utils.pushKeyToPath(path, srcKey, isTargetArray);
+                this.emit((leafPath || '*'),  appliedValue, {type: 'update', oldValue: existingValue});
             }
 
         }
