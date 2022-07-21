@@ -82,19 +82,26 @@ export class LiveReplicaServer extends PatchDiff {
         const path = request.path;
         const clientSubset = this.at(path);
         const connection = request.connection;
+        let changeRevision = 0;
 
         const unsubscribeEvent = `unsubscribe:${request.id}`;
         const applyEvent = `apply:${request.id}`;
         const invokeRpcEvent = `invokeRPC:${request.id}`;
         let invokeRpcListener, replicaApplyListener;
 
-        let ownerChange = false;
+        let subscriberChange = false;
         const unsubscribeChanges = clientSubset.subscribe((patchData, {snapshot}) => {
-            if (!ownerChange) {
-                connection.send(applyEvent, serializeFunctions(patchData), snapshot ? {snapshot} : {snapshot : false});
+            if (!subscriberChange) {
+                const updateInfo  =  snapshot ? {snapshot} : {snapshot : false};
+                if (!snapshot) {
+                    changeRevision++;
+                    updateInfo.changeRevision = changeRevision;
+                }
+
+                connection.send(applyEvent, serializeFunctions(patchData), updateInfo);
             }
 
-            ownerChange = false;
+            subscriberChange = false;
         });
 
         if (connection.listenerCount(applyEvent)) {
@@ -108,8 +115,8 @@ export class LiveReplicaServer extends PatchDiff {
         if (request.allowWrite) {
 
             replicaApplyListener = (payload) => {
-                ownerChange = true;
-                clientSubset.apply(payload);
+                subscriberChange = payload.changeRevision === changeRevision;
+                clientSubset.apply(payload.data);
             };
 
             connection.on(applyEvent, replicaApplyListener);

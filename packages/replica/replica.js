@@ -18,12 +18,14 @@ export class Replica extends PatchDiff {
     // private
     [bindToSocket]() {
 
+        let changeRevision = 0;
         this.onApplyEvent = (delta, meta = {}) => {
             if (!delta) { return; }
 
             if (meta.snapshot) {
                 this[remoteOverride](delta);
             } else {
+                changeRevision = meta.changeRevision;
                 this[remoteApply](delta);
             }
 
@@ -38,7 +40,7 @@ export class Replica extends PatchDiff {
         if (this.options.allowWrite) {
             this.subscribe((data, diff, options) => {
                 if (options.local) {
-                    this.connection.send(`apply:${this.id}`, data);
+                    this.connection.send(`apply:${this.id}`, {data, changeRevision});
                 }
             });
         }
@@ -153,7 +155,7 @@ export class Replica extends PatchDiff {
     splice(patch, path, options = {}) {
         if (this.options.allowWrite) {
             options.local = true;
-            super.apply(patch, path, options);
+            super.splice(patch, path, options);
         }
     }
 

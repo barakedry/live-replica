@@ -87,7 +87,7 @@ export class PatchDiff extends EventEmitter {
         this._applyObject(this._data, Utils.wrapByPath(this.options.deleteKeyword, path), '', options, 0);
     }
 
-    splice(path, {index, itemsToRemove, ...itemsToAdd}, options = {}) {
+    splice({index, itemsToRemove, ...itemsToAdd}, path, options = {}) {
         options = _defaults(options || {}, this.options);
         path = Utils.concatPath(this._path, path);
         this._applyObject(this._data, Utils.wrapByPath({[this.options.spliceKeyword]: {index, itemsToRemove, itemsToAdd}}, path), '', options, 0);
