@@ -35,7 +35,8 @@ export class PatchDiff extends EventEmitter {
             emitDifferences: true,
             maxKeysInLevel: 1000,
             maxLevels: 50,
-            maxListeners: 1000000
+            maxListeners: 1000000,
+            disableSplices: true
         });
 
         this._data = object || {};

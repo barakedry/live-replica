@@ -96,22 +96,29 @@ class LiveReplicaFilePersistence extends LiveReplicaPersistence {
 
 class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
 
-    constructor(replica, query, dbCollection) {
+    constructor(replica, query, dbCollection, initialDocument = query,  dataKey = 'data') {
         super(replica, query);
+        this.dataKey = dataKey;
         this.dbCollection = dbCollection;
+        this.document = initialDocument;
     }
 
     async read(query) {
-        const record = await this.dbCollection.findOne(query);
-        if (!record) {
+        const document = await this.dbCollection.findOne(query);
+        if (!document) {
             throw new TypeError(`no record found on mongodb for query ${JSON.stringify(query)}`);
         }
-        return record.data;
+        this.document = document;
+        return document[this.dataKey];
     }
 
     async update(data, query) {
-        const document = {...query, data};
+        //const document = {...query, data};
 
+        const document = {
+            ...this.document,
+            [this.dataKey]: data
+        }
         await this.dbCollection.updateOne(query, {$set: document}, {upsert: true});
     }
 

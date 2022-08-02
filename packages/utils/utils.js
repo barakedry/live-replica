@@ -28,6 +28,12 @@ export const Utils = {
             let char = path[i];
             switch (char) {
                 case '[': {
+
+                    if (part !== '') {
+                        parts.push(part);
+                        part = '';
+                    }
+
                     let num = '';
                     i++;
                     char = path[i]
@@ -57,7 +63,9 @@ export const Utils = {
             i++;
         }
 
-        parts.push(part);
+        if (part !== '') {
+            parts.push(part);
+        }
 
         return parts;
     },

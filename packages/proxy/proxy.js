@@ -368,8 +368,8 @@ export const PatcherProxy = {
                 // trying to assign the same proxy object
                 const p = this.proxyProperties.get(newval).patcher;
 
-                if (newval === p.get()) {
-                    return; // do nothing
+                if (this.proxies.get(target[name]) === newval) {
+                    return true; // do nothing
                 } else {
                     throw Error(`trying to assign an object that already exists to property ${name} assignment of cyclic references`);
                 }
