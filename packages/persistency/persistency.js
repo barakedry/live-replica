@@ -1,7 +1,7 @@
-import _debounce from 'lodash_es/debounce.js';
-import path from 'node:path';
+import _debounce from 'lodash-es/debounce.js';
 import fs from 'node:fs';
-import { util } from  'node:util';
+import util from  'node:util';
+import v8 from  'node:v8';
 import { PatchDiff } from '../patch-diff/index.js';
 
 
@@ -9,7 +9,7 @@ const structuredClone = obj => {
     return v8.deserialize(v8.serialize(obj));
 };
 
-class LiveReplicaPersistence {
+export class LiveReplicaPersistence {
     constructor(replica, key) {
         if (!(replica instanceof PatchDiff)) {
             throw new TypeError('the "replica" argument must be an instance of LiveReplica');
@@ -77,7 +77,7 @@ const read = util.promisify(fs.readFile);
 const write = util.promisify(fs.writeFile);
 const unlink = util.promisify(fs.unlink);
 
-class LiveReplicaFilePersistence extends LiveReplicaPersistence {
+export class LiveReplicaFilePersistence extends LiveReplicaPersistence {
 
     async read(filepath) {
         const raw = await read(filepath, 'utf8');
@@ -94,7 +94,7 @@ class LiveReplicaFilePersistence extends LiveReplicaPersistence {
 
 }
 
-class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
+export class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
 
     constructor(replica, query, dbCollection, initialDocument = query,  dataKey = 'data') {
         super(replica, query);
@@ -127,9 +127,3 @@ class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
     }
 
 }
-
-module.exports = {
-    LiveReplicaPersistence,
-    LiveReplicaFilePersistence,
-    LiveReplicaMongoDbPersistence
-};

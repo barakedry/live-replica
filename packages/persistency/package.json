@@ -8,7 +8,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "lodash_es": "latest"
+    "lodash-es": "latest"
   },
   "author": "Barak Edry",
   "license": "Apache-2.0"
