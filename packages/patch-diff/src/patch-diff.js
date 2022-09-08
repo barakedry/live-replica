@@ -338,7 +338,8 @@ export class PatchDiff extends EventEmitter {
                         isTargetArray
                     );
 
-                    levelDiffs.addChildTracking(childDiffs, key);
+
+                    levelDiffs.addChildTracking(childDiffs, key, true);
 
                     // empty object
                     if (!childDiffs.hasAdditions) {
@@ -379,7 +380,7 @@ export class PatchDiff extends EventEmitter {
 
                 childDiffs = this._applyObject(target[srcKey],
                     patchValue,
-                    Utils.pushKeyToPath(path, key, isExistingValueArray),
+                    Utils.pushKeyToPath(path, key, isTargetArray),
                     options,
                     level + 1,
                     override);

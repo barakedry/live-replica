@@ -103,22 +103,33 @@ export class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
         this.document = initialDocument;
     }
 
+    async beforeRead(query) { return query; }
+    async afterRead(document) { return document; }
+    async beforeUpdate(document) { return document; }
+
+
     async read(query) {
+        query = await this.beforeRead(query);
+
         const document = await this.dbCollection.findOne(query);
         if (!document) {
             throw new TypeError(`no record found on mongodb for query ${JSON.stringify(query)}`);
         }
-        this.document = document;
-        return document[this.dataKey];
+
+        this.document = await this.afterRead(document);
+        return this.document[this.dataKey];
     }
 
     async update(data, query) {
         //const document = {...query, data};
 
-        const document = {
+        let document = {
             ...this.document,
             [this.dataKey]: data
         }
+
+        document = await this.beforeUpdate(document);
+        this.document = document;
         await this.dbCollection.updateOne(query, {$set: document}, {upsert: true});
     }
 
