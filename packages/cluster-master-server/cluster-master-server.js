@@ -70,12 +70,12 @@ class Connection extends EventEmitter {
  *  LiveReplicaWorkerSocket
  */
 class LiveReplicaNodeClusterServer extends LiveReplicaServer {
-    constructor() {
+    constructor(options) {
         if (!cluster.isMaster) {
             throw new Error('LiveReplicaNodeClusterServer can be initiated only on a node.js cluster master process')
         }
 
-        super();
+        super(options);
 
         cluster.on('online', (worker) => {
             this.onConnect(new Connection(worker));
