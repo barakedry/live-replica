@@ -86,16 +86,21 @@ Connection.prototype.on = Connection.prototype.addListener;
  *  LiveReplicaWorkerSocket
  */
 export class LiveReplicaWebSocketsServer extends LiveReplicaServer {
+
     constructor(wsServer) {
         super();
 
-        wsServer.on('connection', (socket) => {
-            const connection = new Connection(socket);
-            this.onConnect(connection);
-            connection.on('decoding-error', () => socket.terminate());
-        });
+        if (!wsServer) { return; }
+
+        wsServer.on('connection', (socket) => this.handleWebSocket(socket));
     }
 
+    handleWebSocket(socket) {
+        const connection = new Connection(socket);
+        this.onConnect(connection);
+        connection.on('decoding-error', () => socket.terminate());
+    }
 }
+
 
 export default LiveReplicaWebSocketsServer;

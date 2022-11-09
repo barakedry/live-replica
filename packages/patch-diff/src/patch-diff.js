@@ -39,6 +39,7 @@ export class PatchDiff extends EventEmitter {
             disableSplices: true
         });
 
+        this.retainState = true;
         this._data = object || {};
         this.setMaxListeners(this.options.maxListeners);
         //this.prototypes = []; // prototypes are stored in a special collection
@@ -168,7 +169,12 @@ export class PatchDiff extends EventEmitter {
         path = path || '*';
 
         let handler = function (diff, options) {
-            fn(diff.differences, diff, options);
+            if (this.retainState === false) {
+                fn(current, {snapshot: true}, {});
+            } else {
+                fn(diff.differences, diff, options);
+            }
+
         };
         super.on(path, handler);
 
@@ -216,7 +222,7 @@ export class PatchDiff extends EventEmitter {
      ************************************************************************************/
     _applyObject(target, patch, path, options, level, override) {
 
-        if (!(_isObject(target) && _isObject(patch))) {
+        if (this.retainState && !(_isObject(target) && _isObject(patch))) {
             debug('invalid apply, target and patch must be objects');
             this.emit('error', new Error('invalid apply, target and patch must be objects'));
 
@@ -255,7 +261,7 @@ export class PatchDiff extends EventEmitter {
         for (let i = 0; i < length; i++) {
             let key = keys[i];
 
-            if (Utils.isValid(patch[key]) && patch[key] !== target[key]) {
+            if (Utils.isValid(patch[key]) && (!this.retainState || patch[key] !== target[key])) {
                 levelDiffs = this._applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray);
             }
         }
@@ -289,7 +295,10 @@ export class PatchDiff extends EventEmitter {
         // splice treat as primitive
         if (key === this.options.spliceKeyword) {
             appliedValue = this._splice(path, patchValue.index, patchValue.itemsToRemove || 0, ...(patchValue.itemsToAdd || []));
-            target[srcKey] = patchValue;
+            if (this.retainState) {
+                target[srcKey] = patchValue;
+            }
+
 
             levelDiffs.hasUpdates = true;
             levelDiffs.hasDifferences = true;
@@ -317,7 +326,7 @@ export class PatchDiff extends EventEmitter {
         }
 
         // new
-        if (!target.hasOwnProperty(srcKey)) {
+        if (!this.retainState || !target.hasOwnProperty(srcKey)) {
             if (options.patchAdditions && patch[key] !== options.deleteKeyword) {
 
                 levelDiffs.hasAdditions = true;
@@ -327,9 +336,11 @@ export class PatchDiff extends EventEmitter {
                 // add new object
                 if (isPatchValueObject) {
 
-                    target[srcKey] = patchValue.constructor.call(Object.create(Object.getPrototypeOf(patchValue)));
+                    if (this.retainState) {
+                        target[srcKey] = patchValue.constructor.call(Object.create(Object.getPrototypeOf(patchValue)));
+                    }
 
-                    childDiffs = this._applyObject(target[srcKey],
+                    childDiffs = this._applyObject(this.retainState ? target[srcKey] : undefined,
                         patchValue,
                         Utils.pushKeyToPath(path, key, isTargetArray),
                         options,
@@ -349,7 +360,10 @@ export class PatchDiff extends EventEmitter {
 
                     // add new primitive
                 } else {
-                    target[srcKey] = patchValue;
+                    if (this.retainState) {
+                        target[srcKey] = patchValue;
+                    }
+
                     levelDiffs.additions[key] = appliedValue;
                     levelDiffs.differences[key] = appliedValue;
                     const leafPath =  Utils.pushKeyToPath(path, srcKey, isTargetArray);
