@@ -187,6 +187,7 @@ export class Replica extends PatchDiff {
             this.proxies.delete(this);
         }
 
+        this.emit('destroyed');
     }
 
     getData({immediateFlush} = {}) {
