@@ -1,0 +1,118 @@
+export = LiveReplica;
+
+declare namespace LiveReplica {
+
+    type EventListener = (...args) => void;
+
+    class EventEmitter {
+        setMaxListeners(num:number);
+        on(eventName:string, cb:EventListener);
+        addEventListener(eventName:string, cb:EventListener);
+        addListener(eventName:string, cb:EventListener);
+
+        off(eventName:string, cb:EventListener);
+        removeEventListener(eventName:string, cb:EventListener);
+        removeListener(eventName:string, cb:EventListener);
+
+        once(eventName:string, cb:EventListener);
+        emit(eventName, ...args);
+        removeAllListeners(eventName:string);
+        listenersOf(eventName:string):EventListener[]
+        listenerCount(eventName:string):number
+
+    }
+
+
+    type DiffInfo = {
+        snapshot?: boolean;
+        hasAdditions?: boolean;
+        hasAddedObjects?: boolean;
+        hasDeletions?: boolean;
+        hasUpdates?: boolean;
+        hasDifferences?: boolean;
+        additions?: object | Array<object>,
+        deletions?: object,
+        updates?: object,
+        addedObjects?: object,
+        differences?: object | Array<object>,
+    }
+
+    type SubscribeCallback = (differencesOrSnapshot: object, changeInfo:DiffInfo) => void;
+    type SpliceParams = { index: number, itemsToRemove: number, itemsToAdd?:Array<any>}
+
+    class PatchDiff extends EventEmitter {
+        apply(patch:object, path?:string, options?:object);
+        set(fullDocument:object, path?:string, options?:object);
+        remove(path?:string, options?:object);
+        splice(spliceParams:SpliceParams, path?:string, options?:object);
+        get(path?:string, callback?:(data:object) => void);
+        getClone(path?:string):object;
+        subscribe(path:string, callback:SubscribeCallback);
+        getWhenExists(path?:string) : Promise<object>;
+        whenAnything(path?:string) : Promise<object>;
+        at(subPath) : PatchDiff;
+    }
+
+
+
+    type Proxy = object;
+    type ProxyOptions = {immediateFlush: boolean}
+
+
+    class Origin extends PatchDiff {
+        get data() : Proxy;
+    }
+
+    type SubscriptionRequest = ReplicaPermissions & {
+        path: string;
+        [key:string]: any;
+    }
+
+    type Middleware = (request:SubscriptionRequest, reject: (reason:string) => void, next:(request:SubscriptionRequest) => void) => void;
+
+    class Server extends PatchDiff {
+        data : Proxy;
+        use(middleware:Middleware);
+        at(subPath): Origin;
+    }
+
+
+    class Socket<SocketType> {
+        constructor(socket:SocketType);
+        set socket(socket:SocketType);
+        get baseSocket():SocketType;
+        disconnect();
+        isConnected():boolean
+        connect(baseSocket:SocketType);
+        disconnect();
+        isConnected():boolean;
+    }
+
+    type ReplicaPermissions = { allowWrite: boolean, allowRPC: boolean };
+    type ReplicaOptions = ReplicaPermissions & {
+        dataObject: object,
+        subscribeRemoteOnCreate: boolean,
+        connection: Socket<any>
+    }
+
+    class Replica extends PatchDiff {
+        constructor(remotePath:string, options: Partial<ReplicaOptions>);
+        public remotePath:string;
+        get data() : Proxy;
+        at(subPath): Replica;
+        subscribed:Promise<any>;
+        subscribeRemote(connection:Socket<any>, subscribeSuccessCallback:Function, subscribeRejectCallback:Function)
+        getData(proxyOptions?:Partial<ProxyOptions>):Proxy
+        unsubscribeRemote();
+        destroy();
+    }
+
+    class WebSocketClient extends Socket<WebSocket> {}
+
+    class WebSocketServer extends Server {
+        handleWebSocket(socket);
+    }
+}
+
+
+

@@ -5,7 +5,7 @@ export function observed() {
     return function createObservablePropertyDescriptor(target, propertyName) {
         const originalDescriptor = Object.getOwnPropertyDescriptor(target, propertyName);
         const propertyKey = Symbol(`_${propertyName}`);
-        const unwatchKey = Symbol(`unwatch${propertyKey}`);
+        const unwatchKey = Symbol(`unwatch${propertyName}`);
         const reactiveController = Symbol();
 
         const descriptor = {
