@@ -24,7 +24,7 @@ export function observed() {
                 }
 
                 // setting a non observable object
-                if (typeof value === 'object' && !(value instanceof PatchDiff || PatcherProxy.proxyProperties.has(value))) {
+                if (typeof value === 'object' && !(value instanceof PatchDiff || PatcherProxy.isProxy(value))) {
                     // create observable by creating a local replica
                     const replica = new Replica();
                     replica.set(value);

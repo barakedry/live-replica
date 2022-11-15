@@ -37,7 +37,7 @@ declare namespace LiveReplica {
         differences?: object | Array<object>,
     }
 
-    type SubscribeCallback = (differencesOrSnapshot: object, changeInfo:DiffInfo) => void;
+    type SubscribeCallback = (differencesOrSnapshot?: object, changeInfo?:DiffInfo) => void;
     type SpliceParams = { index: number, itemsToRemove: number, itemsToAdd?:Array<any>}
 
     class PatchDiff extends EventEmitter {
@@ -46,8 +46,10 @@ declare namespace LiveReplica {
         remove(path?:string, options?:object);
         splice(spliceParams:SpliceParams, path?:string, options?:object);
         get(path?:string, callback?:(data:object) => void);
+        get(callback?:(data:object) => void);
         getClone(path?:string):object;
         subscribe(path:string, callback:SubscribeCallback);
+        subscribe(callback:SubscribeCallback);
         getWhenExists(path?:string) : Promise<object>;
         whenAnything(path?:string) : Promise<object>;
         at(subPath) : PatchDiff;
@@ -99,7 +101,7 @@ declare namespace LiveReplica {
         constructor(remotePath:string, options: Partial<ReplicaOptions>);
         public remotePath:string;
         get data() : Proxy;
-        at(subPath): Replica;
+        at(subPat:string): Replica;
         subscribed:Promise<any>;
         subscribeRemote(connection:Socket<any>, subscribeSuccessCallback:Function, subscribeRejectCallback:Function)
         getData(proxyOptions?:Partial<ProxyOptions>):Proxy
@@ -111,6 +113,11 @@ declare namespace LiveReplica {
 
     class WebSocketServer extends Server {
         handleWebSocket(socket);
+    }
+
+    class PatcherProxy  {
+        public static isProxy(proxy): boolean;
+        public static create(patcher:PatchDiff, path:string, root?:PatchDiff, readonly?:boolean, immediateFlush?:boolean);
     }
 }
 

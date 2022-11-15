@@ -92,6 +92,7 @@ function get(target, path) {
 export const PatcherProxy = {
     proxies: new WeakMap(),
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
+    isProxy(proxy) { return this.proxyProperties.has(proxy);},
     create(patcher, path, root, readonly, immediateFlush = false) {
         let patcherRef = patcher.get(path);
 
