@@ -38,6 +38,7 @@ declare namespace LiveReplica {
     }
 
     type SubscribeCallback = (differencesOrSnapshot?: object, changeInfo?:DiffInfo) => void;
+    type UnsubscribeCallback = () => void;
     type SpliceParams = { index: number, itemsToRemove: number, itemsToAdd?:Array<any>}
 
     class PatchDiff extends EventEmitter {
@@ -48,8 +49,8 @@ declare namespace LiveReplica {
         get(path?:string, callback?:(data:object) => void);
         get(callback?:(data:object) => void);
         getClone(path?:string):object;
-        subscribe(path:string, callback:SubscribeCallback);
-        subscribe(callback:SubscribeCallback);
+        subscribe(path:string, callback:SubscribeCallback):UnsubscribeCallback;
+        subscribe(callback:SubscribeCallback):UnsubscribeCallback;
         getWhenExists(path?:string) : Promise<object>;
         whenAnything(path?:string) : Promise<object>;
         at(subPath) : PatchDiff;
@@ -117,8 +118,25 @@ declare namespace LiveReplica {
 
     class PatcherProxy  {
         public static isProxy(proxy): boolean;
+        public static getPatchDiff(proxy): PatchDiff;
         public static create(patcher:PatchDiff, path:string, root?:PatchDiff, readonly?:boolean, immediateFlush?:boolean);
     }
+
+    type ApplyOptions = {
+        emitEvents?: boolean
+        maxKeysInLevel?: 1000,
+        maxLevels?: 50,
+        maxListeners?: 1000000
+    };
+
+    type LiveReplicaProxy = object;
+    function observe(object:LiveReplicaProxy, cb:SubscribeCallback) : UnsubscribeCallback;
+    function nextChange(object:LiveReplicaProxy) : Promise<Partial<object>>;
+    function replace(object:LiveReplicaProxy, value:object) : LiveReplicaProxy;
+    function get(object:LiveReplicaProxy, path?) : any;
+    function cloneDeep(object:LiveReplicaProxy, path?) : object;
+    function set(object:LiveReplicaProxy, path:string, value:object);
+    function merge(object:LiveReplicaProxy, partial:object);
 }
 
 

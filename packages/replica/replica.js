@@ -49,9 +49,14 @@ export class Replica extends PatchDiff {
     [createRPCfunction](path) {
         const self = this;
         return function rpcToRemote(...args) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 self.connection.send(`invokeRPC:${self.id}`, {path, args}, (returnValue) => {
-                    resolve(returnValue);
+                    if (returnValue?.$error) {
+                        reject(`RPC Error invoking ${path}(): ${returnValue.$error}`);
+                    } else {
+                        resolve(returnValue);
+                    }
+
                 });
             });
         }
