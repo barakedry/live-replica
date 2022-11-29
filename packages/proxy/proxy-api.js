@@ -74,7 +74,7 @@ export function merge(proxy, partial) {
     return PatcherProxy.getPatchDiff(proxy).apply(partial);
 }
 
-export function deepClone(proxy, path) {
+export function cloneDeep(proxy, path) {
     if (!PatcherProxy.isProxy(proxy)) {
         throw new TypeError(`trying to observe a non LiveReplica Proxy type`);
     }

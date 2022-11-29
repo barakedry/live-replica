@@ -277,12 +277,12 @@ export const PatcherProxy = {
         return this.proxyProperties.get(proxy).root || proxy;
     },
 
-    getPath(proxy, key) {
+    getPath(proxy, key, isArray = false) {
         let properties = this.proxyProperties.get(proxy);
 
         if (properties.path) {
             if (key) {
-                return Utils.pushKeyToPath(properties.path, key);
+                return Utils.pushKeyToPath(properties.path, key, isArray);
             } else {
                 return properties.path;
             }
@@ -333,7 +333,7 @@ export const PatcherProxy = {
         }
         
         let root = this.getRoot(proxy);
-        let fullPath = this.getPath(proxy, name);
+        let fullPath = this.getPath(proxy, name, properties.isArray);
         let deleteValue = properties.patcher.options.deleteKeyword;
         let value = get(this.proxyProperties.get(root).changes, fullPath);
         let realValue = target[name];

@@ -168,6 +168,10 @@ export class PatchDiff extends EventEmitter {
         path = Utils.concatPath(this._path, path);
         path = path || '*';
 
+        if (path !== "" && !isNaN(path)) {
+            path = `[${path}]`
+        }
+
         let handler = function (diff, options) {
             if (this.retainState === false) {
                 fn(current, {snapshot: true}, {});
