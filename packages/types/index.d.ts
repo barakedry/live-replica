@@ -49,7 +49,7 @@ declare namespace LiveReplica {
         get(path?:string, callback?:(data:object) => void);
         get(callback?:(data:object) => void);
         getClone(path?:string):object;
-        subscribe(path:string, callback:SubscribeCallback):UnsubscribeCallback;
+        subscribe(path:string, callback?:SubscribeCallback):UnsubscribeCallback;
         subscribe(callback:SubscribeCallback):UnsubscribeCallback;
         getWhenExists(path?:string) : Promise<object>;
         whenAnything(path?:string) : Promise<object>;
@@ -118,6 +118,7 @@ declare namespace LiveReplica {
 
     class PatcherProxy  {
         public static isProxy(proxy): boolean;
+        public static unwrap(proxy): object;
         public static getPatchDiff(proxy): PatchDiff;
         public static create(patcher:PatchDiff, path:string, root?:PatchDiff, readonly?:boolean, immediateFlush?:boolean);
     }
@@ -131,6 +132,8 @@ declare namespace LiveReplica {
 
     type LiveReplicaProxy = object;
     function observe(object:LiveReplicaProxy, cb:SubscribeCallback) : UnsubscribeCallback;
+    function subscribe(object:LiveReplicaProxy, cb:SubscribeCallback) : UnsubscribeCallback;
+    function unwrap(object:LiveReplicaProxy) : object;
     function nextChange(object:LiveReplicaProxy) : Promise<Partial<object>>;
     function replace(object:LiveReplicaProxy, value:object) : LiveReplicaProxy;
     function get(object:LiveReplicaProxy, path?) : any;

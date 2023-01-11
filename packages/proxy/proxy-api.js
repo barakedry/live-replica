@@ -13,6 +13,28 @@ export function observe(object, path, cb) {
     return patcher.subscribe(cb);
 }
 
+// same as observe
+export function subscribe(object, path, cb) {
+    if (!PatcherProxy.isProxy(object)) {
+        throw new TypeError(`trying to observe a non LiveReplica Proxy type`);
+    }
+
+    if (typeof path === 'function') {
+        cb = path;
+    }
+
+    const patcher = PatcherProxy.getPatchDiff(object);
+    return patcher.subscribe(cb);
+}
+
+export function unrwap(object) {
+    if (!PatcherProxy.isProxy(object)) {
+        throw new TypeError(`trying to observe a non LiveReplica Proxy type`);
+    }
+
+    return PatcherProxy.unwrap(object);
+}
+
 export function nextChange(object) {
 
     if (!PatcherProxy.isProxy(object)) {

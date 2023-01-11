@@ -160,14 +160,6 @@ export class LiveReplicaServer extends PatchDiff {
     use(fn) {
         this.middlewares.use(fn);
     }
-
-    get data() {
-        if (!this.proxies.has(this)) {
-            const proxy = PatcherProxy.create(this, '', null, this.options.readonly);
-            this.proxies.set(this, proxy);
-        }
-        return this.proxies.get(this);
-    }
 }
 
 export default LiveReplicaServer;

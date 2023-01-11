@@ -1,6 +1,7 @@
 import { EventEmitter } from '../../events/events.js';
 import { Utils } from '../../utils/utils.js';
 import { DiffTracker } from "./diff-tracker.js";
+import { PatcherProxy } from "../../proxy/proxy.js";
 
 const debug = (msg) => {};
 
@@ -56,6 +57,10 @@ export class PatchDiff extends EventEmitter {
             return;
         }
 
+        if (PatcherProxy.isProxy(patch)) {
+            patch = PatcherProxy.unwrap(patch);
+        }
+
         this._applyObject(this._data, Utils.wrapByPath(patch, path), '', options, 0);
     }
 
@@ -67,8 +72,11 @@ export class PatchDiff extends EventEmitter {
 
         if (!_isObject(fullDocument) && !path) {
             debug('invalid apply, target and value must be objects');
-
             return;
+        }
+
+        if (PatcherProxy.isProxy(fullDocument)) {
+            fullDocument = PatcherProxy.unwrap(fullDocument);
         }
 
         this._applyObject(this._data, Utils.wrapByPath(fullDocument, path), '', options, 0, path || true);
@@ -527,6 +535,18 @@ export class PatchDiff extends EventEmitter {
         levelDiffs.hasDifferences = true;
         levelDiffs.deletions = deletedObject;
         return levelDiffs;
+    }
+
+    getData({immediateFlush} = {}) {
+        if (!this.proxies.has(this)) {
+            const proxy = PatcherProxy.create(this, '', null, !this.options.allowWrite, immediateFlush);
+            this.proxies.set(this, proxy);
+        }
+        return this.proxies.get(this);
+    }
+
+    get data() {
+        return this.getData();
     }
 }
 

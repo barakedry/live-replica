@@ -1,5 +1,4 @@
 import { PatchDiff } from "../patch-diff/index.js";
-import { PatcherProxy } from "../proxy/proxy.js";
 import { LiveReplicaSocket } from '../socket/socket.js';
 import { Utils } from '../utils/utils.js';
 const { concatPath } = Utils;
@@ -193,18 +192,6 @@ export class Replica extends PatchDiff {
         }
 
         this.emit('destroyed');
-    }
-
-    getData({immediateFlush} = {}) {
-        if (!this.proxies.has(this)) {
-            const proxy = PatcherProxy.create(this, '', null, !this.options.allowWrite, immediateFlush);
-            this.proxies.set(this, proxy);
-        }
-        return this.proxies.get(this);
-    }
-
-    get data() {
-        return this.getData();
     }
 
     get subscribed() {

@@ -97,6 +97,11 @@ export const PatcherProxy = {
         const {patcher, path} = this.proxyProperties.get(proxy);
         return patcher.at(path);
     },
+
+    unwrap(proxy) {
+        return this.getPatchDiff(proxy).get();
+    },
+
     create(patcher, path, root, readonly, immediateFlush = false) {
         let patcherRef = patcher.get(path);
 
@@ -184,7 +189,8 @@ export const PatcherProxy = {
             return function arrayMutatingMethod() {
                 proxyServices.commit(root, true);
                 const copy = array.slice();
-                const ret = copy[methodName].call(copy, ...arguments);
+                const sanitizedArgs = Array.prototype.map.call(arguments, (arg) => PatcherProxy.isProxy(arg) ? PatcherProxy.unwrap(arg) : arg);
+                const ret = copy[methodName].call(copy, ...sanitizedArgs);
 
                 copy.forEach((item, index) => {
                     proxy[index] = item;
@@ -310,7 +316,7 @@ export const PatcherProxy = {
             if (changes[key] === deleteValue) {
                 let index = targetKeys.indexOf(key);
                 targetKeys.splice(index, 1);
-            // new
+                // new
             } else if (!targetKeys.includes(key)) {
                 targetKeys.push(key);
             }
@@ -331,7 +337,7 @@ export const PatcherProxy = {
         if (properties.isArray && arrayMutationMethods[name]) {
             return this.getOrCreateArrayMethod(proxy, target, name, readonly);
         }
-        
+
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name, properties.isArray);
         let deleteValue = properties.patcher.options.deleteKeyword;
@@ -376,7 +382,7 @@ export const PatcherProxy = {
                 if (this.proxies.get(target[name]) === newval) {
                     return true; // do nothing
                 } else {
-                    throw Error(`trying to assign an object that already exists to property ${name} assignment of cyclic references`);
+                    return this.handleSet(proxy, target, name, PatcherProxy.unwrap(newval));
                 }
             }
 
@@ -434,7 +440,7 @@ export const PatcherProxy = {
             };
         }.bind(proxy);
     },
-    
+
     commit(proxy, immediate = false) {
         let properties = this.proxyProperties.get(proxy);
 

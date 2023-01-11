@@ -1,7 +1,7 @@
 import {Replica, PatchDiff, PatcherProxy} from '../client/index.js';
 import {LiveReplicaController} from './controller.js';
 
-export function observed() {
+export function observed(options = {}) {
     return function createObservablePropertyDescriptor(target, propertyName) {
         const originalDescriptor = Object.getOwnPropertyDescriptor(target, propertyName);
         const propertyKey = Symbol(`_${propertyName}`);
@@ -26,8 +26,7 @@ export function observed() {
                 // setting a non observable object
                 if (typeof value === 'object' && !(value instanceof PatchDiff || PatcherProxy.isProxy(value))) {
                     // create observable by creating a local replica
-                    const replica = new Replica();
-                    replica.set(value);
+                    const replica = new Replica('', {dataObject: value});
                     this[propertyKey] = replica.data;
                 } else {
                     this[propertyKey] = value;
@@ -37,7 +36,17 @@ export function observed() {
                     this[reactiveController] = new LiveReplicaController(this);
                 }
 
-                this[unwatchKey] = this[reactiveController].watch(this[propertyKey]);
+                if (options.onChange && typeof this[options.onChange] === 'function') {
+                    const onChange = this[options.onChange];
+                    this[unwatchKey] = this[reactiveController].watch(this[propertyKey], undefined, (patch, diff, value) => {
+                        return onChange.call(this, patch, diff, value);
+                    });
+
+                    return onChange.call(this, value);
+                } else {
+                    this[unwatchKey] = this[reactiveController].watch(this[propertyKey]);
+                }
+
                 originalDescriptor?.set?.call(this, value);
             },
             enumerable: false,
