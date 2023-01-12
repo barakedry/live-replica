@@ -54,6 +54,10 @@ declare namespace LiveReplica {
         getWhenExists(path?:string) : Promise<object>;
         whenAnything(path?:string) : Promise<object>;
         at(subPath) : PatchDiff;
+
+        get data() : Proxy;
+
+        getData(proxyOptions?:Partial<ProxyOptions>):Proxy
     }
 
 
@@ -74,7 +78,7 @@ declare namespace LiveReplica {
     type Middleware = (request:SubscriptionRequest, reject: (reason:string) => void, next:(request:SubscriptionRequest) => void) => void;
 
     class Server extends PatchDiff {
-        data : Proxy;
+
         use(middleware:Middleware);
         at(subPath): Origin;
     }
@@ -101,11 +105,10 @@ declare namespace LiveReplica {
     class Replica extends PatchDiff {
         constructor(remotePath:string, options: Partial<ReplicaOptions>);
         public remotePath:string;
-        get data() : Proxy;
+
         at(subPat:string): Replica;
         subscribed:Promise<any>;
         subscribeRemote(connection:Socket<any>, subscribeSuccessCallback:Function, subscribeRejectCallback:Function)
-        getData(proxyOptions?:Partial<ProxyOptions>):Proxy
         unsubscribeRemote();
         destroy();
     }

@@ -27,7 +27,7 @@ export function subscribe(object, path, cb) {
     return patcher.subscribe(cb);
 }
 
-export function unrwap(object) {
+export function unwrap(object) {
     if (!PatcherProxy.isProxy(object)) {
         throw new TypeError(`trying to observe a non LiveReplica Proxy type`);
     }

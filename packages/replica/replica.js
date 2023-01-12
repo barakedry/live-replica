@@ -194,6 +194,9 @@ export class Replica extends PatchDiff {
         this.emit('destroyed');
     }
 
+    get isReadOnly() {
+        return !(this.options?.allowWrite)
+    }
     get subscribed() {
         return new Promise((resolve) => {
             if (this._subscribed) {

@@ -537,9 +537,13 @@ export class PatchDiff extends EventEmitter {
         return levelDiffs;
     }
 
+    get isReadOnly() {
+        return false;
+    }
+
     getData({immediateFlush} = {}) {
         if (!this.proxies.has(this)) {
-            const proxy = PatcherProxy.create(this, '', null, !this.options.allowWrite, immediateFlush);
+            const proxy = PatcherProxy.create(this, '', null, this.isReadOnly, immediateFlush);
             this.proxies.set(this, proxy);
         }
         return this.proxies.get(this);
