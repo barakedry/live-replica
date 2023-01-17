@@ -97,7 +97,6 @@ export class Replica extends PatchDiff {
         super(options.dataObject || {}, options);
         this.remotePath = remotePath;
         this.id = ++replicaId;
-        this.proxies = new WeakMap();
 
         if (this.options.subscribeRemoteOnCreate) {
             this.subscribeRemote(this.options.connection)
@@ -186,10 +185,7 @@ export class Replica extends PatchDiff {
             delete this.connection;
         }
 
-        if (this.proxies.has(this)) {
-            PatcherProxy.destroy(this.proxies.get(this));
-            this.proxies.delete(this);
-        }
+        this.destroyProxy();
 
         this.emit('destroyed');
     }

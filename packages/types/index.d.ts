@@ -72,7 +72,7 @@ declare namespace LiveReplica {
 
     type SubscriptionRequest = ReplicaPermissions & {
         path: string;
-        transformer?: (data:any, part:PatchDiff) => any;
+        transformer?: (data:any, part?:PatchDiff) => any;
         [key:string]: any;
     }
 

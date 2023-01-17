@@ -91,6 +91,7 @@ function get(target, path) {
 
 export const PatcherProxy = {
     proxies: new WeakMap(),
+    revocables: new WeakMap(),
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
     isProxy(proxy) { return this.proxyProperties.has(proxy);},
     getPatchDiff(proxy) {
@@ -146,8 +147,10 @@ export const PatcherProxy = {
             };
         }
 
+        const revocable = Proxy.revocable(patcherRef, handlers);
+        proxy = revocable.proxy;
 
-        proxy = new Proxy(patcherRef, handlers);
+        this.revocables.set(proxy, revocable);
 
         let properties = {
             immediateFlush,
@@ -485,6 +488,9 @@ export const PatcherProxy = {
             delete properties.root;
             this.proxies.delete(proxy);
             this.proxyProperties.delete(proxy);
+            this.revocables.get(proxy)?.revoke();
+            this.revocables.delete(proxy);
+
         }, 0);
     }
 };

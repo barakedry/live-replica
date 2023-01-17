@@ -40,6 +40,7 @@ export class PatchDiff extends EventEmitter {
             disableSplices: true
         });
 
+        this.proxies = new WeakMap();
         this.retainState = true;
         this._data = object || {};
         this.setMaxListeners(this.options.maxListeners);
@@ -547,6 +548,13 @@ export class PatchDiff extends EventEmitter {
             this.proxies.set(this, proxy);
         }
         return this.proxies.get(this);
+    }
+
+    destroyProxy() {
+        if (this.proxies.has(this)) {
+            PatcherProxy.destroy(this.proxies.get(this));
+            this.proxies.delete(this);
+        }
     }
 
     get data() {
