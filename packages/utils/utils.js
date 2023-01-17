@@ -136,7 +136,7 @@ export const Utils = {
     },
 
     hasSamePrototype: function (obj1, obj2) {
-        return typeof obj1 === 'object' && Object.getPrototypeOf(obj1) === Object.getPrototypeOf(obj2);
+        return (typeof obj1 === 'object' && obj1 !== null) && Object.getPrototypeOf(obj1) === Object.getPrototypeOf(obj2);
     },
 
     once(fn) {

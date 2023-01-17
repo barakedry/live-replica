@@ -3,6 +3,7 @@ import { PatcherProxy } from '../../proxy/proxy.js';
 import { MiddlewareChain } from './middleware-chain.js';
 import { Utils } from '../../utils/utils.js';
 
+const defaultTransformer = (data, dataPart) => data;
 function serializeFunctions(data) {
 
     if (typeof data !== 'object') {
@@ -79,9 +80,8 @@ export class LiveReplicaServer extends PatchDiff {
     }
 
     subscribeClient(request) {
-        const path = request.path;
+        const { path, connection, transformer = defaultTransformer } = request;
         const clientSubset = this.at(path);
-        const connection = request.connection;
         let changeRevision = 0;
 
         const unsubscribeEvent = `unsubscribe:${request.id}`;
@@ -98,6 +98,7 @@ export class LiveReplicaServer extends PatchDiff {
                     updateInfo.changeRevision = changeRevision;
                 }
 
+                patchData = transformer(patchData, clientSubset);
                 connection.send(applyEvent, serializeFunctions(patchData), updateInfo);
             }
 
