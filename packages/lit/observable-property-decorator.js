@@ -1,53 +1,63 @@
-import {Replica, PatchDiff, PatcherProxy} from '../client/index.js';
+import {Replica, PatchDiff, PatcherProxy, replace, unwrap} from '../client/index.js';
 import {LiveReplicaController} from './controller.js';
 
 export function observed(options = {}) {
     return function createObservablePropertyDescriptor(target, propertyName) {
-        const originalDescriptor = Object.getOwnPropertyDescriptor(target, propertyName);
+
+        const previouslyDefinedDescriptor = Object.getOwnPropertyDescriptor(target, propertyName) ||
+            Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), propertyName);
+
         const propertyKey = Symbol(`_${propertyName}`);
         const unwatchKey = Symbol(`unwatch${propertyName}`);
         const reactiveController = Symbol();
 
         const descriptor = {
-            get() { return originalDescriptor?.get?.call(this) || this[propertyKey]; },
+            get() { return previouslyDefinedDescriptor?.get?.call(this) || this[propertyKey]},
             set: function(value){
 
                 if (this[propertyKey] === value) { return; }
+                const prevValue = this[propertyKey];
 
                 this[unwatchKey]?.();
 
+                const isValueObject = typeof value === 'object' && value !== null;
+
                 // setting a primitive
-                if (typeof value !== 'object' || value === null) {
+                if (!isValueObject) {
                     this[propertyKey] = value;
-                    originalDescriptor?.set?.call(this, value);
+                    previouslyDefinedDescriptor?.set?.call(this, this[propertyKey]);
                     return;
                 }
 
-                // setting a non observable object
-                if (typeof value === 'object' && !(value instanceof PatchDiff || PatcherProxy.isProxy(value))) {
-                    // create observable by creating a local replica
-                    const replica = new Replica('', {dataObject: value});
-                    this[propertyKey] = replica.data;
+                let proxy;
+                if (PatcherProxy.isProxy(value)) {
+                    proxy = value;
+                } else if (value instanceof PatchDiff) {
+                    proxy = value.data
                 } else {
-                    this[propertyKey] = value;
+                    const replica = new Replica('', {dataObject: value, allowWrite: true});
+                    proxy = replica.data;
                 }
+
+                this[propertyKey] = proxy;
 
                 if (!this[reactiveController]){
                     this[reactiveController] = new LiveReplicaController(this);
                 }
 
                 if (options.onChange && typeof this[options.onChange] === 'function') {
-                    const onChange = this[options.onChange];
-                    this[unwatchKey] = this[reactiveController].watch(this[propertyKey], undefined, (patch, diff, value) => {
-                        return onChange.call(this, patch, diff, value);
+                    this[unwatchKey] = this[reactiveController].watch(proxy, undefined, (patch, diff, val) => {
+                        return this[options.onChange]?.(patch, diff, val);
                     });
-
-                    return onChange.call(this, value);
                 } else {
-                    this[unwatchKey] = this[reactiveController].watch(this[propertyKey]);
+                    this[unwatchKey] = this[reactiveController].watch(proxy);
                 }
 
-                originalDescriptor?.set?.call(this, value);
+                if (previouslyDefinedDescriptor?.set) {
+                    previouslyDefinedDescriptor?.set?.call(this, proxy);
+                } else {
+                    this.requestUpdate(propertyName, proxy, prevValue);
+                }
             },
             enumerable: false,
             configurable: true,

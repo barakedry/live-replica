@@ -144,6 +144,12 @@ declare namespace LiveReplica {
     function cloneDeep(object:LiveReplicaProxy, path?) : object;
     function set(object:LiveReplicaProxy, path:string, value:object);
     function merge(object:LiveReplicaProxy, partial:object);
+
+
+    type ObservedOptions = {
+        onChange: string; // on change method name on the class
+    }
+    function observed(options:ObservedOptions); // decorator
 }
 
 
