@@ -1,4 +1,4 @@
-import {Replica, PatchDiff, PatcherProxy, replace, unwrap} from '../client/index.js';
+import {PatchDiff, PatcherProxy} from '../client/index.js';
 import {LiveReplicaController} from './controller.js';
 
 export function observed(options = {}) {
@@ -35,11 +35,17 @@ export function observed(options = {}) {
                 } else if (value instanceof PatchDiff) {
                     proxy = value.data
                 } else {
-                    const replica = new Replica('', {dataObject: value, allowWrite: true});
-                    proxy = replica.data;
+                    const patchDiff = new PatchDiff(value, {readonly: false});
+                    proxy = patchDiff.data;
                 }
 
                 this[propertyKey] = proxy;
+
+                if (previouslyDefinedDescriptor?.set) {
+                    previouslyDefinedDescriptor?.set?.call(this, proxy);
+                } else {
+                    this.requestUpdate(propertyName, proxy, prevValue);
+                }
 
                 if (!this[reactiveController]){
                     this[reactiveController] = new LiveReplicaController(this);
@@ -51,12 +57,6 @@ export function observed(options = {}) {
                     });
                 } else {
                     this[unwatchKey] = this[reactiveController].watch(proxy);
-                }
-
-                if (previouslyDefinedDescriptor?.set) {
-                    previouslyDefinedDescriptor?.set?.call(this, proxy);
-                } else {
-                    this.requestUpdate(propertyName, proxy, prevValue);
                 }
             },
             enumerable: false,

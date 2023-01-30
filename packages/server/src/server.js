@@ -80,7 +80,7 @@ export class LiveReplicaServer extends PatchDiff {
     }
 
     subscribeClient(request) {
-        const { path, connection, transformer = defaultTransformer } = request;
+        const { path, connection, readTransformer = defaultTransformer, writeTransformer = defaultTransformer } = request;
         const clientSubset = this.at(path);
         let changeRevision = 0;
 
@@ -98,7 +98,7 @@ export class LiveReplicaServer extends PatchDiff {
                     updateInfo.changeRevision = changeRevision;
                 }
 
-                patchData = transformer(patchData, clientSubset);
+                patchData = readTransformer(patchData, clientSubset);
                 connection.send(applyEvent, serializeFunctions(patchData), updateInfo);
             }
 
@@ -117,7 +117,7 @@ export class LiveReplicaServer extends PatchDiff {
 
             replicaApplyListener = (payload) => {
                 subscriberChange = payload.changeRevision === changeRevision;
-                clientSubset.apply(payload.data);
+                clientSubset.apply(writeTransformer(payload.data));
             };
 
             connection.on(applyEvent, replicaApplyListener);

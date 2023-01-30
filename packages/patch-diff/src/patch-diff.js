@@ -427,7 +427,7 @@ export class PatchDiff extends EventEmitter {
                 };
                 levelDiffs.differences[key] = appliedValue;
                 const leafPath =  Utils.pushKeyToPath(path, srcKey, isTargetArray);
-                this.emit((leafPath || '*'),  appliedValue, {type: 'update', oldValue: existingValue});
+                this.emit((leafPath || '*'),  {differences: appliedValue}, {type: 'update', oldValue: existingValue});
             }
 
         }
