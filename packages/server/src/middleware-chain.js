@@ -38,6 +38,10 @@ export class MiddlewareChain {
             self._run(index + 1, finishCallback, args);
         }));
     }
+
+    clear() {
+        this.chain = [];
+    }
 }
 
 MiddlewareChain.prototype.use = MiddlewareChain.prototype.add;

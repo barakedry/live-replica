@@ -42,7 +42,8 @@ export class LiveReplicaServer extends PatchDiff {
     }
 
     onConnect(connection) {
-        connection.on('subscribe', (clientRequest, ack) => {
+
+        const onsubscribe = (clientRequest, ack) => {
             const {id, path, allowRPC, allowWrite} = clientRequest;
 
             const subscribeRequest = {
@@ -55,7 +56,10 @@ export class LiveReplicaServer extends PatchDiff {
             };
 
             this.onSubscribeRequest(subscribeRequest);
-        });
+        };
+        connection.on('subscribe', onsubscribe);
+
+        return () => connection.removeListener('subscribe', onsubscribe);
     }
 
     onSubscribeRequest(subscribeRequest) {
@@ -160,6 +164,12 @@ export class LiveReplicaServer extends PatchDiff {
 
     use(fn) {
         this.middlewares.use(fn);
+    }
+
+    destroy() {
+        this.emit('destroy');
+        this.middlewares.clear();
+        this.remove();
     }
 }
 

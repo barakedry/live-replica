@@ -97,8 +97,13 @@ export class LiveReplicaWebSocketsServer extends LiveReplicaServer {
 
     handleWebSocket(socket) {
         const connection = new Connection(socket);
-        this.onConnect(connection);
-        connection.on('decoding-error', () => socket.terminate());
+        const unHandle = this.onConnect(connection);
+        const onDecodingError = () => socket.terminate();
+        connection.on('decoding-error', onDecodingError);
+        return function stopHandlingSocket() {
+            unHandle();
+            connection.removeListener('decoding-error', onDecodingError);
+        }
     }
 }
 
