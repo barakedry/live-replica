@@ -100,7 +100,11 @@ export const PatcherProxy = {
     },
 
     unwrap(proxy) {
-        return this.getPatchDiff(proxy).get();
+        if (this.isProxy(proxy)) {
+            return this.getPatchDiff(proxy).get();
+        }
+
+        return proxy;
     },
 
     create(patcher, path, root, readonly, immediateFlush = false) {

@@ -28,10 +28,6 @@ export function subscribe(object, path, cb) {
 }
 
 export function unwrap(object) {
-    if (!PatcherProxy.isProxy(object)) {
-        throw new TypeError(`trying to observe a non LiveReplica Proxy type`);
-    }
-
     return PatcherProxy.unwrap(object);
 }
 

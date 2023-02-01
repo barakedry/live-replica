@@ -12,7 +12,8 @@ import _get from '../../../node_modules/lodash-es/get.js';
 import _keys from '../../../node_modules/lodash-es/keys.js';
 import _isArray from '../../../node_modules/lodash-es/isArray.js';
 import _isUndefined from '../../../node_modules/lodash-es/isUndefined.js';
-import _isFunction from '../../../node_modules/lodash-es/isFunction.js';
+
+const _isFunction = (obj) => typeof obj === 'function';
 
 function index(key, levelDiffs) {
     return Number(key) + (levelDiffs.arrayOffset || 0);
