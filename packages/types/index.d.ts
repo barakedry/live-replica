@@ -110,8 +110,10 @@ declare namespace LiveReplica {
 
         at(subPat:string): Replica;
         subscribed:Promise<any>;
+        synced:Promise<any>;
         subscribeRemote(connection:Socket<any>, subscribeSuccessCallback:Function, subscribeRejectCallback:Function)
         unsubscribeRemote();
+        reset():Promise<any>;
         destroy();
     }
 

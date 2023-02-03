@@ -77,7 +77,7 @@ export class LiveReplicaServer extends PatchDiff {
         this.middlewares.start(subscribeRequest, reject, (request) => {
             this.emit('subscribe', request);
 
-            subscribeRequest.ack({success: true});
+            subscribeRequest.ack({success: true, writable: request.allowWrite, rpc: request.allowRPC});
 
             this.subscribeClient(request);
         });

@@ -7,7 +7,7 @@ export class LiveReplicaSocket {
     }
 
     send(event, payload, ack) {
-        this._socketSend(eventName(event), payload, ack);
+        return this._socketSend(eventName(event), payload, ack);
     }
 
     on(event, fn) {
@@ -42,7 +42,12 @@ export class LiveReplicaSocket {
     }
 
     _socketSend(eventName, payload, ack) {
-        this._socket.emit(eventName, payload, ack);
+        return new Promise((resolve) => {
+            this._socket.emit(eventName, payload, (...args) => {
+                ack?.(...args);
+                resolve(...args);
+            });
+        });
     }
 
     connect(baseSocket) {
