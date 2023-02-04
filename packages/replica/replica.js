@@ -17,14 +17,14 @@ export class Replica extends PatchDiff {
     // private
     [bindToSocket]() {
 
-        let changeRevision = 0;
+        this.changeRevision = 0;
         this.onApplyEvent = (delta, meta = {}) => {
             if (!delta) { return; }
 
             if (meta.snapshot) {
                 this[remoteOverride](delta);
             } else {
-                changeRevision = meta.changeRevision;
+                this.changeRevision = meta.changeRevision;
                 this[remoteApply](delta);
             }
 
@@ -35,14 +35,6 @@ export class Replica extends PatchDiff {
         };
 
         this.connection.on(`apply:${this.id}`, this.onApplyEvent);
-
-        if (this.options.allowWrite) {
-            this.subscribe((data, diff, options) => {
-                if (options.local) {
-                    this.connection.send(`apply:${this.id}`, {data, changeRevision});
-                }
-            });
-        }
     }
 
     [createRPCfunction](path) {
@@ -130,10 +122,20 @@ export class Replica extends PatchDiff {
             if (result.success) {
                 console.info(`live-replica subscribed to remote path=${this.remotePath} writable=${result.writable} writable=${result.rpc}`);
                 this.options.allowWrite = result.writable;
+
+                this._subscribed = true;
+
                 if (typeof subscribeSuccessCallback === 'function') {
                     subscribeSuccessCallback(result);
-                    this._subscribed = true;
-                    this.emit('_subscribed', this.get());
+                }
+                this.emit('_subscribed', this.get());
+
+                if (this.options.allowWrite) {
+                    this.subscribe((data, diff, options) => {
+                        if (options.local) {
+                            this.connection.send(`apply:${this.id}`, {data, changeRevision: this.changeRevision});
+                        }
+                    });
                 }
             } else {
                 console.error(`live-replica failed to subscribe remote path=${this.remotePath} reason=${result.rejectReason}`);
