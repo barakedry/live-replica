@@ -13,6 +13,8 @@ import _keys from '../../../node_modules/lodash-es/keys.js';
 import _isArray from '../../../node_modules/lodash-es/isArray.js';
 import _isUndefined from '../../../node_modules/lodash-es/isUndefined.js';
 
+const eventsWithoutPrepend = new Set(['destroyed', 'error', '_subscribed', '_synced']);
+
 const _isFunction = (obj) => typeof obj === 'function';
 
 function index(key, levelDiffs) {
@@ -159,10 +161,14 @@ export class PatchDiff extends EventEmitter {
         return undefined;
     }
 
-    on(path, fn) {
-        path = Utils.concatPath(this._path, path);
-        super.on(path, fn);
+    on(event, fn, prependPath = true) {
+        if (!eventsWithoutPrepend.has(event)) {
+            event = Utils.concatPath(this._path, event);
+        }
+
+        super.on(event, fn);
     }
+
 
     subscribe (path, fn) {
         if (typeof path === 'function') {
@@ -384,7 +390,7 @@ export class PatchDiff extends EventEmitter {
                     this.emit((leafPath || '*'),  {differences: appliedValue}, {type: 'addition',});
                 }
             }
-        // existing
+            // existing
         } else {
 
             existingValue = target[srcKey];
@@ -394,7 +400,7 @@ export class PatchDiff extends EventEmitter {
             if (patch[key] === options.deleteKeyword) {
                 levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isTargetArray);
 
-            // update object
+                // update object
             } else if (isPatchValueObject) {
 
                 // we should replace the target value, todo: array merges check is not sufficient
@@ -415,7 +421,7 @@ export class PatchDiff extends EventEmitter {
 
                 levelDiffs.addChildTracking(childDiffs, key);
 
-            // update primitive
+                // update primitive
             } else {
 
                 target[srcKey] = patchValue;

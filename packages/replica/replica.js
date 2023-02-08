@@ -84,7 +84,14 @@ export class Replica extends PatchDiff {
             subscribeRemoteOnCreate: !!options.connection
         }, options);
 
-        super(options.dataObject || {}, options);
+        super({}, options);
+
+        this._path = '$remote';
+
+        if (options.dataObject) {
+            this.set(options.dataObject);
+        }
+
         this.remotePath = remotePath;
         this.id = ++replicaId;
         this._synced = false;
@@ -128,7 +135,7 @@ export class Replica extends PatchDiff {
                 if (typeof subscribeSuccessCallback === 'function') {
                     subscribeSuccessCallback(result);
                 }
-                this.emit('_subscribed', this.get());
+                super.emit('_subscribed', this.get());
 
                 if (this.options.allowWrite) {
                     this.subscribe((data, diff, options) => {
@@ -151,7 +158,7 @@ export class Replica extends PatchDiff {
             options.local = true;
             super.apply(patch, path, options);
         }
-    }  
+    }
 
     set(fullDocument, path, options = {}) {
         if (this.options.allowWrite) {
@@ -213,7 +220,7 @@ export class Replica extends PatchDiff {
             return Promise.resolve(this.get());
         }
 
-        return new Promise((resolve) => this.once('_subscribed', resolve));
+        return new Promise((resolve) => super.once('_subscribed', resolve, false));
     }
 
     get synced() {
@@ -221,7 +228,7 @@ export class Replica extends PatchDiff {
             return Promise.resolve(this.get());
         }
 
-        return new Promise((resolve) => this.once('_synced', resolve));
+        return new Promise((resolve) => this.once('_synced', resolve, false));
     }
 }
 
