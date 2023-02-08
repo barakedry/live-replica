@@ -177,7 +177,7 @@ export class PatchDiff extends EventEmitter {
         }
 
         let current = this.get(path);
-        if (current) {
+        if (current !== undefined) {
             fn(current, {snapshot: true}, {});
         }
 
