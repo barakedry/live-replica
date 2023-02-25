@@ -85,6 +85,9 @@ export class Replica extends PatchDiff {
         super({}, options);
 
         this._path = '$remote';
+        this._wrapper = {};
+        this._wrapperInner = this._wrapper;
+        this._wrapperKey = '$remote';
 
         if (options.dataObject) {
             this.set(options.dataObject);

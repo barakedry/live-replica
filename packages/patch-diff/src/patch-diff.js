@@ -52,7 +52,7 @@ export class PatchDiff extends EventEmitter {
 
     apply(patch, path, options) {
 
-        path = Utils.concatPath(this._path, path);
+        //path = Utils.concatPath(this._path, path);
         options = _defaults(options || {}, this.options);
 
         if (!_isObject(patch) && !path) {
@@ -65,12 +65,22 @@ export class PatchDiff extends EventEmitter {
             patch = PatcherProxy.unwrap(patch);
         }
 
-        this._applyObject(this._data, Utils.wrapByPath(patch, path), '', options, 0);
+        let wrappedPatch = Utils.wrapByPath(patch, path);
+        if (this._wrapper) {
+            this._wrapperInner[this._wrapperKey] = wrappedPatch
+            wrappedPatch  = this._wrapper;
+        }
+
+        this._applyObject(this._data, wrappedPatch, '', options, 0);
+
+        if (this._wrapper) {
+            delete this._wrapperInner[this._wrapperKey];
+        }
     }
 
     set(fullDocument, path, options) {
 
-        path = Utils.concatPath(this._path, path);
+        //path = Utils.concatPath(this._path, path);
 
         options = _defaults(options || {}, this.options);
 
@@ -83,12 +93,25 @@ export class PatchDiff extends EventEmitter {
             fullDocument = PatcherProxy.unwrap(fullDocument);
         }
 
-        this._applyObject(this._data, Utils.wrapByPath(fullDocument, path), '', options, 0, path || true);
+        let wrapped = Utils.wrapByPath
+
+        (fullDocument, path);
+        if (this._wrapper) {
+            this._wrapperInner[this._wrapperKey] = wrapped
+            wrapped = this._wrapper;
+        }
+
+        this._applyObject(this._data, wrapped, '', options, 0, path || true);
+
+        if (this._wrapper) {
+            delete this._wrapperInner[this._wrapperKey];
+        }
+
     }
 
     remove(path, options) {
 
-        path = Utils.concatPath(this._path, path);
+        //path = Utils.concatPath(this._path, path);
 
         options = _defaults(options || {}, this.options);
 
@@ -98,7 +121,18 @@ export class PatchDiff extends EventEmitter {
             return;
         }
 
-        this._applyObject(this._data, Utils.wrapByPath(this.options.deleteKeyword, path), '', options, 0);
+        let wrapped = Utils.wrapByPath(this.options.deleteKeyword, path);
+        if (this._wrapper) {
+            this._wrapperInner[this._wrapperKey] = wrapped
+            wrapped = this._wrapper;
+        }
+
+        this._applyObject(this._data, wrapped, '', options, 0);
+
+        if (this._wrapper) {
+            delete this._wrapperInner[this._wrapperKey];
+        }
+
     }
 
     splice({index, itemsToRemove, ...itemsToAdd}, path, options = {}) {
@@ -227,6 +261,12 @@ export class PatchDiff extends EventEmitter {
         let at = Object.create(this);
         at._path = path;
 
+        const {wrapper, wrapperInner, lastKey} = Utils.createWrapperWithLastKey(path);
+
+        at._wrapper = wrapper;
+        at._wrapperInner = wrapperInner;
+        at._wrapperKey = lastKey;
+        
         return at;
     }
 

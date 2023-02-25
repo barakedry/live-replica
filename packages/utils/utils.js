@@ -70,7 +70,6 @@ export const Utils = {
         return parts;
     },
 
-
     splitPathAndLastKey: function(fullPath) {
         let key, path, index;
         const dotIndex = fullPath.lastIndexOf('.');
@@ -149,6 +148,41 @@ export const Utils = {
             called = true;
             return lastResult
         }
+    },
+
+    createWrapperWithLastKey(path) {
+        const {path: basePath, key, index} = this.splitPathAndLastKey(path);
+        let lastKey, wrapper, wrapperInner;
+
+        if (index !== undefined) {
+            lastKey = index;
+        } else {
+            lastKey = key;
+        }
+        if (basePath) {
+
+            const parts = Utils.pathParts(basePath);
+
+            let nextKeyType = typeof parts[0];
+            if (nextKeyType === 'number') {
+                wrapper = [];
+            } else {
+                wrapper = {};
+            }
+
+            wrapperInner = wrapper;
+            parts.forEach((part, index) => {
+                const nextKey = index + 1 < parts.length ? parts[index + 1] : lastKey;
+                wrapperInner[part] = typeof nextKey === 'number' ? [] : {};
+                wrapperInner = wrapperInner[part];
+            });
+
+        } else {
+            wrapper = index !== undefined ? [] : {};
+            wrapperInner = wrapper;
+        }
+
+        return {wrapper, wrapperInner, lastKey}
     },
 
     SERIALIZED_FUNCTION: 'function()'
