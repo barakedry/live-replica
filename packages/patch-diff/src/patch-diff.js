@@ -55,7 +55,7 @@ export class PatchDiff extends EventEmitter {
         //path = Utils.concatPath(this._path, path);
         options = _defaults(options || {}, this.options);
 
-        if (!_isObject(patch) && !path) {
+        if (!_isObject(patch) && !path && !this._path) {
             debug('invalid apply, target and patch must be objects');
 
             return;
@@ -80,11 +80,9 @@ export class PatchDiff extends EventEmitter {
 
     set(fullDocument, path, options) {
 
-        //path = Utils.concatPath(this._path, path);
-
         options = _defaults(options || {}, this.options);
 
-        if (!_isObject(fullDocument) && !path) {
+        if (!_isObject(fullDocument) && !path && !this._path) {
             debug('invalid apply, target and value must be objects');
             return;
         }
@@ -93,15 +91,14 @@ export class PatchDiff extends EventEmitter {
             fullDocument = PatcherProxy.unwrap(fullDocument);
         }
 
-        let wrapped = Utils.wrapByPath
+        let wrapped = Utils.wrapByPath(fullDocument, path);
 
-        (fullDocument, path);
         if (this._wrapper) {
             this._wrapperInner[this._wrapperKey] = wrapped
             wrapped = this._wrapper;
         }
 
-        this._applyObject(this._data, wrapped, '', options, 0, path || true);
+        this._applyObject(this._data, wrapped, '', options, 0, Utils.concatPath(this._path, path) || true);
 
         if (this._wrapper) {
             delete this._wrapperInner[this._wrapperKey];
@@ -263,7 +260,7 @@ export class PatchDiff extends EventEmitter {
         at._wrapper = wrapper;
         at._wrapperInner = wrapperInner;
         at._wrapperKey = lastKey;
-        
+
         return at;
     }
 

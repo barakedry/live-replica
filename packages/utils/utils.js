@@ -74,6 +74,11 @@ export const Utils = {
         let key, path, index;
         const dotIndex = fullPath.lastIndexOf('.');
         const bracketIndex = fullPath.lastIndexOf('[');
+
+        if (dotIndex === -1 && bracketIndex === -1) {
+            return {path: '', key: fullPath};
+        }
+
         if (dotIndex > bracketIndex) {
             key = fullPath.substring(dotIndex + 1);
             path = fullPath.substring(0, dotIndex);
@@ -154,11 +159,12 @@ export const Utils = {
         const {path: basePath, key, index} = this.splitPathAndLastKey(path);
         let lastKey, wrapper, wrapperInner;
 
-        if (index !== undefined) {
+        if (!isNaN(index)) {
             lastKey = index;
         } else {
             lastKey = key;
         }
+
         if (basePath) {
 
             const parts = Utils.pathParts(basePath);
@@ -178,7 +184,7 @@ export const Utils = {
             });
 
         } else {
-            wrapper = index !== undefined ? [] : {};
+            wrapper = {};
             wrapperInner = wrapper;
         }
 
