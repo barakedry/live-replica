@@ -185,5 +185,28 @@ export const Utils = {
         return {wrapper, wrapperInner, lastKey}
     },
 
+    fixNumericParts(path) {
+        const parts = path.split('.');
+        const result = [];
+
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+
+            if (part.match(/^\d+$/)) {
+                // If the part is a number, replace with square brackets notation
+                if (i > 0) {
+                    result[i - 1] = result[i - 1] + `[${part}]`;
+                } else {
+                    result.push(`[${part}]`);
+                }
+
+            } else {
+                result.push(part);
+            }
+        }
+
+        return result.join('.');
+    },
+
     SERIALIZED_FUNCTION: 'function()'
 };

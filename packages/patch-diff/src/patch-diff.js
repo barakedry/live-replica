@@ -197,7 +197,7 @@ export class PatchDiff extends EventEmitter {
 
     on(event, fn, prependPath = true) {
         if (!eventsWithoutPrepend.has(event)) {
-            event = Utils.concatPath(this._path, event);
+            event = Utils.fixNumericParts(Utils.concatPath(this._path, event));
         }
 
         super.on(event, fn);
@@ -217,10 +217,7 @@ export class PatchDiff extends EventEmitter {
 
         path = Utils.concatPath(this._path, path);
         path = path || '*';
-
-        if (path !== "" && !isNaN(path)) {
-            path = `[${path}]`
-        }
+        path = Utils.fixNumericParts(path);
 
         let handler = function (diff, options) {
             if (this.retainState === false) {
@@ -259,7 +256,7 @@ export class PatchDiff extends EventEmitter {
     at(subPath) {
         let path = Utils.concatPath(this._path, subPath);
         let at = Object.create(this);
-        at._path = path;
+        at._path = Utils.fixNumericParts(path);
 
         const {wrapper, wrapperInner, lastKey} = Utils.createWrapperWithLastKey(path);
 
