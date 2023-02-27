@@ -48,7 +48,7 @@ const styles = css`
     background-color: transparent;
   }
 
-  button:focus{
+  button:focus {
     outline: 0;
   }
 
@@ -70,7 +70,6 @@ const styles = css`
   button.add {
 
 
-
   }
 
   li:hover > button,
@@ -81,9 +80,9 @@ const styles = css`
   }
 
 
-  ul:hover {
-    transition: background 0.55s linear 0.75s;
-    background-color: rgba(0,0,0,0.03);
+  ul:hover::before, ul:hover::after {
+    transition: background 0.55s linear 0.5s;
+    background-color: rgba(0, 0, 0, 0.2);
   }
 
 
@@ -121,7 +120,7 @@ const styles = css`
     background-color: rgba(0, 0, 0, 0.08);
   }
 
-  [expanded] > ul:hover  > li > .add {
+  [expanded] > ul:hover > li > .add {
     visibility: visible;
   }
 
@@ -177,6 +176,32 @@ const styles = css`
     font-style: italic;
   }
 
+  ul::before, ul::after {
+    margin-left: 24px;
+    color: #888;
+  }
+
+  ul[data-type=array]::before {
+    content: '[';
+  }
+
+  ul[data-type=array]::after {
+    content: ']';
+  }
+
+  ul[data-type=object]::before {
+    content: '{';
+  }
+
+  ul[data-type=object]::after {
+    content: '}';
+  }
+
+  ul:hover::before, ul:hover::after {
+    color: #ffd500;
+    text-shadow: 0 0 1px black;
+  }
+
   input {
     display: none;
     padding: 0;
@@ -216,17 +241,17 @@ const styles = css`
     display: inline-block;
   }
 
-  [data-type=number] .textValue,  input[data-type='number'],
-  [data-type=string] .textValue,  input[data-type='text'] {
+  [data-type=number] .textValue, input[data-type='number'],
+  [data-type=string] .textValue, input[data-type='text'] {
     min-width: 40px;
     min-height: 12px;
     cursor: text;
   }
 
-  [data-type=number] .textValue:hover ,
+  [data-type=number] .textValue:hover,
   [data-type=string] .textValue:hover {
-    outline: 1px solid rgba(0,0,0, 0.5);
-    background-color: rgba(255,255,255, 0.8);
+    outline: 1px solid rgba(0, 0, 0, 0.5);
+    background-color: rgba(255, 255, 255, 0.8);
   }
 
   span.textValue {
@@ -409,7 +434,7 @@ class ReplicaInspector extends LitElement {
         const isArray = Array.isArray(obj);
 
         return html`
-            <ul data-type=${isArray ? 'array' : 'object'}>            
+            <ul data-type=${isArray ? 'array' : 'object'}>
                 ${repeat(keys, k => k, key => this.renderProperty(obj, key))}
                 <li><button class="add" @click="${(e) => this.openTypesMenu(e, obj, isArray)}">Add ${isArray ? 'Value' : 'Property'}</button></li>
             </ul>
@@ -463,7 +488,8 @@ class ReplicaInspector extends LitElement {
             // if (stringified.length === maxChar) {
             //     stringified = stringified + '... ' + (Array.isArray(value) ? ']' : '}');
             // }
-            return html`<span class='summary'>{...}</span>`
+            const summary = Array.isArray(value) ? '[...]' : '{...}';
+            return html`<span class='summary'>${summary}</span>`
         }
 
         if (type === 'function') {

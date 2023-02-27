@@ -114,9 +114,9 @@ export class PatchDiff extends EventEmitter {
 
         options = _defaults(options || {}, this.options);
 
-        if (!(path && _isString(path))) {
-            debug('invalid path, cannot remove');
-
+        if (!path && !this._path) {
+            //this._emitInnerDeletions('', this._data);
+            this._data = Array.isArray(this._data) ? [] : {};
             return;
         }
 
