@@ -157,7 +157,9 @@ export const Utils = {
 
     createWrapperWithLastKey(path) {
         const {path: basePath, key, index} = this.splitPathAndLastKey(path);
-        let lastKey, wrapper, wrapperInner;
+        let lastKey, wrapperInner;
+
+        const wrapper = {};
 
         if (!isNaN(index)) {
             lastKey = index;
@@ -165,27 +167,21 @@ export const Utils = {
             lastKey = key;
         }
 
-        if (basePath) {
+        if (!basePath) {
+            wrapperInner = wrapper;
+        } else {
 
             const parts = Utils.pathParts(basePath);
 
             let nextKeyType = typeof parts[0];
-            if (nextKeyType === 'number') {
-                wrapper = [];
-            } else {
-                wrapper = {};
-            }
 
             wrapperInner = wrapper;
             parts.forEach((part, index) => {
                 const nextKey = index + 1 < parts.length ? parts[index + 1] : lastKey;
-                wrapperInner[part] = typeof nextKey === 'number' ? [] : {};
+                wrapperInner[part] = {};
                 wrapperInner = wrapperInner[part];
             });
 
-        } else {
-            wrapper = {};
-            wrapperInner = wrapper;
         }
 
         return {wrapper, wrapperInner, lastKey}

@@ -3,7 +3,7 @@ import { Utils } from '../../utils/utils.js';
 import { DiffTracker } from "./diff-tracker.js";
 import { PatcherProxy } from "../../proxy/proxy.js";
 
-const debug = (msg) => {};
+const debug = (msg) => {console.debug('LiveReplica PatchDiff: ' + msg);};
 
 import _defaults from '../../../node_modules/lodash-es/defaults.js';
 import _isObject from '../../../node_modules/lodash-es/isObject.js';
@@ -22,6 +22,8 @@ function index(key, levelDiffs) {
 }
 
 export class PatchDiff extends EventEmitter {
+    _subs = {};
+
     constructor(object, options) {
 
         super();
@@ -68,7 +70,7 @@ export class PatchDiff extends EventEmitter {
         let wrappedPatch = Utils.wrapByPath(patch, path);
         if (this._wrapper) {
             this._wrapperInner[this._wrapperKey] = wrappedPatch
-            wrappedPatch  = this._wrapper;
+            wrappedPatch = this._wrapper;
         }
 
         this._applyObject(this._data, wrappedPatch, '', options, 0);
@@ -251,8 +253,13 @@ export class PatchDiff extends EventEmitter {
     }
 
     at(subPath) {
+        if (this._subs[subPath]) {
+            return this._subs[subPath];
+        }
+
         let path = Utils.concatPath(this._path, subPath);
         let at = Object.create(this);
+        at._subs = {};
         at._path = Utils.fixNumericParts(path);
 
         const {wrapper, wrapperInner, lastKey} = Utils.createWrapperWithLastKey(path);
@@ -260,6 +267,8 @@ export class PatchDiff extends EventEmitter {
         at._wrapper = wrapper;
         at._wrapperInner = wrapperInner;
         at._wrapperKey = lastKey;
+
+        this._subs[subPath] = at;
 
         return at;
     }
