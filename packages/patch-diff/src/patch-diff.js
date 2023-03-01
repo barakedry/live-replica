@@ -116,6 +116,8 @@ export class PatchDiff extends EventEmitter {
 
         if (!path && !this._path) {
             //this._emitInnerDeletions('', this._data);
+            PatcherProxy.markDirtyByRef(this._data);
+            this.destroyProxy();
             this._data = Array.isArray(this._data) ? [] : {};
             return;
         }
@@ -503,6 +505,7 @@ export class PatchDiff extends EventEmitter {
         levelDiffs.hasDifferences = true;
 
         if (_isObject(existingValue)) {
+            PatcherProxy.markDirtyByRef(existingValue);
             //levelDiffs.addChildTracking(this._emitInnerDeletions(path, existingValue, options), key)
             const childDiffs = this._emitInnerDeletions(Utils.pushKeyToPath(path, key, isArray), existingValue, options);
             this.emit(Utils.pushKeyToPath(path, key), childDiffs);
@@ -585,6 +588,7 @@ export class PatchDiff extends EventEmitter {
         levelDiffs.hasDeletions = true;
         levelDiffs.hasDifferences = true;
         levelDiffs.deletions = deletedObject;
+        PatcherProxy.markDirtyByRef(deletedObject);
         return levelDiffs;
     }
 

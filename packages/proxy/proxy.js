@@ -160,6 +160,7 @@ export const PatcherProxy = {
             immediateFlush,
             patcher,
             path,
+            patcherRef,
             isArray: Array.isArray(patcherRef),
             arrayMethods: {}
         };
@@ -306,6 +307,9 @@ export const PatcherProxy = {
 
     handleOwnKeys(proxy, target) {
         let properties = this.proxyProperties.get(proxy);
+        if (properties.targetDirty) {
+            target = properties.patcher.get(properties.path);
+        }
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy);
         let changes = get(this.proxyProperties.get(root).changes, fullPath);
@@ -335,6 +339,10 @@ export const PatcherProxy = {
     handleGet(proxy, target, name, readonly) {
 
         let properties = this.proxyProperties.get(proxy);
+
+        if (properties.targetDirty) {
+            target = properties.patcher.get(properties.path);
+        }
 
         if (name === Symbol.iterator) {
             // return this.getIterator(proxy, this.handleOwnKeys(proxy, target, true));
@@ -377,6 +385,11 @@ export const PatcherProxy = {
 
     handleSet(proxy, target, name, newval) {
         let properties = this.proxyProperties.get(proxy);
+
+        if (properties.targetDirty) {
+            target = properties.patcher.get(properties.path);
+        }
+
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
         if (isObject(newval) && isObject(target[name])) {
@@ -410,6 +423,10 @@ export const PatcherProxy = {
 
     handleDelete(proxy, target, name) {
         let properties = this.proxyProperties.get(proxy);
+        if (properties.targetDirty) {
+            target = properties.patcher.get(properties.path);
+        }
+
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
         let rootChangeTracker = this.proxyProperties.get(root).changes;
@@ -485,17 +502,27 @@ export const PatcherProxy = {
     },
 
     destroy(proxy) {
+
+        let properties = this.proxyProperties.get(proxy);
+
+        properties.pullChanges?.();
+        delete properties.patcher;
+        delete properties.root;
+        this.proxies.delete(properties.patcherRef);
+        this.proxyProperties.delete(proxy);
+        properties.targetDirty = true;
         setTimeout(() => {
-            let properties = this.proxyProperties.get(proxy);
-            properties.pullChanges();
-            delete properties.patcher;
-            delete properties.root;
-            this.proxies.delete(proxy);
-            this.proxyProperties.delete(proxy);
+
             this.revocables.get(proxy)?.revoke();
             this.revocables.delete(proxy);
-
         }, 0);
+    },
+
+    markDirtyByRef(ref) {
+        const proxy = this.proxies.get(ref);
+        if (!proxy) { return; }
+        let properties = this.proxyProperties.get(proxy);
+        properties.targetDirty = true;
     }
 };
 
