@@ -205,29 +205,27 @@ export class PatchDiff extends EventEmitter {
     }
 
 
-    subscribe (path, fn) {
-        if (typeof path === 'function') {
-            fn = path;
-            path = '';
+    subscribe (subPath, fn) {
+        if (typeof subPath === 'function') {
+            fn = subPath;
+            subPath = '';
         }
 
-        let current = this.get(path);
-        if (current !== undefined) {
-            fn(current, {snapshot: true}, {});
-        }
+        fn(this.get(subPath), {snapshot: true}, {});
 
+        let path = subPath;
         path = Utils.concatPath(this._path, path);
         path = path || '*';
         path = Utils.fixNumericParts(path);
 
-        let handler = function (diff, options) {
+        let handler = (diff, options) => {
             if (this.retainState === false) {
-                fn(current, {snapshot: true}, {});
+                fn(this.get(subPath), {snapshot: true}, {});
             } else {
                 fn(diff.differences, diff, options);
             }
-
         };
+
         super.on(path, handler);
 
         return () => {

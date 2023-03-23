@@ -53,6 +53,10 @@ export class Replica extends PatchDiff {
 
     [deserializeFunctions](data, path) {
 
+        if (typeof data !== 'object' || data === null) {
+            return data;
+        }
+
         const keys = Object.keys(data);
         for (let i = 0, l = keys.length; i < l; i++) {
             const key = keys[i];

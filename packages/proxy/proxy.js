@@ -353,6 +353,10 @@ export const PatcherProxy = {
             return this.getOrCreateArrayMethod(proxy, target, name, readonly);
         }
 
+        if (typeof name === 'symbol') {
+            return target[name];
+        }
+
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name, properties.isArray);
         let deleteValue = properties.patcher.options.deleteKeyword;
