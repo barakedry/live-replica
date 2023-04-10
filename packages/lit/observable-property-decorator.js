@@ -11,9 +11,12 @@ export function observed(options = {}) {
         const unwatchKey = Symbol(`unwatch${propertyName}`);
         const reactiveController = Symbol();
 
+
         const descriptor = {
             get() { return previouslyDefinedDescriptor?.get?.call(this) || this[propertyKey]},
             set: function(value){
+
+                const onChange = options.onChange && typeof this[options.onChange] === 'function' ? this[options.onChange] : () => {};
 
                 if (this[propertyKey] === value) { return; }
                 const prevValue = this[propertyKey];
@@ -51,13 +54,9 @@ export function observed(options = {}) {
                     this[reactiveController] = new LiveReplicaController(this);
                 }
 
-                if (options.onChange && typeof this[options.onChange] === 'function') {
-                    this[unwatchKey] = this[reactiveController].watch(proxy, undefined, (patch, diff, val) => {
-                        return this[options.onChange]?.(patch, diff, val);
-                    });
-                } else {
-                    this[unwatchKey] = this[reactiveController].watch(proxy);
-                }
+                this[unwatchKey] = this[reactiveController].watch(proxy, undefined, onChange);
+
+                //onChange(value, {});
             },
             enumerable: false,
             configurable: true,

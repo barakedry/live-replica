@@ -464,7 +464,7 @@ export class PatchDiff extends EventEmitter {
 
                 levelDiffs.addChildTracking(childDiffs, key);
 
-                // update primitive
+            // update primitive
             } else {
 
                 target[srcKey] = patchValue;
@@ -573,11 +573,13 @@ export class PatchDiff extends EventEmitter {
         const isArray = _isArray(deletedObject);
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
+            const innerPath = Utils.pushKeyToPath(path, key, isArray);
             if (_isObject(deletedObject[key])) {
-                const innerPath = Utils.pushKeyToPath(path, key, isArray);
                 childDiffs = this._emitInnerDeletions(innerPath, deletedObject[key], options);
                 levelDiffs.addChildTracking(childDiffs, key);
                 this.emit(innerPath, childDiffs);
+            } else {
+                this.emit((innerPath || '*'),  {differences: options.deleteKeyword}, {type: 'deletion'});
             }
 
             levelDiffs.differences[key] = options.deleteKeyword;
@@ -595,6 +597,8 @@ export class PatchDiff extends EventEmitter {
     }
 
     getData({immediateFlush} = {}) {
+        return PatcherProxy.create(this, '', null, this.isReadOnly, immediateFlush);
+
         if (!this.proxies.has(this)) {
             const proxy = PatcherProxy.create(this, '', null, this.isReadOnly, immediateFlush);
             this.proxies.set(this, proxy);
