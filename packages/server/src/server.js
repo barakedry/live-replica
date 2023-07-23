@@ -134,7 +134,7 @@ export class LiveReplicaServer extends PatchDiff {
                 const res = method.call(clientSubset, ...args);
                 if (res && typeof res.then === 'function') {
                     res.then(ack).catch((err) => {
-                        ack({$error: err.message});
+                        ack({$error: {message: err.message, name: err.name}});
                     });
                 } else {
                     ack(res);

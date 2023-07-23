@@ -13,7 +13,7 @@ export function observed(options = {}) {
 
 
         const descriptor = {
-            get() { return previouslyDefinedDescriptor?.get?.call(this) || this[propertyKey]},
+            get() { return previouslyDefinedDescriptor ? previouslyDefinedDescriptor?.get?.call(this) : this[propertyKey]},
             set: function(value){
 
                 const onChange = options.onChange && typeof this[options.onChange] === 'function' ? this[options.onChange] : () => {};
@@ -54,9 +54,13 @@ export function observed(options = {}) {
                     this[reactiveController] = new LiveReplicaController(this);
                 }
 
-                this[unwatchKey] = this[reactiveController].watch(proxy, undefined, onChange);
+                this[unwatchKey] = this[reactiveController].watch(proxy, undefined, (diff, changeInfo) => {
+                    if (changeInfo.selfDelete) {
+                        return false;
+                    }
 
-                //onChange(value, {});
+                    return onChange.call(this, diff, changeInfo);
+                });
             },
             enumerable: false,
             configurable: true,

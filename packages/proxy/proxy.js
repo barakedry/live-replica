@@ -361,7 +361,7 @@ export const PatcherProxy = {
         let fullPath = this.getPath(proxy, name, properties.isArray);
         let deleteValue = properties.patcher.options.deleteKeyword;
         let value = get(this.proxyProperties.get(root).changes, fullPath);
-        let realValue = target[name];
+        let realValue = target?.[name];
 
         if (this.proxies.has(realValue)) {
             return this.proxies.get(realValue);

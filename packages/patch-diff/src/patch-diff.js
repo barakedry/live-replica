@@ -73,6 +73,10 @@ export class PatchDiff extends EventEmitter {
             wrappedPatch = this._wrapper;
         }
 
+        if (this._whitelist) {
+            wrappedPatch = Utils.pickWithKeys(wrappedPatch, this._whitelist);
+        }
+
         this._applyObject(this._data, wrappedPatch, '', options, 0);
 
         if (this._wrapper) {
@@ -89,6 +93,7 @@ export class PatchDiff extends EventEmitter {
             return;
         }
 
+
         if (PatcherProxy.isProxy(fullDocument)) {
             fullDocument = PatcherProxy.unwrap(fullDocument);
         }
@@ -98,6 +103,11 @@ export class PatchDiff extends EventEmitter {
         if (this._wrapper) {
             this._wrapperInner[this._wrapperKey] = wrapped
             wrapped = this._wrapper;
+        }
+
+
+        if (this._whitelist) {
+            wrapped = Utils.pickWithKeys(wrapped, this._whitelist);
         }
 
         this._applyObject(this._data, wrapped, '', options, 0, Utils.concatPath(this._path, path) || true);
@@ -126,6 +136,10 @@ export class PatchDiff extends EventEmitter {
         if (this._wrapper) {
             this._wrapperInner[this._wrapperKey] = wrapped
             wrapped = this._wrapper;
+        }
+
+        if (this._whitelist) {
+            wrapped = Utils.pickWithKeys(wrapped, this._whitelist);
         }
 
         this._applyObject(this._data, wrapped, '', options, 0);
@@ -164,6 +178,10 @@ export class PatchDiff extends EventEmitter {
             retVal = this._data;
         }
 
+        if (this._whitelist && retVal) {
+            retVal = Utils.pickWithKeys(retVal, this._whitelist);
+        }
+
         if (callback) {
             if (retVal) {
                 callback(retVal);
@@ -189,8 +207,12 @@ export class PatchDiff extends EventEmitter {
     }
 
     getClone(path) {
-        const obj = this.get(path);
+        let obj = this.get(path);
         if (obj) {
+            if (this._whitelist) {
+                obj = Utils.pickWithKeys(obj, this._whitelist);
+            }
+
             return JSON.parse(JSON.stringify(obj));
         }
         return undefined;
@@ -202,6 +224,40 @@ export class PatchDiff extends EventEmitter {
         }
 
         super.on(event, fn);
+    }
+
+    whitelist(keySet) {
+
+        let addedKeys = [];
+        let removedKeys = [];
+        const existingKeys = this._whitelist || new Set();
+
+        if (this._whitelist) {
+            // find added keys
+            addedKeys = Array.from(keySet).filter(key => !this._whitelist.has(key));
+
+            // find removed keys
+            removedKeys = Array.from(this._whitelist).filter(key => !keySet.has(key));
+        }
+
+        if (addedKeys.length || removedKeys.length) {
+            // synthesis diff based on added and removed keys
+            const diff = {};
+            addedKeys.forEach(key => {
+                const val = this.get(key)
+                if (val !== undefined) {
+                    diff[key] = val;
+                }
+            });
+
+            removedKeys.forEach(key => diff[key] = this.options.deleteKeyword);
+            let path = this._path;
+            path = path || '*';
+            path = Utils.fixNumericParts(path);
+            this.emit(path, diff, {snapshot: true}, {});
+        }
+
+        this._whitelist = keySet;
     }
 
 
@@ -219,6 +275,10 @@ export class PatchDiff extends EventEmitter {
         path = Utils.fixNumericParts(path);
 
         let handler = (diff, options) => {
+            if (this._whitelist) {
+                diff = Utils.pickWithKeys(diff, this._whitelist);
+            }
+
             if (this.retainState === false) {
                 fn(this.get(subPath), {snapshot: true}, {});
             } else {
@@ -585,6 +645,7 @@ export class PatchDiff extends EventEmitter {
             levelDiffs.differences[key] = options.deleteKeyword;
         }
 
+        levelDiffs.selfDelete = true;
         levelDiffs.hasDeletions = true;
         levelDiffs.hasDifferences = true;
         levelDiffs.deletions = deletedObject;
@@ -620,5 +681,4 @@ export class PatchDiff extends EventEmitter {
 
 PatchDiff.prototype.observe = EventEmitter.prototype.on;
 PatchDiff.prototype.override = PatchDiff.prototype.set;
-
 export default PatchDiff;

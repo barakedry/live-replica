@@ -51,6 +51,7 @@ declare namespace LiveReplica {
         getClone(path?:string):object;
         subscribe(path:string, callback?:SubscribeCallback):UnsubscribeCallback;
         subscribe(callback:SubscribeCallback):UnsubscribeCallback;
+        whitelist(keys:Set<string>);
         getWhenExists(path?:string) : Promise<object>;
         whenAnything(path?:string) : Promise<object>;
         at(subPath) : PatchDiff;
