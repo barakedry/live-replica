@@ -101,6 +101,23 @@ export const Utils = {
         }
     },
 
+    firstKey(path) {
+        const dotIndex = path.indexOf('.');
+        const bracketIndex = path.indexOf('[');
+
+        if (dotIndex === -1 && bracketIndex === -1) {
+            return path;
+        }
+
+        if (bracketIndex === -1) {
+            return path.substring(0, dotIndex);
+        } else if (dotIndex === -1){
+            return path.substring(0, bracketIndex);
+        } else {
+            return path.substring(0, Math.min(dotIndex, bracketIndex));
+        }
+    },
+
     parentPath(path) {
         const dotIndex = path.lastIndexOf('.');
         const bracketIndex = path.lastIndexOf('[');
@@ -210,13 +227,23 @@ export const Utils = {
         return result.join('.');
     },
 
-    pickWithKeys: function (obj, keys) {
+    pickWithKeys: function (obj, keys, allowEmptyObject = false) {
+
+        if (!obj || typeof obj !== 'object') {
+            return obj;
+        }
+
         const result = {};
         keys.forEach(key => {
             if (obj.hasOwnProperty(key)) {
                 result[key] = obj[key];
             }
         });
+
+        if (!allowEmptyObject && Object.keys(result).length === 0) {
+            return undefined;
+        }
+
         return result;
     },
 

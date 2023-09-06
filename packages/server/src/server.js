@@ -84,9 +84,19 @@ export class LiveReplicaServer extends PatchDiff {
     }
 
     subscribeClient(request) {
-        const { path, connection, readTransformer = defaultTransformer, writeTransformer = defaultTransformer } = request;
-        const clientSubset = this.at(path);
+        const { path, connection, whitelist, readTransformer = defaultTransformer, writeTransformer = defaultTransformer } = request;
         let changeRevision = 0;
+
+        let target;
+        if (request.target) {
+            target = request.target;
+        } else {
+            target = this.at(path);
+
+            if (whitelist) {
+                target.whitelist(Array.isArray(whitelist) ? new Set(whitelist) : whitelist);
+            }
+        }
 
         const unsubscribeEvent = `unsubscribe:${request.id}`;
         const applyEvent = `apply:${request.id}`;
@@ -94,7 +104,7 @@ export class LiveReplicaServer extends PatchDiff {
         let invokeRpcListener, replicaApplyListener;
 
         let subscriberChange = false;
-        const unsubscribeChanges = clientSubset.subscribe((patchData, {snapshot}) => {
+        const unsubscribeChanges = target.subscribe((patchData, {snapshot, changeType}) => {
             if (!subscriberChange) {
                 const updateInfo  =  snapshot ? {snapshot} : {snapshot : false};
                 if (!snapshot) {
@@ -102,7 +112,7 @@ export class LiveReplicaServer extends PatchDiff {
                     updateInfo.changeRevision = changeRevision;
                 }
 
-                patchData = readTransformer(patchData, clientSubset);
+                patchData = readTransformer(patchData, target);
                 connection.send(applyEvent, serializeFunctions(patchData), updateInfo);
             }
 
@@ -121,7 +131,7 @@ export class LiveReplicaServer extends PatchDiff {
 
             replicaApplyListener = (payload) => {
                 subscriberChange = payload.changeRevision === changeRevision;
-                clientSubset.apply(writeTransformer(payload.data));
+                target.apply(writeTransformer(payload.data));
             };
 
             connection.on(applyEvent, replicaApplyListener);
@@ -129,9 +139,9 @@ export class LiveReplicaServer extends PatchDiff {
 
         if (request.allowRPC) {
             invokeRpcListener = ({path, args}, ack) => {
-                const method = clientSubset.get(path);
+                const method = target.get(path);
                 // check if promise
-                const res = method.call(clientSubset, ...args);
+                const res = method.call(target, ...args);
                 if (res && typeof res.then === 'function') {
                     res.then(ack).catch((err) => {
                         ack({$error: {message: err.message, name: err.name}});

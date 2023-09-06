@@ -22,6 +22,7 @@ declare namespace LiveReplica {
 
     }
 
+    type KeyList = string[] | Set<string>;
 
     type DiffInfo = {
         snapshot?: boolean;
@@ -51,10 +52,11 @@ declare namespace LiveReplica {
         getClone(path?:string):object;
         subscribe(path:string, callback?:SubscribeCallback):UnsubscribeCallback;
         subscribe(callback:SubscribeCallback):UnsubscribeCallback;
-        whitelist(keys:Set<string>);
+        whitelist(keys: KeyList);
         getWhenExists(path?:string) : Promise<object>;
         whenAnything(path?:string) : Promise<object>;
-        at(subPath) : PatchDiff;
+        at(subPath, cached?) : PatchDiff;
+        getFullPath(subPath?:string):string;
 
         get data() : Proxy;
 
@@ -75,6 +77,8 @@ declare namespace LiveReplica {
         path: string;
         readTransformer?: (data:any, part?:PatchDiff) => any;
         writeTransformer?: (data:any, part?:PatchDiff) => any;
+        whitelist?: KeyList;
+        target?: Origin;
         [key:string]: any;
     }
 

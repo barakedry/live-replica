@@ -63,8 +63,20 @@ export class PatchDiff extends EventEmitter {
             return;
         }
 
+
         if (PatcherProxy.isProxy(patch)) {
             patch = PatcherProxy.unwrap(patch);
+        }
+
+
+        if (this._whitelist) {
+            if (path) {
+                if (!this._whitelist.has(Utils.firstKey(path))) {
+                    return;
+                }
+            } else {
+                patch = Utils.pickWithKeys(patch, this._whitelist, false);
+            }
         }
 
         let wrappedPatch = Utils.wrapByPath(patch, path);
@@ -73,8 +85,15 @@ export class PatchDiff extends EventEmitter {
             wrappedPatch = this._wrapper;
         }
 
-        if (this._whitelist) {
-            wrappedPatch = Utils.pickWithKeys(wrappedPatch, this._whitelist);
+        // adjustOverrides
+        if (options.overrides) {
+            options = {...options};
+            const overrides = {};
+            Object.keys(options.overrides).forEach((key) => {
+                const keyPath = Utils.fixNumericParts(Utils.concatPath(Utils.concatPath(this._path, path), key));
+                overrides[keyPath] = options.overrides[key];
+            });
+            options.overrides = overrides;
         }
 
         this._applyObject(this._data, wrappedPatch, '', options, 0);
@@ -93,6 +112,10 @@ export class PatchDiff extends EventEmitter {
             return;
         }
 
+        if (this._whitelist) {
+            throw new Error('set is not supported with whitelist');
+        }
+
 
         if (PatcherProxy.isProxy(fullDocument)) {
             fullDocument = PatcherProxy.unwrap(fullDocument);
@@ -105,10 +128,6 @@ export class PatchDiff extends EventEmitter {
             wrapped = this._wrapper;
         }
 
-
-        if (this._whitelist) {
-            wrapped = Utils.pickWithKeys(wrapped, this._whitelist);
-        }
 
         this._applyObject(this._data, wrapped, '', options, 0, Utils.concatPath(this._path, path) || true);
 
@@ -132,15 +151,16 @@ export class PatchDiff extends EventEmitter {
             return;
         }
 
+        if (this._whitelist && !this._whitelist.has(Utils.firstKey(path))) {
+            return;
+        }
+
         let wrapped = Utils.wrapByPath(this.options.deleteKeyword, path);
         if (this._wrapper) {
             this._wrapperInner[this._wrapperKey] = wrapped
             wrapped = this._wrapper;
         }
 
-        if (this._whitelist) {
-            wrapped = Utils.pickWithKeys(wrapped, this._whitelist);
-        }
 
         this._applyObject(this._data, wrapped, '', options, 0);
 
@@ -154,6 +174,10 @@ export class PatchDiff extends EventEmitter {
         options = _defaults(options || {}, this.options);
         path = Utils.concatPath(this._path, path);
         this._applyObject(this._data, Utils.wrapByPath({[this.options.spliceKeyword]: {index, itemsToRemove, itemsToAdd}}, path), '', options, 0);
+    }
+
+    getFullPath(path) {
+        return Utils.concatPath(this._path, path);
     }
 
     get(path, callback) {
@@ -170,7 +194,6 @@ export class PatchDiff extends EventEmitter {
             return;
         }
 
-
         let retVal;
         if (fullPath) {
             retVal = _get(this._data, fullPath);
@@ -178,9 +201,16 @@ export class PatchDiff extends EventEmitter {
             retVal = this._data;
         }
 
-        if (this._whitelist && retVal) {
-            retVal = Utils.pickWithKeys(retVal, this._whitelist);
+        if (this._whitelist) {
+            if (path) {
+                if (!this._whitelist.has(Utils.firstKey(path))) {
+                    return undefined;
+                }
+            } else if (retVal) {
+                retVal = Utils.pickWithKeys(retVal, this._whitelist);
+            }
         }
+
 
         if (callback) {
             if (retVal) {
@@ -228,6 +258,10 @@ export class PatchDiff extends EventEmitter {
 
     whitelist(keySet) {
 
+        if (Array.isArray(keySet)) {
+            keySet = new Set(keySet);
+        }
+
         let addedKeys = [];
         let removedKeys = [];
         const existingKeys = this._whitelist || new Set();
@@ -240,21 +274,38 @@ export class PatchDiff extends EventEmitter {
             removedKeys = Array.from(this._whitelist).filter(key => !keySet.has(key));
         }
 
+        // create a temp union to be able to update changes for all keys
+        this._whitelist = new Set([...existingKeys, ...keySet]);
+
         if (addedKeys.length || removedKeys.length) {
             // synthesis diff based on added and removed keys
-            const diff = {};
+            const differences = {};
+            const deletions = {};
+            const additions = {};
+            let hasAdditions = false;
+            let hasDeletions = false;
+
+
+            removedKeys.forEach(key => {
+                hasAdditions = true;
+                deletions[key] = this.get(key);
+                differences[key] = this.options.deleteKeyword
+            });
+
             addedKeys.forEach(key => {
                 const val = this.get(key)
                 if (val !== undefined) {
-                    diff[key] = val;
+                    differences[key] = val;
+                    additions[key] = val;
+                    hasAdditions = true;
                 }
             });
 
-            removedKeys.forEach(key => diff[key] = this.options.deleteKeyword);
+
             let path = this._path;
             path = path || '*';
             path = Utils.fixNumericParts(path);
-            this.emit(path, diff, {snapshot: true}, {});
+            this.emit(path, {differences, hasDifferences: true, hasDeletions, hasAdditions, deletions, additions, changeType: 'whitelist-change'}, {type: 'whitelist-change'});
         }
 
         this._whitelist = keySet;
@@ -275,16 +326,28 @@ export class PatchDiff extends EventEmitter {
         path = Utils.fixNumericParts(path);
 
         let handler = (diff, options) => {
-            if (this._whitelist) {
-                diff = Utils.pickWithKeys(diff, this._whitelist);
-            }
-
             if (this.retainState === false) {
-                fn(this.get(subPath), {snapshot: true}, {});
+                let snapshot = this.get(subPath);
+                fn(snapshot, {snapshot: true}, {});
             } else {
                 fn(diff.differences, diff, options);
             }
         };
+
+        if (this._whitelist) {
+            handler = (diff, options) => {
+                if (this.retainState === false) {
+                    const snapshot = Utils.pickWithKeys(this.get(subPath), this._whitelist)
+                    fn(snapshot, {snapshot: true}, {});
+                } else {
+                    const delta = Utils.pickWithKeys(diff.differences, this._whitelist);
+                    if (delta) {
+                        fn(delta, diff, options);
+                    }
+                }
+            };
+        }
+
 
         super.on(path, handler);
 
@@ -312,13 +375,28 @@ export class PatchDiff extends EventEmitter {
         });
     }
 
-    at(subPath) {
-        if (this._subs[subPath]) {
+    at(subPath, cached = true) {
+
+        if (cached && this._subs[subPath]) {
             return this._subs[subPath];
+        }
+
+        if (this._whitelist) {
+            let allowed = false;
+            this._whitelist.forEach(key => {
+                if (key === subPath || subPath.startsWith(key + '.')) {
+                    allowed = true;
+                }
+            });
+
+            if (!allowed) {
+                throw new Error(`at(): path "${subPath}" is not allowed by whitelist`);
+            }
         }
 
         let path = Utils.concatPath(this._path, subPath);
         let at = Object.create(this);
+        at._whitelist = null;
         at._subs = {};
         at._path = Utils.fixNumericParts(path);
 
@@ -328,7 +406,9 @@ export class PatchDiff extends EventEmitter {
         at._wrapperInner = wrapperInner;
         at._wrapperKey = lastKey;
 
-        this._subs[subPath] = at;
+        if (cached) {
+            this._subs[subPath] = at;
+        }
 
         return at;
     }
