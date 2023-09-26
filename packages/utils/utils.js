@@ -34,16 +34,35 @@ export const Utils = {
                         part = '';
                     }
 
-                    let num = '';
                     i++;
                     char = path[i]
-                    while (char !== ']' && i < len) {
-                        num = `${num}${char}`;
+
+                    // key
+                    if (char === '"') {
                         i++;
                         char = path[i];
+                        let key = '';
+                        while (char !== '"' && i < len) {
+                            key += char
+                            i++;
+                            char = path[i];
+                        }
+                        parts.push(key);
+                        i++; // skip closing "
+                        i++; // skip closing ]
+                        // number
+                    } else {
+                        let num = '';
+                        while (char !== ']' && i < len) {
+                            num = `${num}${char}`;
+                            i++;
+                            char = path[i];
+                        }
+
+                        parts.push(Number(num));
                     }
 
-                    parts.push(Number(num));
+
                     part = '';
                     break;
                 }
@@ -73,6 +92,7 @@ export const Utils = {
     splitPathAndLastKey: function(fullPath) {
         let key, path, index;
         const dotIndex = fullPath.lastIndexOf('.');
+        const stringBracketIndex = fullPath.lastIndexOf('["');
         const bracketIndex = fullPath.lastIndexOf('[');
 
         if (dotIndex === -1 && bracketIndex === -1) {
@@ -82,6 +102,9 @@ export const Utils = {
         if (dotIndex > bracketIndex) {
             key = fullPath.substring(dotIndex + 1);
             path = fullPath.substring(0, dotIndex);
+        } else if (stringBracketIndex > bracketIndex) {
+            key = fullPath.substring(stringBracketIndex + 2, fullPath.length -2);
+            path = fullPath.substring(0, stringBracketIndex);
         } else {
             key = fullPath.substring(bracketIndex + 1, fullPath.length -1);
             path = fullPath.substring(0, bracketIndex);
@@ -93,9 +116,13 @@ export const Utils = {
 
     lastPathKey: function(path) {
         const dotIndex = path.lastIndexOf('.');
+        const stringBracketIndex = fullPath.lastIndexOf('["');
         const bracketIndex = path.lastIndexOf('[');
+
         if (dotIndex > bracketIndex) {
             return path.substring(dotIndex + 1);
+        } else if (stringBracketIndex > bracketIndex) {
+            return fullPath.substring(stringBracketIndex + 2, fullPath.length -2);
         } else {
             return Number(path.substring(bracketIndex + 1, path.length -1));
         }
@@ -104,26 +131,34 @@ export const Utils = {
     firstKey(path) {
         const dotIndex = path.indexOf('.');
         const bracketIndex = path.indexOf('[');
+        const stringBracketIndex = fullPath.indexOf('["');
 
-        if (dotIndex === -1 && bracketIndex === -1) {
+        if (dotIndex === -1 && bracketIndex === -1 && stringBracketIndex === -1) {
             return path;
         }
 
-        if (bracketIndex === -1) {
+        if (bracketIndex === -1 && stringBracketIndex === -1) {
             return path.substring(0, dotIndex);
-        } else if (dotIndex === -1){
+        } else if (dotIndex === -1 && stringBracketIndex === -1) {
             return path.substring(0, bracketIndex);
+        } else if (dotIndex === -1 && bracketIndex === -1) {
+            return path.substring(0, stringBracketIndex);
         } else {
-            return path.substring(0, Math.min(dotIndex, bracketIndex));
+            return path.substring(0, Math.min(...[dotIndex, bracketIndex, stringBracketIndex].filter( i => i !== -1)));
         }
     },
 
     parentPath(path) {
         const dotIndex = path.lastIndexOf('.');
+        const stringBracketIndex = fullPath.lastIndexOf('["');
         const bracketIndex = path.lastIndexOf('[');
+
         if (dotIndex > bracketIndex) {
             return path.substring(0, dotIndex);
+        } else if (stringBracketIndex > bracketIndex) {
+            return fullPath.substring(0, stringBracketIndex);
         }
+
         return path.substring(0, bracketIndex);
     },
 

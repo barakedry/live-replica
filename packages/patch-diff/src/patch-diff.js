@@ -570,7 +570,7 @@ export class PatchDiff extends EventEmitter {
                     levelDiffs.additions[key] = appliedValue;
                     levelDiffs.differences[key] = appliedValue;
                     const leafPath =  Utils.pushKeyToPath(path, srcKey, isTargetArray);
-                    this.emit((leafPath || '*'),  {differences: appliedValue}, {type: 'addition',});
+                    this.emit((leafPath || '*'),  {differences: appliedValue}, {type: 'addition'});
                 }
             }
             // existing
@@ -646,10 +646,10 @@ export class PatchDiff extends EventEmitter {
             PatcherProxy.markDirtyByRef(existingValue);
             //levelDiffs.addChildTracking(this._emitInnerDeletions(path, existingValue, options), key)
             const childDiffs = this._emitInnerDeletions(Utils.pushKeyToPath(path, key, isArray), existingValue, options);
-            levelDiffs.addChildTracking(childDiffs);
+            levelDiffs.addChildTracking(childDiffs, key);
         }
 
-        this.emit((Utils.pushKeyToPath(path, key) || '*'),  {differences: options.deleteKeyword}, {type: 'delete', oldValue: existingValue});
+        this.emit((Utils.pushKeyToPath(path, key) || '*'),  {differences: options.deleteKeyword}, {type: 'deletion', oldValue: existingValue});
 
         return levelDiffs;
     }

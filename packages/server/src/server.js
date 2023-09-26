@@ -44,7 +44,7 @@ export class LiveReplicaServer extends PatchDiff {
     onConnect(connection) {
 
         const onsubscribe = (clientRequest, ack) => {
-            const {id, path, allowRPC, allowWrite} = clientRequest;
+            const {id, path, allowRPC, allowWrite, params} = clientRequest;
 
             const subscribeRequest = {
                 id,
@@ -52,7 +52,8 @@ export class LiveReplicaServer extends PatchDiff {
                 ack,
                 path,
                 allowRPC,
-                allowWrite
+                allowWrite,
+                params
             };
 
             this.onSubscribeRequest(subscribeRequest);

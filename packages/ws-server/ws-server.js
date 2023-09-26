@@ -49,8 +49,12 @@ class Connection extends EventEmitter {
             }
         };
 
-        const data = encode(message);
-        this.socket.send(data);
+        try {
+            const data = encode(message);
+            this.socket.send(data);
+        } catch (e) {
+            console.error('[LiveReplica] unable to encode msgpack to socket', e );
+        }
     }
 
 

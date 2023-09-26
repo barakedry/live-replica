@@ -79,6 +79,7 @@ declare namespace LiveReplica {
         writeTransformer?: (data:any, part?:PatchDiff) => any;
         whitelist?: KeyList;
         target?: Origin;
+        params?: object,
         [key:string]: any;
     }
 
