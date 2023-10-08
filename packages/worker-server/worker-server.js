@@ -1,10 +1,6 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const eventName = require('../common/events');
-const { EventEmitter }  = require('events');
-const LiveReplicaServer = require('../server');
+import { eventName } from "../common/event-name.js";
+import { EventEmitter } from '../events/events.js';
+import {LiveReplicaServer} from '../server/index.js';
 
 class Connection extends EventEmitter {
     constructor() {
@@ -27,13 +23,13 @@ class Connection extends EventEmitter {
             }
         };
 
-        global.addEventListener('message', this.messageFromMaster);
+        self.addEventListener('message', this.messageFromMaster);
     }
 
 
     send(event, ...args) {
         event = eventName(event);
-        global.postMessage({
+        self.postMessage({
             liveReplica: {
                 event,
                 args
@@ -61,17 +57,16 @@ class Connection extends EventEmitter {
 /**
  *  LiveReplicaWorkerSocket
  */
-class LiveReplicaWorkerServer extends LiveReplicaServer {
+export class WorkerServer extends LiveReplicaServer {
     constructor() {
-        if (typeof onmessage !== 'function') {
-            throw new Error('LiveReplicaWorkerServer can be initiated only inside a web worker')
+        if (!self) {
+            throw new Error('WorkerServer can be initiated only inside a web worker')
         }
         super();
 
         this._masterConnection = new Connection();
         this.onConnect(this._masterConnection)
     }
-
 }
 
-module.exports = LiveReplicaWorkerServer;
+export default WorkerServer;

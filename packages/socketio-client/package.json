@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "description": "web worker socket for live-replica",
   "main": "socketio-client.js",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },
   "dependencies": {
       "@live-replica/socket": "*",
-      "events": "latest"
+      "@live-replica/events": "*"
   },
   "author": "",
   "license": "Apache-2.0"

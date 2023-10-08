@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "description": "web worker server for live-replica",
   "main": "worker-server.js",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },
   "dependencies": {
       "@live-replica/server": "*",
-      "events": "latest"
+      "@live-replica/events": "*"
   },
   "author": "",
   "license": "Apache-2.0"

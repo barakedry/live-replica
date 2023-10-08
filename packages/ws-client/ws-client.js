@@ -1,25 +1,18 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const LiveReplicaSocket = require('../socket');
-const LiveReplicaEvents = require('../common/events');
-const Events = require('events');
-const msgpack = require('@msgpack/msgpack');
+import { EventEmitter } from "../events/events.js";
+import { LiveReplicaSocket } from '../socket/socket.js';
+import {encode, decode} from '../../node_modules/@msgpack/msgpack/dist.es5+esm/index.mjs';
+
 const LIVE_REPLICA_MSG = '$LR';
 const onMessage = Symbol('onWebsocketMessage');
 let acks = Date.now();
 const nativeSocketEvents = {'disconnect': 'close'};
 
-/**
- *  LiveReplicaWebSocketsClient
- */
-class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
+export class WebSocketClient extends LiveReplicaSocket {
 
     constructor(socket) {
         super();
         this.socket = socket;
-        this._emitter = new Events.EventEmitter();
+        this._emitter = new EventEmitter();
         this._emitter.setMaxListeners(50000);
     }
 
@@ -78,7 +71,7 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
             }
         };
 
-        this._socket.send(msgpack.encode(message));
+        this._socket.send(encode(message));
     }
 
     set socket(socket) {
@@ -94,7 +87,7 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
         this._socket = socket;
 
         this[onMessage] = ({data}) => {
-            const msg = msgpack.decode(data);
+            const msg = decode(data);
             if (msg[LIVE_REPLICA_MSG]) {
                 const {event, args} = msg[LIVE_REPLICA_MSG];
                 this._emitter.emit(event, ...args);
@@ -125,4 +118,4 @@ class LiveReplicaWebSocketsClient extends LiveReplicaSocket {
     
 }
 
-module.exports = LiveReplicaWebSocketsClient;
+export default WebSocketClient;

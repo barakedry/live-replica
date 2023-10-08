@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "websockets  server for live-replica",
   "main": "ws-server.js",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },
@@ -11,8 +12,8 @@
   },
   "dependencies": {
     "@live-replica/server": "*",
-    "@msgpack/msgpack": "^1.9.0",
-    "events": "latest"
+    "@live-replica/events": "*",
+    "@msgpack/msgpack": "^1.9.0"
   },
   "author": "",
   "license": "Apache-2.0"

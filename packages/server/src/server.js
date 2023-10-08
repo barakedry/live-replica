@@ -1,12 +1,9 @@
-/**
- * Created by barakedry on 02/06/2018.
- */
-'use strict';
-const PatchDiff = require('../../patch-diff');
-const PatcherProxy = require('../../proxy');
-const Middlewares = require('./middleware-chain.js');
-const utils = PatchDiff.utils;
+import { PatchDiff } from '../../patch-diff/index.js';
+import { PatcherProxy } from '../../proxy/proxy.js';
+import { MiddlewareChain } from './middleware-chain.js';
+import { Utils } from '../../utils/utils.js';
 
+const defaultTransformer = (data, dataPart) => data;
 function serializeFunctions(data) {
 
     if (typeof data !== 'object') {
@@ -22,7 +19,7 @@ function serializeFunctions(data) {
         const value = data[key];
 
         if (typeof value === 'function') {
-            ret[key] = utils.SERIALIZED_FUNCTION;
+            ret[key] = Utils.SERIALIZED_FUNCTION;
         } else if (typeof value === 'object' && value !== null) {
             ret[key] = serializeFunctions(value);
         } else {
@@ -33,7 +30,7 @@ function serializeFunctions(data) {
 
 }
 
-class LiveReplicaServer extends PatchDiff {
+export class LiveReplicaServer extends PatchDiff {
 
     constructor(options) {
         options = Object.assign({}, options);
@@ -41,12 +38,13 @@ class LiveReplicaServer extends PatchDiff {
 
         this.proxies = new WeakMap();
 
-        this.middlewares = new Middlewares(this);
+        this.middlewares = new MiddlewareChain(this);
     }
 
     onConnect(connection) {
-        connection.on('subscribe', (clientRequest, ack) => {
-            const {id, path, allowRPC, allowWrite} = clientRequest;
+
+        const onsubscribe = (clientRequest, ack) => {
+            const {id, path, allowRPC, allowWrite, params} = clientRequest;
 
             const subscribeRequest = {
                 id,
@@ -54,11 +52,15 @@ class LiveReplicaServer extends PatchDiff {
                 ack,
                 path,
                 allowRPC,
-                allowWrite
+                allowWrite,
+                params
             };
 
             this.onSubscribeRequest(subscribeRequest);
-        });
+        };
+        connection.on('subscribe', onsubscribe);
+
+        return () => connection.removeListener('subscribe', onsubscribe);
     }
 
     onSubscribeRequest(subscribeRequest) {
@@ -76,29 +78,46 @@ class LiveReplicaServer extends PatchDiff {
         this.middlewares.start(subscribeRequest, reject, (request) => {
             this.emit('subscribe', request);
 
-            subscribeRequest.ack({success: true});
+            subscribeRequest.ack({success: true, writable: request.allowWrite, rpc: request.allowRPC});
 
             this.subscribeClient(request);
         });
     }
 
     subscribeClient(request) {
-        const path = request.path;
-        const clientSubset = this.at(path);
-        const connection = request.connection;
+        const { path, connection, whitelist, readTransformer = defaultTransformer, writeTransformer = defaultTransformer } = request;
+        let changeRevision = 0;
+
+        let target;
+        if (request.target) {
+            target = request.target;
+        } else {
+            target = this.at(path);
+
+            if (whitelist) {
+                target.whitelist(Array.isArray(whitelist) ? new Set(whitelist) : whitelist);
+            }
+        }
 
         const unsubscribeEvent = `unsubscribe:${request.id}`;
         const applyEvent = `apply:${request.id}`;
         const invokeRpcEvent = `invokeRPC:${request.id}`;
         let invokeRpcListener, replicaApplyListener;
 
-        let ownerChange = false;
-        const unsubscribeChanges = clientSubset.subscribe((patchData, {snapshot}) => {
-            if (!ownerChange) {
-                connection.send(applyEvent, serializeFunctions(patchData), snapshot ? {snapshot} : {snapshot : false});
+        let subscriberChange = false;
+        const unsubscribeChanges = target.subscribe((patchData, {snapshot, changeType}) => {
+            if (!subscriberChange) {
+                const updateInfo  =  snapshot ? {snapshot} : {snapshot : false};
+                if (!snapshot) {
+                    changeRevision++;
+                    updateInfo.changeRevision = changeRevision;
+                }
+
+                patchData = readTransformer(patchData, target);
+                connection.send(applyEvent, serializeFunctions(patchData), updateInfo);
             }
 
-            ownerChange = false;
+            subscriberChange = false;
         });
 
         if (connection.listenerCount(applyEvent)) {
@@ -112,8 +131,8 @@ class LiveReplicaServer extends PatchDiff {
         if (request.allowWrite) {
 
             replicaApplyListener = (payload) => {
-                ownerChange = true;
-                clientSubset.apply(payload);
+                subscriberChange = payload.changeRevision === changeRevision;
+                target.apply(writeTransformer(payload.data));
             };
 
             connection.on(applyEvent, replicaApplyListener);
@@ -121,11 +140,13 @@ class LiveReplicaServer extends PatchDiff {
 
         if (request.allowRPC) {
             invokeRpcListener = ({path, args}, ack) => {
-                const method = clientSubset.get(path);
+                const method = target.get(path);
                 // check if promise
-                const res = method.call(clientSubset, ...args);
+                const res = method.call(target, ...args);
                 if (res && typeof res.then === 'function') {
-                    res.then(ack);
+                    res.then(ack).catch((err) => {
+                        ack({$error: {message: err.message, name: err.name}});
+                    });
                 } else {
                     ack(res);
                 }
@@ -134,7 +155,7 @@ class LiveReplicaServer extends PatchDiff {
             connection.on(invokeRpcEvent, invokeRpcListener);
         }
 
-        const onUnsubscribe = utils.once(() => {
+        const onUnsubscribe = Utils.once(() => {
             unsubscribeChanges();
 
             if (replicaApplyListener) { connection.removeListener(invokeRpcEvent, replicaApplyListener); }
@@ -156,15 +177,11 @@ class LiveReplicaServer extends PatchDiff {
         this.middlewares.use(fn);
     }
 
-    get data() {
-        if (!this.proxies.has(this)) {
-            const proxy = PatcherProxy.create(this, '', null, this.options.readonly);
-            this.proxies.set(this, proxy);
-        }
-        return this.proxies.get(this);
+    destroy() {
+        this.emit('destroy');
+        this.middlewares.clear();
+        this.remove();
     }
 }
 
-LiveReplicaServer.middlewares = require('./middlewares');
-
-module.exports = LiveReplicaServer;
+export default LiveReplicaServer;

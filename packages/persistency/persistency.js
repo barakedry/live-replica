@@ -1,18 +1,17 @@
-const _debounce = require('lodash/debounce');
-const path = require('path');
-const fs = require('fs');
-const util = require('util');
-const LiveReplicaPatchDiff = require('../patch-diff');
+import _debounce from 'lodash-es/debounce.js';
+import fs from 'node:fs';
+import util from  'node:util';
+import v8 from  'node:v8';
+import { PatchDiff } from '../patch-diff/index.js';
 
-const v8 = require('v8');
 
 const structuredClone = obj => {
     return v8.deserialize(v8.serialize(obj));
 };
 
-class LiveReplicaPersistence {
+export class LiveReplicaPersistence {
     constructor(replica, key) {
-        if (!(replica instanceof LiveReplicaPatchDiff)) {
+        if (!(replica instanceof PatchDiff)) {
             throw new TypeError('the "replica" argument must be an instance of LiveReplica');
         }
 
@@ -78,7 +77,7 @@ const read = util.promisify(fs.readFile);
 const write = util.promisify(fs.writeFile);
 const unlink = util.promisify(fs.unlink);
 
-class LiveReplicaFilePersistence extends LiveReplicaPersistence {
+export class LiveReplicaFilePersistence extends LiveReplicaPersistence {
 
     async read(filepath) {
         const raw = await read(filepath, 'utf8');
@@ -95,24 +94,42 @@ class LiveReplicaFilePersistence extends LiveReplicaPersistence {
 
 }
 
-class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
+export class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
 
-    constructor(replica, query, dbCollection) {
+    constructor(replica, query, dbCollection, initialDocument = query,  dataKey = 'data') {
         super(replica, query);
+        this.dataKey = dataKey;
         this.dbCollection = dbCollection;
+        this.document = initialDocument;
     }
 
+    async beforeRead(query) { return query; }
+    async afterRead(document) { return document; }
+    async beforeUpdate(document) { return document; }
+
+
     async read(query) {
-        const record = await this.dbCollection.findOne(query);
-        if (!record) {
+        query = await this.beforeRead(query);
+
+        const document = await this.dbCollection.findOne(query);
+        if (!document) {
             throw new TypeError(`no record found on mongodb for query ${JSON.stringify(query)}`);
         }
-        return record.data;
+
+        this.document = await this.afterRead(document);
+        return this.document[this.dataKey];
     }
 
     async update(data, query) {
-        const document = {...query, data};
+        //const document = {...query, data};
 
+        let document = {
+            ...this.document,
+            [this.dataKey]: data
+        }
+
+        document = await this.beforeUpdate(document);
+        this.document = document;
         await this.dbCollection.updateOne(query, {$set: document}, {upsert: true});
     }
 
@@ -121,9 +138,3 @@ class LiveReplicaMongoDbPersistence extends LiveReplicaPersistence {
     }
 
 }
-
-module.exports = {
-    LiveReplicaPersistence,
-    LiveReplicaFilePersistence,
-    LiveReplicaMongoDbPersistence
-};

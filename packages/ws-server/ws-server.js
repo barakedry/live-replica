@@ -1,11 +1,8 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const eventName = require('../common/events');
-const { EventEmitter }  = require('events');
-const LiveReplicaServer = require('../server');
-const msgpack = require('@msgpack/msgpack');
+import {eventName} from "../common/event-name.js";
+import { EventEmitter} from "../events/events.js";
+import {LiveReplicaServer} from '../server/index.js';
+import {encode, decode} from '../../node_modules/@msgpack/msgpack/dist.es5+esm/index.mjs';
+
 const LIVE_REPLICA_MSG = '$LR';
 const nativeSocketEvents = {'disconnect': 'close'};
 
@@ -20,7 +17,7 @@ class Connection extends EventEmitter {
 
         this.socket.addEventListener('message', ({data}) => {
             try {
-                const msg = msgpack.decode(data);
+                const msg = decode(data);
                 if (msg[LIVE_REPLICA_MSG]) {
                     const {event, payload, ack} = msg[LIVE_REPLICA_MSG];
                     let ackFunction;
@@ -52,8 +49,12 @@ class Connection extends EventEmitter {
             }
         };
 
-        const data = msgpack.encode(message);
-        this.socket.send(data);
+        try {
+            const data = encode(message);
+            this.socket.send(data);
+        } catch (e) {
+            console.error('[LiveReplica] unable to encode msgpack to socket', e );
+        }
     }
 
 
@@ -88,17 +89,27 @@ Connection.prototype.on = Connection.prototype.addListener;
 /**
  *  LiveReplicaWorkerSocket
  */
-class LiveReplicaWebSocketsServer extends LiveReplicaServer {
+export class LiveReplicaWebSocketsServer extends LiveReplicaServer {
+
     constructor(wsServer) {
         super();
 
-        wsServer.on('connection', (socket) => {
-            const connection = new Connection(socket);
-            this.onConnect(connection);
-            connection.on('decoding-error', () => socket.terminate());
-        });
+        if (!wsServer) { return; }
+
+        wsServer.on('connection', (socket) => this.handleWebSocket(socket));
     }
 
+    handleWebSocket(socket) {
+        const connection = new Connection(socket);
+        const unHandle = this.onConnect(connection);
+        const onDecodingError = () => socket.terminate();
+        connection.on('decoding-error', onDecodingError);
+        return function stopHandlingSocket() {
+            unHandle();
+            connection.removeListener('decoding-error', onDecodingError);
+        }
+    }
 }
 
-module.exports = LiveReplicaWebSocketsServer;
+
+export default LiveReplicaWebSocketsServer;

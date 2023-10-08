@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "description": "node.js cluster worker socket for live-replica",
   "main": "cluster-worker-socket.js",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },
   "dependencies": {
     "@live-replica/server": "*",
-    "events": "latest"
+    "@live-replica/events": "*"
   },
   "author": "",
   "license": "Apache-2.0"

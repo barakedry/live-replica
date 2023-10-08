@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "main": "persistency.js",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },
   "dependencies": {
-    "lodash": "latest"
+    "lodash-es": "latest"
   },
   "author": "Barak Edry",
   "license": "Apache-2.0"

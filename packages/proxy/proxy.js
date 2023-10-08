@@ -1,8 +1,6 @@
-/**
- * Created by barakedry on 31/03/2017.
- */
-'use strict';
-let arrayMutationMethods = {};
+import {Utils} from '../utils/utils.js';
+
+const arrayMutationMethods = {};
 ['copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'].forEach((method) => {
     arrayMutationMethods[method] = true;
 });
@@ -22,7 +20,7 @@ function set(target, path, value) {
         return value;
     }
 
-    levels = path.split('.');
+    levels = Utils.pathParts(path);
     len = levels.length;
     i = 0;
     target = target || {};
@@ -52,7 +50,7 @@ function unset(target, path) {
         return value;
     }
 
-    levels = path.split('.');
+    levels = Utils.pathParts(path);
     len = levels.length;
     i = 0;
     curr = target;
@@ -78,7 +76,7 @@ function get(target, path) {
         return target;
     }
 
-    levels = path.split('.');
+    levels = Utils.pathParts(path)
     len = levels.length;
     i = 0;
     curr = target;
@@ -91,9 +89,24 @@ function get(target, path) {
     return curr;
 }
 
-const PatcherProxy = {
+export const PatcherProxy = {
     proxies: new WeakMap(),
+    revocables: new WeakMap(),
     proxyProperties: new WeakMap(), // meta tracking properties for the proxies
+    isProxy(proxy) { return this.proxyProperties.has(proxy);},
+    getPatchDiff(proxy) {
+        const {patcher, path} = this.proxyProperties.get(proxy);
+        return patcher.at(path);
+    },
+
+    unwrap(proxy) {
+        if (this.isProxy(proxy)) {
+            return this.getPatchDiff(proxy).get();
+        }
+
+        return proxy;
+    },
+
     create(patcher, path, root, readonly, immediateFlush = false) {
         let patcherRef = patcher.get(path);
 
@@ -138,13 +151,16 @@ const PatcherProxy = {
             };
         }
 
+        const revocable = Proxy.revocable(patcherRef, handlers);
+        proxy = revocable.proxy;
 
-        proxy = new Proxy(patcherRef, handlers);
+        this.revocables.set(proxy, revocable);
 
         let properties = {
             immediateFlush,
             patcher,
             path,
+            patcherRef,
             isArray: Array.isArray(patcherRef),
             arrayMethods: {}
         };
@@ -181,7 +197,8 @@ const PatcherProxy = {
             return function arrayMutatingMethod() {
                 proxyServices.commit(root, true);
                 const copy = array.slice();
-                const ret = copy[methodName].call(copy, ...arguments);
+                const sanitizedArgs = Array.prototype.map.call(arguments, (arg) => PatcherProxy.isProxy(arg) ? PatcherProxy.unwrap(arg) : arg);
+                const ret = copy[methodName].call(copy, ...sanitizedArgs);
 
                 copy.forEach((item, index) => {
                     proxy[index] = item;
@@ -274,12 +291,12 @@ const PatcherProxy = {
         return this.proxyProperties.get(proxy).root || proxy;
     },
 
-    getPath(proxy, key) {
+    getPath(proxy, key, isArray = false) {
         let properties = this.proxyProperties.get(proxy);
 
         if (properties.path) {
             if (key) {
-                return [properties.path, key].join('.');
+                return Utils.pushKeyToPath(properties.path, key, isArray);
             } else {
                 return properties.path;
             }
@@ -290,6 +307,9 @@ const PatcherProxy = {
 
     handleOwnKeys(proxy, target) {
         let properties = this.proxyProperties.get(proxy);
+        if (properties.targetDirty) {
+            target = properties.patcher.get(properties.path);
+        }
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy);
         let changes = get(this.proxyProperties.get(root).changes, fullPath);
@@ -307,7 +327,7 @@ const PatcherProxy = {
             if (changes[key] === deleteValue) {
                 let index = targetKeys.indexOf(key);
                 targetKeys.splice(index, 1);
-            // new
+                // new
             } else if (!targetKeys.includes(key)) {
                 targetKeys.push(key);
             }
@@ -320,6 +340,10 @@ const PatcherProxy = {
 
         let properties = this.proxyProperties.get(proxy);
 
+        if (properties.targetDirty) {
+            target = properties.patcher.get(properties.path);
+        }
+
         if (name === Symbol.iterator) {
             // return this.getIterator(proxy, this.handleOwnKeys(proxy, target, true));
             return this.getIterator(proxy, Object.keys(target));
@@ -328,12 +352,16 @@ const PatcherProxy = {
         if (properties.isArray && arrayMutationMethods[name]) {
             return this.getOrCreateArrayMethod(proxy, target, name, readonly);
         }
-        
+
+        if (typeof name === 'symbol') {
+            return target[name];
+        }
+
         let root = this.getRoot(proxy);
-        let fullPath = this.getPath(proxy, name);
+        let fullPath = this.getPath(proxy, name, properties.isArray);
         let deleteValue = properties.patcher.options.deleteKeyword;
         let value = get(this.proxyProperties.get(root).changes, fullPath);
-        let realValue = target[name];
+        let realValue = target?.[name];
 
         if (this.proxies.has(realValue)) {
             return this.proxies.get(realValue);
@@ -361,6 +389,11 @@ const PatcherProxy = {
 
     handleSet(proxy, target, name, newval) {
         let properties = this.proxyProperties.get(proxy);
+
+        if (properties.targetDirty) {
+            target = properties.patcher.get(properties.path);
+        }
+
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
         if (isObject(newval) && isObject(target[name])) {
@@ -370,10 +403,10 @@ const PatcherProxy = {
                 // trying to assign the same proxy object
                 const p = this.proxyProperties.get(newval).patcher;
 
-                if (newval === p.get()) {
-                    return; // do nothing
+                if (this.proxies.get(target[name]) === newval) {
+                    return true; // do nothing
                 } else {
-                    throw Error(`trying to assign an object that already exists to property ${name} assignment of cyclic references`);
+                    return this.handleSet(proxy, target, name, PatcherProxy.unwrap(newval));
                 }
             }
 
@@ -394,6 +427,10 @@ const PatcherProxy = {
 
     handleDelete(proxy, target, name) {
         let properties = this.proxyProperties.get(proxy);
+        if (properties.targetDirty) {
+            target = properties.patcher.get(properties.path);
+        }
+
         let root = this.getRoot(proxy);
         let fullPath = this.getPath(proxy, name);
         let rootChangeTracker = this.proxyProperties.get(root).changes;
@@ -414,7 +451,7 @@ const PatcherProxy = {
     handleSplice(proxy, index, itemsToRemove, itemsToAdd) {
         let properties = this.proxyProperties.get(proxy);
         let patcher = properties.patcher;
-        patcher.splice(this.getPath(proxy), {index, itemsToRemove, ...itemsToAdd});
+        patcher.splice({index, itemsToRemove, ...itemsToAdd}, this.getPath(proxy));
 
     },
 
@@ -431,7 +468,7 @@ const PatcherProxy = {
             };
         }.bind(proxy);
     },
-    
+
     commit(proxy, immediate = false) {
         let properties = this.proxyProperties.get(proxy);
 
@@ -469,16 +506,28 @@ const PatcherProxy = {
     },
 
     destroy(proxy) {
+
+        let properties = this.proxyProperties.get(proxy);
+
+        properties.pullChanges?.();
+        delete properties.patcher;
+        delete properties.root;
+        this.proxies.delete(properties.patcherRef);
+        this.proxyProperties.delete(proxy);
+        properties.targetDirty = true;
         setTimeout(() => {
-            let properties = this.proxyProperties.get(proxy);
-            properties.pullChanges();
-            delete properties.patcher;
-            delete properties.root;
-            this.proxies.delete(proxy);
-            this.proxyProperties.delete(proxy);
+
+            this.revocables.get(proxy)?.revoke();
+            this.revocables.delete(proxy);
         }, 0);
+    },
+
+    markDirtyByRef(ref) {
+        const proxy = this.proxies.get(ref);
+        if (!proxy) { return; }
+        let properties = this.proxyProperties.get(proxy);
+        properties.targetDirty = true;
     }
 };
 
-// export default Proxy;
-module.exports = PatcherProxy;
+export default PatcherProxy;

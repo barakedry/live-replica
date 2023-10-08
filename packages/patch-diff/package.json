@@ -2,13 +2,13 @@
   "name": "@live-replica/patch-diff",
   "version": "0.1.0",
   "description": "Emits diff events.",
+  "type": "module",
   "main": "index.js",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "test": "jest",
-    "localtest": "grunt localtest"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -36,8 +36,6 @@
     "node.extend": "latest"
   },
   "dependencies": {
-    "events": "^3.0.0",
-    "debuglog": "latest",
     "lodash": "latest"
   }
 }

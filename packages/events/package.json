@@ -1,0 +1,8 @@
+{
+  "name": "@live-replica/events",
+  "version": "1.0.0",
+  "main": "events.js",
+  "type": "module",
+  "dependencies": {
+  }
+}

@@ -1,10 +1,6 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const eventName = require('../common/events');
-const { EventEmitter }  = require('events');
-const LiveReplicaServer = require('../server');
+import { eventName } from "../common/event-name.js";
+import { EventEmitter } from "../events/events.js";
+import { LiveReplicaServer } from "../server/index.js";
 
 class Connection extends EventEmitter {
     constructor(socketio, options) {
@@ -37,7 +33,7 @@ Connection.prototype.on = Connection.prototype.addListener;
 /**
  *  LiveReplicaWorkerSocket
  */
-class LiveReplicaSocketIoServer extends LiveReplicaServer {
+export class LiveReplicaSocketIoServer extends LiveReplicaServer {
     constructor(sioServer) {
         super();
 
@@ -49,4 +45,4 @@ class LiveReplicaSocketIoServer extends LiveReplicaServer {
 
 }
 
-module.exports = LiveReplicaSocketIoServer;
+export default LiveReplicaSocketIoServer;

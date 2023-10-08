@@ -1,19 +1,12 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const LiveReplicaEvents = require('../common/events');
-const Events = require('events');
-const LiveReplicaSocket = require('../socket');
+import { EventEmitter } from '../events/events.js';
+import { LiveReplicaSocket } from '../socket/socket.js';
+
 let acks = 1;
-/**
- *  LiveReplicaWorkerSocket
- */
-class LiveReplicaWorkerSocket extends LiveReplicaSocket {
+export class WorkerSocket extends LiveReplicaSocket {
 
     constructor() {
         super();
-        this._emitter = new Events.EventEmitter();
+        this._emitter = new EventEmitter();
         this._emitter.setMaxListeners(50000);
     }
 
@@ -77,4 +70,4 @@ class LiveReplicaWorkerSocket extends LiveReplicaSocket {
     isConnected() { return !!this.socket; }
 }
 
-module.exports = LiveReplicaWorkerSocket;
+export default WorkerSocket;

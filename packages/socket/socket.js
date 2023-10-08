@@ -1,13 +1,5 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const eventName = require('../common/events');
-
-/**
- *  LiveReplicaSocket
- */
-class LiveReplicaSocket {
+import { eventName } from "../common/event-name.js";
+export class LiveReplicaSocket {
 
     constructor(baseSocket) {
         this._socket = baseSocket;
@@ -15,7 +7,7 @@ class LiveReplicaSocket {
     }
 
     send(event, payload, ack) {
-        this._socketSend(eventName(event), payload, ack);
+        return this._socketSend(eventName(event), payload, ack);
     }
 
     on(event, fn) {
@@ -50,7 +42,12 @@ class LiveReplicaSocket {
     }
 
     _socketSend(eventName, payload, ack) {
-        this._socket.emit(eventName, payload, ack);
+        return new Promise((resolve) => {
+            this._socket.emit(eventName, payload, (...args) => {
+                ack?.(...args);
+                resolve(...args);
+            });
+        });
     }
 
     connect(baseSocket) {
@@ -72,4 +69,4 @@ class LiveReplicaSocket {
 
 LiveReplicaSocket.instances = 0;
 
-module.exports = LiveReplicaSocket;
+export default LiveReplicaSocket;

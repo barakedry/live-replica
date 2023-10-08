@@ -1,9 +1,4 @@
-/**
- * Created by barakedry on 12/08/2018.
- */
-'use strict';
-
-function whitelist(list) {
+export function whitelist(list) {
     if (Array.isArray(list)) {
         list = new Set(list);
     } else if (!(list instanceof Set)) {
@@ -20,7 +15,7 @@ function whitelist(list) {
 }
 
 const serverCounters = new WeakMap();
-function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback, matchPathes = (path1, path2) => path1 === path2) {
+export function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback, matchPathes = (path1, path2) => path1 === path2) {
 
     if (typeof path === 'function') {
         lastSubscriptionCallback = firstSubscriptionCallback;
@@ -97,8 +92,3 @@ function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCa
         subscribersPerPath[subscribePath]++;
     };
 }
-
-module.exports = {
-    oncePerSubscription,
-    whitelist
-};

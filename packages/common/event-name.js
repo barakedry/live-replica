@@ -1,9 +1,4 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-
-const LiveReplicaEvents = {
+export const LiveReplicaEvents = {
     subscribe: '$s',
     unsubscribe: '$u',
     invokeRPC: '$i',
@@ -17,12 +12,11 @@ names.forEach((key) => {
     LiveReplicaEvents[value] = key;
 });
 
-module.exports = function eventName(event) {
+export function eventName(event) {
     const split = event.split(':');
     if (split.length === 2) {
         return [LiveReplicaEvents[split[0]] || event[0], split[1]].join(':');
     } else {
         return LiveReplicaEvents[event] || event;
     }
-
-};
+}

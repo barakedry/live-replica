@@ -1,10 +1,6 @@
-/**
- * Created by barakedry on 06/07/2018.
- */
-'use strict';
-const eventName = require('../common/events');
-const {EventEmitter} = require('events');
-const LiveReplicaServer = require('../server');
+import {eventName} from "../common/event-name.js";
+import { EventEmitter } from '../events/events.js';
+import { LiveReplicaServer } from '../server/index.js';
 
 class Connection extends EventEmitter {
     constructor(port) {
@@ -63,7 +59,7 @@ class Connection extends EventEmitter {
 /**
  *  LiveReplicaWorkerSocket
  */
-class LiveReplicaSharedWorkerServer extends LiveReplicaServer {
+export class LiveReplicaSharedWorkerServer extends LiveReplicaServer {
     constructor(port) {
         super();
 
@@ -72,4 +68,4 @@ class LiveReplicaSharedWorkerServer extends LiveReplicaServer {
     }
 }
 
-module.exports = LiveReplicaSharedWorkerServer;
+export default LiveReplicaSharedWorkerServer;

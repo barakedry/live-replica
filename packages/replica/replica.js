@@ -1,11 +1,7 @@
-/**
- * Created by barakedry on 28/04/2018.
- */
-'use strict';
-const PatchDiff = require('../patch-diff');
-const PatcherProxy = require('../proxy');
-const LiveReplicaSocket = require('../socket');
-const concatPath = PatchDiff.utils.concatPath;
+import { PatchDiff } from "../patch-diff/index.js";
+import { LiveReplicaSocket } from '../socket/socket.js';
+import { Utils } from '../utils/utils.js';
+const { concatPath } = Utils;
 
 let replicaId = Date.now();
 
@@ -16,49 +12,52 @@ const remoteApply           = Symbol('remoteApply');
 const remoteOverride           = Symbol('remoteOverride');
 const bindToSocket           = Symbol('bindToSocket');
 
-class Replica extends PatchDiff {
+export class Replica extends PatchDiff {
 
     // private
     [bindToSocket]() {
 
+        this.changeRevision = 0;
         this.onApplyEvent = (delta, meta = {}) => {
-            if (!delta) { return; }
-
             if (meta.snapshot) {
                 this[remoteOverride](delta);
             } else {
+                this.changeRevision = meta.changeRevision;
                 this[remoteApply](delta);
             }
 
-            if (!this._subscribed) {
-                this._subscribed = true;
-                this.emit('_subscribed', this.get());
+            if (!this._synced) {
+                this._synced = true;
+                this.emit('_synced', this.get());
             }
         };
 
         this.connection.on(`apply:${this.id}`, this.onApplyEvent);
-
-        if (this.options.allowWrite) {
-            this.subscribe((data, diff, options) => {
-                if (options.local) {
-                    this.connection.send(`apply:${this.id}`, data);
-                }
-            });
-        }
     }
 
     [createRPCfunction](path) {
         const self = this;
         return function rpcToRemote(...args) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 self.connection.send(`invokeRPC:${self.id}`, {path, args}, (returnValue) => {
-                    resolve(returnValue);
+                    if (returnValue?.$error) {
+                        const err = new Error(returnValue.$error.message);
+                        err.name = returnValue.$error.name;
+                        reject(err);
+                    } else {
+                        resolve(returnValue);
+                    }
+
                 });
             });
         }
     }
 
     [deserializeFunctions](data, path) {
+
+        if (typeof data !== 'object' || data === null) {
+            return data;
+        }
 
         const keys = Object.keys(data);
         for (let i = 0, l = keys.length; i < l; i++) {
@@ -86,15 +85,24 @@ class Replica extends PatchDiff {
     constructor(remotePath, options = {dataObject: {}}) {
 
         options = Object.assign({
-            allowWrite: false,
-            allowRPC: false,
             subscribeRemoteOnCreate: !!options.connection
         }, options);
 
-        super(options.dataObject || {}, options);
+        super({}, options);
+
+        this._path = '$remote';
+        this._wrapper = {};
+        this._wrapperInner = this._wrapper;
+        this._wrapperKey = '$remote';
+
+        if (options.dataObject) {
+            this.set(options.dataObject);
+        }
+
         this.remotePath = remotePath;
         this.id = ++replicaId;
-        this.proxies = new WeakMap();
+        this._synced = false;
+        this._subscribed = false;
 
         if (this.options.subscribeRemoteOnCreate) {
             this.subscribeRemote(this.options.connection)
@@ -123,12 +131,26 @@ class Replica extends PatchDiff {
             id: this.id,
             path: this.remotePath,
             allowRPC: this.options.allowRPC,
-            allowWrite: this.options.allowWrite
+            allowWrite: this.options.allowWrite,
+            params: this.options.params
         }, (result) => {
             if (result.success) {
-                console.info(`live-replica subscribed to remote path=${this.remotePath}`);
+                console.info(`live-replica subscribed to remote path=${this.remotePath} writable=${result.writable} writable=${result.rpc}`);
+                this.options.allowWrite = result.writable;
+
+                this._subscribed = true;
+
                 if (typeof subscribeSuccessCallback === 'function') {
                     subscribeSuccessCallback(result);
+                }
+                super.emit('_subscribed', this.get());
+
+                if (this.options.allowWrite) {
+                    this.subscribe((data, diff, options) => {
+                        if (options.local) {
+                            this.connection.send(`apply:${this.id}`, {data, changeRevision: this.changeRevision});
+                        }
+                    });
                 }
             } else {
                 console.error(`live-replica failed to subscribe remote path=${this.remotePath} reason=${result.rejectReason}`);
@@ -144,7 +166,7 @@ class Replica extends PatchDiff {
             options.local = true;
             super.apply(patch, path, options);
         }
-    }  
+    }
 
     set(fullDocument, path, options = {}) {
         if (this.options.allowWrite) {
@@ -156,7 +178,7 @@ class Replica extends PatchDiff {
     splice(patch, path, options = {}) {
         if (this.options.allowWrite) {
             options.local = true;
-            super.apply(patch, path, options);
+            super.splice(patch, path, options);
         }
     }
 
@@ -167,9 +189,18 @@ class Replica extends PatchDiff {
         }
     }
 
+    async reset() {
+        await this.unsubscribeRemote();
+        super.set(Array.isArray(this.get()) ? [] : {});
+    }
+
     unsubscribeRemote() {
         if (!this.connection) { return; }
-        this.connection.send(`unsubscribe:${this.id}`);
+        if (!this._subscribed) { return; }
+        const promise = this.connection.send(`unsubscribe:${this.id}`);
+        this._subscribed = false;
+        this._synced = false;
+        return promise;
     }
 
 
@@ -183,38 +214,32 @@ class Replica extends PatchDiff {
             delete this.connection;
         }
 
-        if (this.proxies.has(this)) {
-            PatcherProxy.destroy(this.proxies.get(this));
-            this.proxies.delete(this);
-        }
+        this.destroyProxy();
 
+        this.emit('destroyed');
     }
 
-    getData({immediateFlush} = {}) {
-        if (!this.proxies.has(this)) {
-            const proxy = PatcherProxy.create(this, '', null, !this.options.allowWrite, immediateFlush);
-            this.proxies.set(this, proxy);
-        }
-        return this.proxies.get(this);
-    }
-
-    get data() {
-        return this.getData();
+    get isReadOnly() {
+        return !(this.options?.allowWrite)
     }
 
     get subscribed() {
-        return new Promise((resolve) => {
-            if (this._subscribed) {
-                resolve(this.get());
-            } else {
-                this.once('_subscribed', resolve);
-            }
+        if (this._subscribed) {
+            return Promise.resolve(this.get());
+        }
 
-        });
+        return new Promise((resolve) => super.once('_subscribed', resolve, false));
+    }
+
+    get synced() {
+        if (this._synced) {
+            return Promise.resolve(this.get());
+        }
+
+        return new Promise((resolve) => this.once('_synced', resolve, false));
     }
 }
 
 Replica.prototype.override = Replica.prototype.set;
 
-// export default Replica;
-module.exports = Replica;
+export default Replica;

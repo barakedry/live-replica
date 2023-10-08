@@ -1,8 +1,3 @@
-/**
- * Created by barakedry on 6/20/15.
- */
-'use strict';
-
 function deepAssign(target, patch) {
     const keys = Object.keys(patch);
     for (let i = 0; i < keys.length; i++) {
@@ -20,17 +15,27 @@ function deepAssign(target, patch) {
 function create(diffsAsArray) {
     return {
         hasAdditions: false,
+        hasAddedObjects: false,
         hasDeletions: false,
         hasUpdates: false,
         hasDifferences: false,
         additions: diffsAsArray ? [] : {},
         deletions: {},
         updates: {},
+        addedObjects: {},
         differences: diffsAsArray ? [] : {},
-        addChildTracking: function addChildTracking(childTracker, key) {
+        addChildTracking: function addChildTracking(childTracker, key, isNewObject = false) {
             if (childTracker.hasAdditions) {
                 this.additions[key] = childTracker.additions;
                 this.hasAdditions = true;
+            }
+
+            if (isNewObject) {
+                this.addedObjects[key] = true;
+                this.hasAddedObjects = true;
+            } else if (childTracker.hasAddedObjects) {
+                this.addedObjects[key] = childTracker.addedObjects;
+                this.hasAddedObjects = true;
             }
 
             if (childTracker.hasDeletions) {
@@ -57,4 +62,4 @@ function create(diffsAsArray) {
     };
 }
 
-module.exports = {create};
+export const DiffTracker = { create };

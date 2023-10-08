@@ -1,28 +1,29 @@
 import {LitElement, html, css} from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
 import {LiveReplicaController} from './controller.js';
 
 const styles = css`
 
-:host {
+  :host {
     font-size: 13px;
-}
+  }
 
-input {
+  input {
     font-family: Consolas, Menlo, Monaco, 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace, serif;
     font-size: 12px;
-}
+  }
 
-ul li {
+  ul li {
     padding: 0;
-    margin: 0;    
-}
+    margin: 0;
+  }
 
-ul, ul * {
+  ul, ul * {
     box-sizing: border-box;
     vertical-align: middle;
-}
+  }
 
-ul {
+  ul {
     list-style: none;
     vertical-align: middle;
     padding-left: 16px;
@@ -30,63 +31,62 @@ ul {
     moz-user-select: none;
     -webkit-user-select: none;
     -ms-user-select: none;
-}
+  }
 
-li {
+  li {
     margin: 1px;
     margin-top: 2px;
     vertical-align: middle;
     font-weight: bold;
-}
+  }
 
-button {
+  button {
     outline: blue;
     border: none;
     padding: 0;
     margin: 0;
     background-color: transparent;
-}
+  }
 
-button:focus{
+  button:focus {
     outline: 0;
-}
+  }
 
-button.delete,
-button.add,
-button.duplicate,
-button.expandCollapse {
+  button.delete,
+  button.add,
+  button.duplicate,
+  button.expandCollapse {
     background-repeat: no-repeat;
     width: 16px;
     height: 16px;
     font-size: 10px;
-}
+  }
 
-button.delete,
-button.duplicate {
+  button.delete,
+  button.duplicate {
     visibility: hidden;
-}
+  }
 
-button.add {
+  button.add {
 
 
+  }
 
-}
-
-li:hover > button,
-li:hover > span > button.duplicate,
-ul:hover > li > button.add {
+  li:hover > button,
+  li:hover > span > button.duplicate,
+  ul:hover > li > button.add {
     visibility: visible;
     opacity: 1;
-}
+  }
 
 
-ul:hover {
-    transition: background 0.55s linear 0.75s;
-    background-color: rgba(0,0,0,0.03);
-}
+  ul:hover::before, ul:hover::after {
+    transition: background 0.55s linear 0.5s;
+    background-color: rgba(0, 0, 0, 0.2);
+  }
 
 
-label {
+  label {
     margin: 0;
     padding: 0;
     padding-left: 2px;
@@ -94,13 +94,13 @@ label {
     overflow: hidden;
     font-weight: bold;
     color: #800080;
-}
+  }
 
-button.delete {
+  button.delete {
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAlwSFlzAAALEwAACxMBAJqcGAAABCJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDUuNC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIgogICAgICAgICAgICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+CiAgICAgICAgIDx0aWZmOlJlc29sdXRpb25Vbml0PjE8L3RpZmY6UmVzb2x1dGlvblVuaXQ+CiAgICAgICAgIDx0aWZmOkNvbXByZXNzaW9uPjU8L3RpZmY6Q29tcHJlc3Npb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpZUmVzb2x1dGlvbj43MjwvdGlmZjpZUmVzb2x1dGlvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjE2PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6Q29sb3JTcGFjZT4xPC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj4xNjwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgICAgIDxkYzpzdWJqZWN0PgogICAgICAgICAgICA8cmRmOkJhZy8+CiAgICAgICAgIDwvZGM6c3ViamVjdD4KICAgICAgICAgPHhtcDpNb2RpZnlEYXRlPjIwMTQ6MDg6MTUgMjI6MDg6NDA8L3htcDpNb2RpZnlEYXRlPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPlBpeGVsbWF0b3IgMy4yPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgoYh+BDAAAA/0lEQVQ4Ea1Tqw7CQBCcAgZIAwI0giBxiGqC5Sfq+Ro8X0LQFThkg0CDgDSAIsfuvfpIew2Pmrvbndmb250CP35ekX8ewO/0saJ4AIGZzHvY0xo9rlgPL0iynFyBZIx5E9jAwygLsnuB0wsI/SN2JmYLaPKWyDZmQLlVQFCRhSkiwSy728Oh8uZcBTqQkvsNU35Og3PyzVWyi2Q+E1b3CbIAhYIyXE1McloSxN3WL2/Hwsl7TjRQT8gocJJcSaVAzXnJQHuDi8U5xbE9iOrwJXnJ+c8YeZ7sMJqvu4MsQxkpNJa2TWRnscPYJCVyVUhZ2bqQg3omKeXTnyllfrl7A8CaUAi7BDdNAAAAAElFTkSuQmCC);
-}
+  }
 
-button.add {
+  button.add {
     cursor: pointer;
     visibility: hidden;
     height: 18px;
@@ -113,141 +113,167 @@ button.add {
     vertical-align: middle;
     line-height: 10px;
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAlwSFlzAAALEwAACxMBAJqcGAAABCJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDUuNC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIgogICAgICAgICAgICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+CiAgICAgICAgIDx0aWZmOlJlc29sdXRpb25Vbml0PjE8L3RpZmY6UmVzb2x1dGlvblVuaXQ+CiAgICAgICAgIDx0aWZmOkNvbXByZXNzaW9uPjU8L3RpZmY6Q29tcHJlc3Npb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpZUmVzb2x1dGlvbj43MjwvdGlmZjpZUmVzb2x1dGlvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjE2PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6Q29sb3JTcGFjZT4xPC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj4xNjwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgICAgIDxkYzpzdWJqZWN0PgogICAgICAgICAgICA8cmRmOkJhZy8+CiAgICAgICAgIDwvZGM6c3ViamVjdD4KICAgICAgICAgPHhtcDpNb2RpZnlEYXRlPjIwMTQ6MDg6MTUgMjI6MDg6MTA8L3htcDpNb2RpZnlEYXRlPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPlBpeGVsbWF0b3IgMy4yPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgoqgMGxAAAA8klEQVQ4EaVTKxICMQx9hbUMR+AEOAQKAViGO+A5zXrugAcEagWOE3CEHSxMaRrSpsvAbJeapkle8vIp8OcxH/g9Bhhi6/RTGEy83eLi7go1Sqxx15g0wBFz9LFzwJF2CrLFDU9ssMBJdDEAgQscnCHqxCu9LR5YShB2ZtrXZmY7sx5qzo2YxKTGmMrpeQ+q+RvtNDu/yJf7BA5ADcs/HlN4nHTbPYS2jqd1oZw3Rhho/yyZGdCcDVaEDBmcLJm1LkTn3Qg9qIKhveAxXAJtGI2m7eExluQeB9xxkWITaT1pw34xIZvawpSB0M/8TALrfL8ADMFGq64HOtYAAAAASUVORK5CYII=);
-}
+  }
 
-button.add:hover {
+  button.add:hover {
     border-radius: 3px;
     background-color: rgba(0, 0, 0, 0.08);
-}
+  }
 
-[expanded] > ul:hover  > li > .add {
+  [expanded] > ul:hover > li > .add {
     visibility: visible;
-}
+  }
 
-button.duplicate {
+  button.duplicate {
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAlwSFlzAAALEwAACxMBAJqcGAAABCJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDUuNC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIgogICAgICAgICAgICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+CiAgICAgICAgIDx0aWZmOlJlc29sdXRpb25Vbml0PjE8L3RpZmY6UmVzb2x1dGlvblVuaXQ+CiAgICAgICAgIDx0aWZmOkNvbXByZXNzaW9uPjU8L3RpZmY6Q29tcHJlc3Npb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpZUmVzb2x1dGlvbj43MjwvdGlmZjpZUmVzb2x1dGlvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjE2PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6Q29sb3JTcGFjZT4xPC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj4xNjwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgICAgIDxkYzpzdWJqZWN0PgogICAgICAgICAgICA8cmRmOkJhZy8+CiAgICAgICAgIDwvZGM6c3ViamVjdD4KICAgICAgICAgPHhtcDpNb2RpZnlEYXRlPjIwMTQ6MDg6MTUgMjI6MDg6NTY8L3htcDpNb2RpZnlEYXRlPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPlBpeGVsbWF0b3IgMy4yPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgrv6qAEAAABBElEQVQ4EWNgGGjAiMsBLkELrjMwMmqgyP/7G8DI/v/07hXJz2DiTDAGBg3UvHtNHAMMS0nwMgANlBMT4H/gFjFPFqYetwEwFVCakZGR4d9/hh8vX34p//eL0RYmzQJjYHPysVOPGNRVRRiEBbkYwgO0GbbvvTOL4f9/huu334C0LYPpBdMuwQv/I4O47HX/12+99h9Ev3rzBVnqP0gtTDNOL4CczMrKzODnrs5w+dpLmHoMGu4FdBmokxlgTnayVUJXAubjNMDTWZUBhEHANWQRmMZG4PQCNsXYxHC6AF0xiiv+/78BkyfagD1r47GmWip6AegsoDNR0z7MnUhOhglRjQYAhqlrkfq/jTwAAAAASUVORK5CYII=);
     margin-left: 20px;
-}
+  }
 
-button.duplicate:hover {
+  button.duplicate:hover {
 
-}
+  }
 
-button.expandCollapse,
-.collapsed > button.expandCollapse {
+  button.expandCollapse,
+  .collapsed > button.expandCollapse {
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAlwSFlzAAALEwAACxMBAJqcGAAABCJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDUuNC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIgogICAgICAgICAgICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+CiAgICAgICAgIDx0aWZmOlJlc29sdXRpb25Vbml0PjE8L3RpZmY6UmVzb2x1dGlvblVuaXQ+CiAgICAgICAgIDx0aWZmOkNvbXByZXNzaW9uPjU8L3RpZmY6Q29tcHJlc3Npb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpZUmVzb2x1dGlvbj43MjwvdGlmZjpZUmVzb2x1dGlvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjE2PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6Q29sb3JTcGFjZT4xPC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj4xNjwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgICAgIDxkYzpzdWJqZWN0PgogICAgICAgICAgICA8cmRmOkJhZy8+CiAgICAgICAgIDwvZGM6c3ViamVjdD4KICAgICAgICAgPHhtcDpNb2RpZnlEYXRlPjIwMTQ6MDg6MTUgMjI6MDg6NjI8L3htcDpNb2RpZnlEYXRlPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPlBpeGVsbWF0b3IgMy4yPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgquNgPlAAAAs0lEQVQ4EWNgGJ7Az89PnFifMWFTyMHBkRkWFnYgPDxcH5s8shhWA0AKGBkZ7YHUOaBBM0JDQ0WRNSGzcRoAVcQENCgdiG8DDSo0NjZmRdYMYhMyAKweaAA/EPcpKytfDgkJ8UQ2hCgDUDQwMTEi81mQObjY/////wiUa7x79+6Us2fP/kZWR8iAf0DFc4AG1Kxevfo1skYYG6cBQE0Hgf7OX7ly5UWYYqJpUhIS0YYOXoUAuOIpy79fu1UAAAAASUVORK5CYII=);
-}
+  }
 
-[expanded] > button.expandCollapse {
+  [expanded] > button.expandCollapse {
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAlwSFlzAAALEwAACxMBAJqcGAAABCJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDUuNC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIgogICAgICAgICAgICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+CiAgICAgICAgIDx0aWZmOlJlc29sdXRpb25Vbml0PjE8L3RpZmY6UmVzb2x1dGlvblVuaXQ+CiAgICAgICAgIDx0aWZmOkNvbXByZXNzaW9uPjU8L3RpZmY6Q29tcHJlc3Npb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpZUmVzb2x1dGlvbj43MjwvdGlmZjpZUmVzb2x1dGlvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjE2PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6Q29sb3JTcGFjZT4xPC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj4xNjwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgICAgIDxkYzpzdWJqZWN0PgogICAgICAgICAgICA8cmRmOkJhZy8+CiAgICAgICAgIDwvZGM6c3ViamVjdD4KICAgICAgICAgPHhtcDpNb2RpZnlEYXRlPjIwMTQ6MDg6MTUgMjI6MDg6NDY8L3htcDpNb2RpZnlEYXRlPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPlBpeGVsbWF0b3IgMy4yPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgqNDgGLAAAAwElEQVQ4EWNgGAUUhwAjsgl+fn7iHBwcmchi6OwfP35M37Rp00uYOIoBIMGwsLADjIyM9jAFyPT///8Prlq1ygFZjAmZA2IDNecDqX/o4iAxqByKFIYBK1euvAi0aTaKKiAHJAaSQxfHMACkAKi4Fog/whSD2CAxGB+ZZkbmwNjXrl37pq2t/RPoZHeoWNXq1av3wuSRaawuACm4e/fuFKCtN0EYxEbWhMxmQeYgs8+ePftbUVGxECQGYiPLDTM2ALbCTJh2U9L+AAAAAElFTkSuQmCC);
-}
+  }
 
-li ul {
+  li ul {
     display: none;
-}
+  }
 
-li[expanded] > ul {
+  li[expanded] > ul {
     display: block;
-}
+  }
 
-li[expanded] > .keyValuePair > .summary {
+  li[expanded] > .keyValuePair > .summary {
     display: none;
-} 
+  }
 
-.number button.expandCollapse,
-.string button.expandCollapse,
-.null button.expandCollapse,
-.function button.expandCollapse,
-.boolean button.expandCollapse {
+  .number button.expandCollapse,
+  .string button.expandCollapse,
+  .null button.expandCollapse,
+  .function button.expandCollapse,
+  .boolean button.expandCollapse {
     visibility: hidden;
-}
+  }
 
-[data-type=string] {
+  [data-type=string] {
     color: darkgreen;
-}
+  }
 
-[data-type=number], [data-type=boolean] {
+  [data-type=number], [data-type=boolean] {
     color: blue;
-}
+  }
 
-.textValue[data-type=array],
-.textValue[data-type=object] {
+  .textValue[data-type=array],
+  .textValue[data-type=object] {
     color: #888;
     font-style: italic;
-}
+  }
 
-input {
+  ul::before, ul::after {
+    margin-left: 24px;
+    color: #888;
+  }
+
+  ul[data-type=array]::before {
+    content: '[';
+  }
+
+  ul[data-type=array]::after {
+    content: ']';
+  }
+
+  ul[data-type=object]::before {
+    content: '{';
+  }
+
+  ul[data-type=object]::after {
+    content: '}';
+  }
+
+  ul:hover::before, ul:hover::after {
+    color: #ffd500;
+    text-shadow: 0 0 1px black;
+  }
+
+  input {
     display: none;
     padding: 0;
     border-width: 1px;
-}
+  }
 
-[editing] input {
+  [editing] input {
     display: inline;
     moz-user-select: text;
     -webkit-user-select: text;
     -ms-user-select: text;
-}
+  }
 
-[editing] .textValue:not([data-type=boolean]) {
+  [editing] .textValue:not([data-type=boolean]) {
     display: none;
-}
+  }
 
 
-[data-type=boolean] input {
+  [data-type=boolean] input {
     display: inline;
-}
+  }
 
-label,
-button,
-span {
+  label,
+  button,
+  span {
     display: inline-block;
     vertical-align: middle;
     /*margin-top: 2px;*/
-}
+  }
 
-span,
-.textValue {
+  span,
+  .textValue {
     font-weight: normal;
-}
+  }
 
-.textValue {
+  .textValue {
     display: inline-block;
-}
+  }
 
-[data-type=number] .textValue,  input[data-type='number'],
-[data-type=string] .textValue,  input[data-type='text'] {
+  [data-type=number] .textValue, input[data-type='number'],
+  [data-type=string] .textValue, input[data-type='text'] {
     min-width: 40px;
     min-height: 12px;
     cursor: text;
-}
+  }
 
-[data-type=number] .textValue:hover ,
-[data-type=string] .textValue:hover {
-    outline: 1px solid rgba(0,0,0, 0.5);
-    background-color: rgba(255,255,255, 0.8);
-}
+  [data-type=number] .textValue:hover,
+  [data-type=string] .textValue:hover {
+    outline: 1px solid rgba(0, 0, 0, 0.5);
+    background-color: rgba(255, 255, 255, 0.8);
+  }
 
-span.textValue {
+  span.textValue {
     display: inline-block;
     margin-left: 4px;
-}
+  }
 
-.textValue[data-type=string]::before {
+  .textValue[data-type=string]::before {
     content: '"'
-}
+  }
 
-.textValue[data-type=string]::after {
+  .textValue[data-type=string]::after {
     content: '"'
-}
+  }
 
-.end {
+  .end {
     display: inline-block;
     padding-left: 34px;
     font-weight: bold;
-}
+  }
 
-#objecteditor-types-menu {
+  #objecteditor-types-menu {
     margin: 0;
     padding: 0px;
     list-style: none;
@@ -256,44 +282,44 @@ span.textValue {
     background: white;
     border: 1px solid #ccc;
     width: 60px;
-}
+  }
 
-#objecteditor-types-menu li {
+  #objecteditor-types-menu li {
     margin: 0;
     padding: 5px;
     cursor: default;
-}
+  }
 
-#objecteditor-types-menu li:hover {
+  #objecteditor-types-menu li:hover {
     background: #eee;
-}
+  }
 
-.summary {
+  .summary {
     color: grey;
     font-style: italic;
     cursor: pointer;
-}
+  }
 
-.summary:hover {
+  .summary:hover {
     text-decoration: underline;
     color: black;
-}
+  }
 
-#typesMenu {
+  #typesMenu {
     padding: 0;
     position: absolute;
-    border: 1px solid #ccc;   
+    border: 1px solid #ccc;
     list-style: none;
-}
+  }
 
-#typesMenu li {
+  #typesMenu li {
     margin: 0;
     padding: 3px 8px;
-}
+  }
 
-#typesMenu li:hover {
+  #typesMenu li:hover {
     background-color: #eee;
-}
+  }
 
 `;
 
@@ -408,8 +434,8 @@ class ReplicaInspector extends LitElement {
         const isArray = Array.isArray(obj);
 
         return html`
-            <ul data-type=${isArray ? 'array' : 'object'}>            
-                ${keys.map(key => this.renderProperty(obj, key))}
+            <ul data-type=${isArray ? 'array' : 'object'}>
+                ${repeat(keys, k => k, key => this.renderProperty(obj, key))}
                 <li><button class="add" @click="${(e) => this.openTypesMenu(e, obj, isArray)}">Add ${isArray ? 'Value' : 'Property'}</button></li>
             </ul>
         `;
@@ -446,7 +472,7 @@ class ReplicaInspector extends LitElement {
             <label>
                 <input type=${inputType} value=${value} @blur="${this.stopEditing}" ?checked=${value} @input=${({currentTarget}) => this.setValue(currentTarget, parent, key, type) }>
                 <span class="textValue" data-type=${type} @click=${this.startEditing}>${value}</span>
-            </label>            
+            </label>
         `;
     }
 
@@ -457,12 +483,33 @@ class ReplicaInspector extends LitElement {
         }
 
         if (type === 'object') {
-            const maxChar = 50;
-            let stringified = JSON.stringify(value).substr(0, maxChar);
-            if (stringified.length === maxChar) {
-                stringified = stringified + '... ' + (Array.isArray(value) ? ']' : '}');
-            }
-            return html`<span class='summary'>${stringified}</span>`
+            // const maxChar = 50;
+            // let stringified = JSON.stringify(value).substr(0, maxChar);
+            // if (stringified.length === maxChar) {
+            //     stringified = stringified + '... ' + (Array.isArray(value) ? ']' : '}');
+            // }
+            const summary = Array.isArray(value) ? '[...]' : '{...}';
+            return html`<span class='summary'>${summary}</span>`
+        }
+
+        if (type === 'function') {
+            return html`<button @click=${async () => {
+                const values = prompt(`parameters for ${key}() (separated by commas)`);
+                const args = values.split(',').map(v => {
+                    try {
+                        return JSON.parse(v);
+                    } catch (e) {
+                        return v;
+                    }
+                });
+
+                try {
+                    const result = await value.call(parent, ...args);
+                    alert(`${key}() returned: ${result}`);
+                } catch (e) {
+                    alert(`${key}() exception: ${e.message}`);
+                }
+            }}>invoke()</button>`
         }
 
         return this.renderPrimitive(value, type, parent, key);
@@ -502,11 +549,11 @@ class ReplicaInspector extends LitElement {
         return html`
             <li class="${type}" data-type="${dataType}">
                 <button class='delete' title='Delete' @click="${() => this.deleteProperty(parent, key)}"></button>
-                <button class="expandCollapse" @click=${expandCollapse}></button>                                
+                <button class="expandCollapse" @click=${expandCollapse}></button>
                 <span class="keyValuePair" @click=${expandCollapse}>
                     <label class="key">${key}:</label>
                     ${this.renderValueByType(value, type, parent, key)}                    
-                </span>                                
+                </span>
                 <button class="duplicate" @click=${() => this.duplicateProperty(parent, value)}></button>
                 ${type === 'object' ? this.renderObject(value) : ''}
             </li>`;
