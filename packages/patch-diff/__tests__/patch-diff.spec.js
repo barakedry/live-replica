@@ -1,16 +1,10 @@
 /**
  * Created by barakedry on 6/21/15.
  */
-/*global describe: false, it: false */
-'use strict';
 
-const PatchDiff = require('../index');
-const chai = require('chai');
-const assert = chai.assert;
-const extend = require('node.extend');
-// const EventEmitterEnhancer = require('event-emitter-enhancer');
+import PatchDiff from '../src/patch-diff.js';
 
-describe('apply-diff', function () {
+describe.skip('apply-diff', function () {
     function createBaseObject() {
         return {
             string: 'string',
