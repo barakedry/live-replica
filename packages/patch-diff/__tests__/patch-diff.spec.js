@@ -192,9 +192,9 @@ describe('Patch Diff', () => {
                     }
                 }
             });
-            const subPatcher = patcher.at('a.b');
 
             //Act
+            const subPatcher = patcher.at('a.b');
             subPatcher.apply(5, 'c');
             subPatcher.remove('e');
 
