@@ -3,7 +3,7 @@ import { Utils } from '../../utils/utils.js';
 import { DiffTracker } from "./diff-tracker.js";
 import { PatcherProxy } from "../../proxy/proxy.js";
 
-const debug = (msg) => {console.debug('LiveReplica PatchDiff: ' + msg);};
+const logError = (msg) => {console.error('LiveReplica PatchDiff: ' + msg);};
 
 import _defaults from '../../../node_modules/lodash-es/defaults.js';
 import _isObject from '../../../node_modules/lodash-es/isObject.js';
@@ -58,7 +58,7 @@ export class PatchDiff extends EventEmitter {
         options = _defaults(options || {}, this.options);
 
         if (!_isObject(patch) && !path && !this._path) {
-            debug('invalid apply, target and patch must be objects');
+            logError('invalid apply, target and patch must be objects');
 
             return;
         }
@@ -108,7 +108,7 @@ export class PatchDiff extends EventEmitter {
         options = _defaults(options || {}, this.options);
 
         if (!_isObject(fullDocument) && !path && !this._path) {
-            debug('invalid apply, target and value must be objects');
+            logError('invalid apply, target and value must be objects');
             return;
         }
 
@@ -189,7 +189,7 @@ export class PatchDiff extends EventEmitter {
 
         const fullPath = Utils.concatPath(this._path, path);
         if (fullPath && (!_isString(fullPath))) {
-            debug('invalid path, cannot get');
+            logError('invalid path, cannot get');
 
             return;
         }
@@ -426,17 +426,17 @@ export class PatchDiff extends EventEmitter {
     _applyObject(target, patch, path, options, level, override) {
 
         if (this.retainState && !(_isObject(target) && _isObject(patch))) {
-            debug('invalid apply, target and patch must be objects');
+            logError('invalid apply, target and patch must be objects');
             this.emit('error', new Error('invalid apply, target and patch must be objects'));
 
-            return;
+            return {};
         }
 
         if (level > options.maxLevels) {
-            debug('Trying to apply too deep, stopping at level %d', level);
+            logError('Trying to apply too deep, stopping at level %d', level);
             this.emit('error', new Error('Trying to apply too deep, stopping at level ' + level));
 
-            return;
+            return {};
         }
 
         let levelDiffs;
@@ -454,7 +454,7 @@ export class PatchDiff extends EventEmitter {
         }
 
         if (length > options.maxKeysInLevel) {
-            debug('Stopped patching, Too many keys in object - %d out of %d allowed keys.', length, options.maxKeysInLevel);
+            logError('Stopped patching, Too many keys in object - %d out of %d allowed keys.', length, options.maxKeysInLevel);
             this.emit('error', new Error('Stopped patching, Too many keys in object - ' + length + ' out of ' + options.maxKeysInLevel + ' allowed keys.'));
 
             return levelDiffs;
@@ -684,7 +684,7 @@ export class PatchDiff extends EventEmitter {
     _splice(path, index, itemsToRemove, ...itemsToAdd) {
         const target = this.get(path);
         if (!_isArray(target)) {
-            debug('invalid splice, target must be an array');
+            logError('invalid splice, target must be an array');
 
             return { deleted: [] };
         }
