@@ -107,12 +107,13 @@ describe('Patch Diff', () => {
                 })
 
                 it.each`
-              test          | key           | value                                       | expectedObject 
-              ${'string'}   | ${'string'}   | ${'string'}                                 | ${{ string: 'string' }}
-              ${'number'}   | ${'number'}   | ${5}                                        | ${{ string: 'string', number: 5 }}
-              ${'boolean'}  | ${'boolean'}  | ${true}                                     | ${{ string: 'string', number: 5, boolean: true }}
-              ${'object'}   | ${'object'}   | ${{hello: 'world'}}                         | ${{ string: 'string', number: 5, boolean: true,  object: {hello: 'world'}}}
-              ${'nested'}   | ${'nested'}   | ${{hello: {world: {print: 'end'}}}}         | ${{ string: 'string', number: 5, boolean: true, object: {hello: 'world'}, nested: {hello: {world: {print: 'end'}}}}}}
+              test          | key           | value                                             | expectedObject 
+              ${'string'}   | ${'string'}   | ${'string'}                                       | ${{ string: 'string' }}
+              ${'number'}   | ${'number'}   | ${5}                                              | ${{ string: 'string', number: 5 }}
+              ${'boolean'}  | ${'boolean'}  | ${true}                                           | ${{ string: 'string', number: 5, boolean: true }}
+              ${'object'}   | ${'object'}   | ${{hello: 'world'}}                               | ${{ string: 'string', number: 5, boolean: true, object: {hello: 'world'}}}
+              ${'nested'}   | ${'object'}   | ${{hello: {world: {print: 'end'}}}}               | ${{ string: 'string', number: 5, boolean: true, object: {hello: {world: {print: 'end'}}}}}}
+              ${'nested'}   | ${'object'}   | ${{hello: {world: {additionalProp: 'test'}}}}     | ${{ string: 'string', number: 5, boolean: true, object: {hello: {world: {print: 'end', additionalProp: 'test'}}}}}}
             `('should apply addition of $test property', ({key, value, expectedObject}) => {
                     //Act
                     patcher.apply({[key]: value});
@@ -139,10 +140,22 @@ describe('Patch Diff', () => {
                     expect(patcher.get()).toEqual(expectedObject);
                 });
             });
+
+            it.todo('apply -> options.overrides');
         });
     });
     describe('set', () => {
-        it.todo('future');
+        it('should override the object', () => {
+            //Arrange
+            const patcher = new PatchDiff({hello: {world: {print: 'end'}}});
+            const overrideObject = {hello: {world: {overriddenProperty: 'test'}}};
+
+            //Act
+            patcher.set(overrideObject);
+
+            //Assert
+            expect(patcher.get()).toEqual(overrideObject);
+        });
     });
     describe('remove', () => {
         it.todo('future');
@@ -169,7 +182,25 @@ describe('Patch Diff', () => {
         it.todo('future');
     });
     describe('at', () => {
-        it.todo('future');
+        it('should return a fully operational PatchDiff sub object at given path', () => {
+            //Arrange
+            const patcher = new PatchDiff({
+                a: {
+                    b: {
+                        c: 'd',
+                        e: 'f'
+                    }
+                }
+            });
+            const subPatcher = patcher.at('a.b');
+
+            //Act
+            subPatcher.apply(5, 'c');
+            subPatcher.remove('e');
+
+            //Assert
+            expect(patcher.get()).toEqual({a: {b: {c: 5}}});
+        });
     });
 });
 
