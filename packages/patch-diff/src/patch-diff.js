@@ -108,12 +108,12 @@ export class PatchDiff extends EventEmitter {
         options = _defaults(options || {}, this.options);
 
         if (!_isObject(fullDocument) && !path && !this._path) {
-            logError('invalid apply, target and value must be objects');
+            logError('invalid set, fullDocument must be an object');
             return;
         }
 
         if (this._whitelist) {
-            throw new Error('set is not supported with whitelist');
+            throw new Error('LiveReplica PatchDiff: set is not supported with whitelist');
         }
 
 

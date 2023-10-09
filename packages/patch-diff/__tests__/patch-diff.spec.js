@@ -1,5 +1,8 @@
 import PatchDiff from '../src/patch-diff.js';
 
+beforeEach(() => {
+    jest.resetAllMocks();
+});
 
 describe('Patch Diff', () => {
     describe('apply', () => {
@@ -156,6 +159,46 @@ describe('Patch Diff', () => {
             //Assert
             expect(patcher.get()).toEqual(overrideObject);
         });
+
+        describe('No fullDocument and path', () => {
+            it('should make no changes to underlying object and print error', () => {
+                //Arrange
+                const patcher = new PatchDiff({a: 'b'});
+                jest.spyOn(console, 'error');
+
+                //Act
+                patcher.set();
+
+                //Assert
+                expect(console.error).toBeCalledWith('LiveReplica PatchDiff: invalid set, fullDocument must be an object');
+                expect(patcher.get()).toEqual({a: 'b'});
+            });
+        });
+
+        describe('whitelist', () => {
+            it('should throw an error when set is used with whitelist', () => {
+                //Arrange
+                const patcher = new PatchDiff({a: 'b'});
+                patcher.whitelist(['a']);
+
+                //Act & Assert
+                expect(() => patcher.set({a: 'c'})).toThrowError('LiveReplica PatchDiff: set is not supported with whitelist');
+            });
+        });
+
+        it('should be able to set a proxy object', () => {
+            //Arrange
+            const patcher = new PatchDiff({ a: 'b' });
+            const proxy = patcher.getData({immediateFlush: true});
+            proxy.b = 'c';
+            const expectedObject = { a: 'b', b: 'c' };
+
+            //Act
+            patcher.set(proxy);
+
+            //Assert
+            expect(patcher.get()).toEqual(expectedObject);
+        });
     });
     describe('remove', () => {
         it.todo('future');
@@ -164,10 +207,31 @@ describe('Patch Diff', () => {
         it.todo('future');
     });
     describe('get', () => {
-        it.todo('future');
+        it('should return the underlying object', () => {
+            //Arrange
+            const initObject = {a: 'b'};
+            const patcher = new PatchDiff(initObject);
+
+            //Act
+            const result = patcher.get();
+
+            //Assert
+            expect(result).toBe(initObject);
+        });
     });
     describe('getClone', () => {
-        it.todo('future');
+        it('should return a clone of the underlying object', () => {
+            //Arrange
+            const initObject = {a: 'b'};
+            const patcher = new PatchDiff(initObject);
+
+            //Act
+            const result = patcher.getClone();
+
+            //Assert
+            expect(result).toEqual(initObject);
+            expect(result).not.toBe(initObject);
+        });
     });
     describe('on', () => {
         it.todo('future');
@@ -197,9 +261,10 @@ describe('Patch Diff', () => {
             const subPatcher = patcher.at('a.b');
             subPatcher.apply(5, 'c');
             subPatcher.remove('e');
+            subPatcher.set({g: 'h'}, 'f');
 
             //Assert
-            expect(patcher.get()).toEqual({a: {b: {c: 5}}});
+            expect(patcher.get()).toEqual({a: {b: {c: 5, f: {g: 'h'}}}});
         });
     });
 });
