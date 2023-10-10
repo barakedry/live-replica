@@ -116,13 +116,13 @@ export const Utils = {
 
     lastPathKey: function(path) {
         const dotIndex = path.lastIndexOf('.');
-        const stringBracketIndex = fullPath.lastIndexOf('["');
+        const stringBracketIndex = path.lastIndexOf('["');
         const bracketIndex = path.lastIndexOf('[');
 
         if (dotIndex > bracketIndex) {
             return path.substring(dotIndex + 1);
         } else if (stringBracketIndex > bracketIndex) {
-            return fullPath.substring(stringBracketIndex + 2, fullPath.length -2);
+            return path.substring(stringBracketIndex + 2, path.length -2);
         } else {
             return Number(path.substring(bracketIndex + 1, path.length -1));
         }
@@ -131,7 +131,7 @@ export const Utils = {
     firstKey(path) {
         const dotIndex = path.indexOf('.');
         const bracketIndex = path.indexOf('[');
-        const stringBracketIndex = fullPath.indexOf('["');
+        const stringBracketIndex = path.indexOf('["');
 
         if (dotIndex === -1 && bracketIndex === -1 && stringBracketIndex === -1) {
             return path;
