@@ -37,13 +37,6 @@ describe('Patch Diff', () => {
             });
 
             describe('Whitelisted keys enabled', () => {
-                /*
-                    BUG: whitelist is not working
-                    ReferenceError: fullPath is not defined
-                        at Object.fullPath (/Projects/live-replica/packages/utils/utils.js:134:36)
-                        at PatchDiff.firstKey [as apply] (/Projects/live-replica/packages/patch-diff/src/patch-diff.js:74:48)
-                        at Object.apply (/Projects/live-replica/packages/patch-diff/__tests__/patch-diff.spec.js:50:29)
-                 */
                 it.failing('should not modify non whitelisted paths', () => {
                     //Arrange
                     const baseObject = {
@@ -287,11 +280,22 @@ describe('Patch Diff', () => {
             patcher.apply(5, 'a.b.c');
 
             //Assert
-            return expect(promise).resolves.toBe(5);
+            return expect(promise).resolves.toEqual(5);
         });
     });
     describe('whenAnything', () => {
-        it.todo('future');
+        it('should resolve whenever a non empty object is populated on a given path', () => {
+            //Arrange
+            const patcher = new PatchDiff();
+            const promise = patcher.whenAnything('a.b.c');
+
+            //Act
+            patcher.apply({ key: 'value' }, 'a.b.c');
+
+            //Assert
+            return expect(promise).resolves.toEqual({ key: 'value' });
+        });
+        it.todo('test its not resolving when empty object is populated');
     });
     describe('at', () => {
         it('should return a fully operational PatchDiff sub object at given path', () => {
