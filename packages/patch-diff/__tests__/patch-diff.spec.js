@@ -201,7 +201,30 @@ describe('Patch Diff', () => {
         });
     });
     describe('remove', () => {
-        it.todo('future');
+        it('should remove any data at given path', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+
+            //Act
+            patcher.remove('a.b.c');
+
+            //Assert
+            expect(patcher.get()).toEqual({a: {b: {}}});
+        });
+
+        it('should remove all data if no path provided while considering the initial type', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const arrPatcher = new PatchDiff([1, 2, 3]);
+
+            //Act
+            patcher.remove();
+            arrPatcher.remove();
+
+            //Assert
+            expect(patcher.get()).toEqual({});
+            expect(arrPatcher.get()).toEqual([]);
+        });
     });
     describe('splice', () => {
         it.todo('future');
@@ -237,10 +260,40 @@ describe('Patch Diff', () => {
         it.todo('future');
     });
     describe('subscribe', () => {
-        it.todo('future');
+        //todo: work in progress
+        it('should notify of all changes on a given path', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const spy = jest.fn();
+            patcher.subscribe(spy, 'a.b.c');
+
+            //Act
+            patcher.apply(5, 'a.b.c');
+            // patcher.apply(6,'a.b.d');
+            // patcher.remove( 'a.b.c');
+
+            //Assert snapshot notification
+            const snapshot = {"a": {"b": {"c": 5}}};
+            expect(spy).toHaveBeenCalledWith(snapshot, {"snapshot": true}, {});
+        });
     });
     describe('getWhenExists', () => {
-        it.todo('future');
+        /*
+        * BUG: getWhenExists impacted by the same bug as whitelist
+        * utils.parentPath
+        * [ReferenceError: fullPath is not defined]
+        * */
+        it.failing('should resolve whenever a value is populated on a given path', () => {
+            //Arrange
+            const patcher = new PatchDiff();
+            const promise = patcher.getWhenExists('a.b.c');
+
+            //Act
+            patcher.apply(5, 'a.b.c');
+
+            //Assert
+            return expect(promise).resolves.toBe(5);
+        });
     });
     describe('whenAnything', () => {
         it.todo('future');
