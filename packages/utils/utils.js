@@ -150,13 +150,13 @@ export const Utils = {
 
     parentPath(path) {
         const dotIndex = path.lastIndexOf('.');
-        const stringBracketIndex = fullPath.lastIndexOf('["');
+        const stringBracketIndex = path.lastIndexOf('["');
         const bracketIndex = path.lastIndexOf('[');
 
         if (dotIndex > bracketIndex) {
             return path.substring(0, dotIndex);
         } else if (stringBracketIndex > bracketIndex) {
-            return fullPath.substring(0, stringBracketIndex);
+            return path.substring(0, stringBracketIndex);
         }
 
         return path.substring(0, bracketIndex);

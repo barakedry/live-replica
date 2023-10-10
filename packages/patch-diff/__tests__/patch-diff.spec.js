@@ -278,12 +278,7 @@ describe('Patch Diff', () => {
         });
     });
     describe('getWhenExists', () => {
-        /*
-        * BUG: getWhenExists impacted by the same bug as whitelist
-        * utils.parentPath
-        * [ReferenceError: fullPath is not defined]
-        * */
-        it.failing('should resolve whenever a value is populated on a given path', () => {
+        it('should resolve whenever a value is populated on a given path', () => {
             //Arrange
             const patcher = new PatchDiff();
             const promise = patcher.getWhenExists('a.b.c');
