@@ -2,7 +2,7 @@
   "private": true,
   "name": "@live-replica/live-replica",
   "type": "module",
-  "version": "0.7.41",
+  "version": "0.7.42",
   "description": "an easy to use real-time objects replica syncing",
   "directories": {
     "test": "tests"
@@ -30,8 +30,8 @@
     "chai": "latest",
     "mocha": "latest",
     "node.extend": "latest",
-    "lit": "^2.0.0-rc.2",
-    "jest": "^27.2.0"
+    "lit": "latest",
+    "jest": "latest"
   },
   "dependencies": {
     "@msgpack/msgpack": "latest",

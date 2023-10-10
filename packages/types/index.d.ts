@@ -106,6 +106,7 @@ declare namespace LiveReplica {
     type ReplicaPermissions = { allowWrite: boolean, allowRPC: boolean };
     type ReplicaOptions = ReplicaPermissions & {
         dataObject: object,
+        params?: object,
         subscribeRemoteOnCreate: boolean,
         connection: Socket<any>
     }
