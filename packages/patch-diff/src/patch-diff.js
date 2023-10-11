@@ -287,7 +287,7 @@ export class PatchDiff extends EventEmitter {
 
 
             removedKeys.forEach(key => {
-                hasAdditions = true;
+                hasDeletions = true;
                 deletions[key] = this.get(key);
                 differences[key] = this.options.deleteKeyword
             });
