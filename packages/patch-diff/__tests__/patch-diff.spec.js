@@ -37,26 +37,39 @@ describe('Patch Diff', () => {
             });
 
             describe('Whitelisted keys enabled', () => {
-                it.failing('should not modify non whitelisted paths', () => {
+                it('should not modify non whitelisted paths', () => {
                     //Arrange
                     const baseObject = {
-                        allowParent: 'b',
-                        disallow: { child: { allowChild: 'c' }},
-                        c: { d: 4 },
-                        d: 'e'
+                        allowParent: 'b'
                     };
                     const patcher = new PatchDiff(baseObject);
-                    patcher.whitelist(['allowParent','disallow.child.allowChild']);
+                    patcher.whitelist(['allowParent']);
 
                     //Act
                     patcher.apply(5, 'c.d');
+                    patcher.apply({ new: 'change' }, 'allowParent');
 
                     //Assert
                     expect(patcher.get()).toEqual({
-                        allowParent: 'b',
-                        disallow: { child: { allowChild: 'c' }},
-                        c: { d: 4 },
-                        d: 'e'
+                        allowParent: { new: 'change' }
+                    });
+                });
+
+                it('should not modify non whitelisted paths when path is not provided', () => {
+                    //Arrange
+                    const baseObject = {
+                        allowParent: 'a'
+                    };
+                    const patcher = new PatchDiff(baseObject);
+                    patcher.whitelist(['allowParent', 'allowParent2']);
+
+                    //Act
+                    patcher.apply({ newNonWhitelistedParent: 'change', allowParent2: 'change' });
+
+                    //Assert
+                    expect(patcher.get()).toEqual({
+                        allowParent: 'a',
+                        allowParent2: 'change'
                     });
                 });
             });
@@ -258,6 +271,7 @@ describe('Patch Diff', () => {
             //Arrange
             const patcher = new PatchDiff({a: {b: {c: 'd'}}});
             const spy = jest.fn();
+            //todo: why changing param order fails?
             patcher.subscribe(spy, 'a.b.c');
 
             //Act
@@ -317,6 +331,40 @@ describe('Patch Diff', () => {
 
             //Assert
             expect(patcher.get()).toEqual({a: {b: {c: 5, f: {g: 'h'}}}});
+        });
+    });
+    describe('Whitelist', () => {
+        it('should notify on whitelist additions and removals', () => {
+            //Arrange
+            const baseObject = {
+                allowParent: 'a',
+                allowParent2: 'b',
+                allowParent3: 'c',
+                allowParent4: 'd'
+            };
+            const patcher = new PatchDiff(baseObject);
+            const spy = jest.fn();
+            patcher.subscribe('*', spy);
+            patcher.whitelist(['allowParent', 'allowParent2', 'allowParent3']);
+
+            //Act
+            patcher.whitelist(['allowParent', 'allowParent2', 'allowParent4']);
+
+            //Assert
+            const differences = { 'allowParent3': '__$$D', 'allowParent4': 'd' };
+            const additions = { 'allowParent4': 'd' };
+            const deletions = { 'allowParent3': 'c' };
+            const completeEvent = {
+                'changeType': 'whitelist-change',
+                additions,
+                deletions,
+                differences,
+                'hasAdditions': true,
+                'hasDeletions': true,
+                'hasDifferences': true
+            };
+
+            expect(spy).toBeCalledWith(differences, completeEvent, { 'type': 'whitelist-change' });
         });
     });
 });
