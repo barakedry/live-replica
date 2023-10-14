@@ -4,6 +4,10 @@ beforeEach(() => {
     jest.resetAllMocks();
 });
 
+export function flushCycle() {
+    return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 describe('Patch Diff', () => {
     describe('apply', () => {
         describe('Bad path', () => {
@@ -529,6 +533,21 @@ describe('Patch Diff', () => {
             };
 
             expect(spy).toBeCalledWith(differences, completeEvent, { 'type': 'whitelist-change' });
+        });
+    });
+
+    describe('data proxy getter', () => {
+        it('should return a PatcherProxy of self', async () => {
+            //Arrange
+            const patcher = new PatchDiff({a: 'b'});
+            const proxy = patcher.data;
+
+            //Act
+            proxy.a = 'c';
+            await flushCycle();
+
+            //Assert
+            expect(patcher.get()).toEqual({a: 'c'});
         });
     });
 });
