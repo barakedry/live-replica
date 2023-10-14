@@ -247,6 +247,46 @@ describe('Patch Diff', () => {
             //Assert
             expect(result).toBe(initObject);
         });
+
+        it('should log error for invalid path argument', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: 'b'});
+            jest.spyOn(console, 'error');
+
+            //Act
+            patcher.get(5);
+
+            //Assert
+            expect(console.error).toBeCalledWith('LiveReplica PatchDiff: invalid path, cannot get');
+        });
+
+        describe('callback api', () => {
+            it('should return the data immediately if its available', () => {
+                //Arrange
+                const initObject = {a: 'b'};
+                const patcher = new PatchDiff(initObject);
+                const spy = jest.fn();
+
+                //Act
+                patcher.get(spy);
+
+                //Assert
+                expect(spy).toHaveBeenCalledWith(initObject);
+            });
+            it('should return the data when it becomes available', () => {
+                //Arrange
+                const initObject = {a: 'b'};
+                const patcher = new PatchDiff();
+                const spy = jest.fn();
+
+                //Act
+                patcher.get(spy);
+                patcher.apply(initObject);
+
+                //Assert
+                expect(spy).toHaveBeenCalledWith(initObject);
+            });
+        });
     });
     describe('getClone', () => {
         it('should return a clone of the underlying object', () => {
@@ -261,27 +301,87 @@ describe('Patch Diff', () => {
             expect(result).toEqual(initObject);
             expect(result).not.toBe(initObject);
         });
+        it('should return a clone of the underlying object with only whitelisted keys', () => {
+            //Arrange
+            const initObject = {a: 'b', c: 'd'};
+            const patcher = new PatchDiff(initObject);
+            patcher.whitelist(['a']);
+
+            //Act
+            const result = patcher.getClone();
+
+            //Assert
+            expect(result).toEqual({a: 'b'});
+        });
     });
     describe('on', () => {
         it.todo('future');
     });
     describe('subscribe', () => {
-        //todo: work in progress
-        it('should notify of all changes on a given path', () => {
+        it('should notify of all changes on a given path', async () => {
             //Arrange
             const patcher = new PatchDiff({a: {b: {c: 'd'}}});
             const spy = jest.fn();
-            //todo: why changing param order fails?
-            patcher.subscribe(spy, 'a.b.c');
+            patcher.subscribe('a.b.c', (diff,differences,options) => {
+                console.log('a.b.c', diff,differences,options);
+                spy(diff,differences,options);
+            });
 
             //Act
             patcher.apply(5, 'a.b.c');
-            // patcher.apply(6,'a.b.d');
-            // patcher.remove( 'a.b.c');
+            patcher.remove( 'a.b.c');
+            patcher.apply({ e: 'f' }, 'a.b.c');
 
             //Assert snapshot notification
-            const snapshot = {"a": {"b": {"c": 5}}};
-            expect(spy).toHaveBeenCalledWith(snapshot, {"snapshot": true}, {});
+            expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, {});
+            expect(spy).toHaveBeenCalledWith(5, {differences: 5}, {oldValue: 'd', type: 'update'});
+            expect(spy).toHaveBeenCalledWith(patcher.options.deleteKeyword, {differences: patcher.options.deleteKeyword}, {oldValue: 5, type: 'deletion'});
+            expect(spy).toHaveBeenCalledWith({e:'f'}, expect.objectContaining({
+                hasAdditions: true,
+                hasAddedObjects: false,
+                hasDeletions: false,
+                hasUpdates: false,
+                hasDifferences: true,
+                additions: {e: "f"},
+                deletions: {},
+                updates: {},
+                addedObjects: {},
+                differences: {e: "f"},
+                path: "a.b.c"
+            }), expect.any(Object));
+        });
+
+        it('should notify of all changes on whitelisted paths and exclude the rest', async () => {
+            //Arrange
+            const patcher = new PatchDiff({a: 1, b: 2, c: 'd'});
+            const spy = jest.fn();
+            patcher.whitelist(['a']);
+            patcher.subscribe('a', spy);
+            patcher.subscribe('b', spy);
+
+            //Act
+            patcher.apply('changeToA', 'a');
+            patcher.apply('changeToB', 'b');
+
+            //Assert
+            expect(spy).toHaveBeenCalledWith('changeToA', {differences: 'changeToA'}, {oldValue: 1, type: 'update'});
+            expect(spy).not.toHaveBeenCalledWith('changeToB', {differences: 'changeToB'}, {oldValue: 2, type: 'update'});
+        });
+
+        it('should allow to unsubscribe', async () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const spy = jest.fn();
+            const unsubscribe = patcher.subscribe('a.b.c', spy);
+
+            //Act
+            patcher.apply('beforeUnsub', 'a.b.c');
+            unsubscribe();
+            patcher.apply('afterUnsub', 'a.b.c');
+
+            //Assert
+            expect(spy).toHaveBeenCalledWith('beforeUnsub', {differences: 'beforeUnsub'}, { oldValue: 'd', type: 'update'});
+            expect(spy).not.toHaveBeenCalledWith('afterUnsub', {differences: 'afterUnsub'}, { oldValue: 'beforeUnsub', type: 'update'});
         });
     });
     describe('getWhenExists', () => {
@@ -351,7 +451,7 @@ describe('Patch Diff', () => {
             patcher.whitelist(['allowParent', 'allowParent2', 'allowParent4']);
 
             //Assert
-            const differences = { 'allowParent3': '__$$D', 'allowParent4': 'd' };
+            const differences = { 'allowParent3': patcher.options.deleteKeyword, 'allowParent4': 'd' };
             const additions = { 'allowParent4': 'd' };
             const deletions = { 'allowParent3': 'c' };
             const completeEvent = {
