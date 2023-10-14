@@ -127,7 +127,7 @@ describe('PatcherProxy', () => {
             patcherProxy.splice(1, 1, 'c');
 
             //Assert
-            expect(patcher.get()).toEqual(['a', 's']);
+            expect(patcher.get()).toEqual(['a', 'c']);
         });
     });
 });
