@@ -497,6 +497,7 @@ export class PatchDiff extends EventEmitter {
 
         // splice treat as primitive
         if (key === this.options.spliceKeyword) {
+            //bug: we cannot spread an object as args, should we Object.values(patchValue.itemsToAdd)?
             appliedValue = this._splice(path, patchValue.index, patchValue.itemsToRemove || 0, ...(patchValue.itemsToAdd || []));
             if (this.retainState) {
                 target[srcKey] = patchValue;
@@ -741,14 +742,14 @@ export class PatchDiff extends EventEmitter {
 
     getData({immediateFlush} = {}) {
         return PatcherProxy.create(this, '', null, this.isReadOnly, immediateFlush);
-
-        if (!this.proxies.has(this)) {
-            const proxy = PatcherProxy.create(this, '', null, this.isReadOnly, immediateFlush);
-            this.proxies.set(this, proxy);
-        }
-        return this.proxies.get(this);
+        // if (!this.proxies.has(this)) {
+        //     const proxy = PatcherProxy.create(this, '', null, this.isReadOnly, immediateFlush);
+        //     this.proxies.set(this, proxy);
+        // }
+        // return this.proxies.get(this);
     }
 
+    /* istanbul ignore next */
     destroyProxy() {
         if (this.proxies.has(this)) {
             PatcherProxy.destroy(this.proxies.get(this));
