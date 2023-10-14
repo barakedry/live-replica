@@ -209,13 +209,19 @@ describe('Patch Diff', () => {
     describe('remove', () => {
         it('should remove any data at given path', () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const patcher = new PatchDiff({
+                a: {
+                    b: { c: 'd' },
+                    e: 'f'
+                }
+            });
 
             //Act
-            patcher.remove('a.b.c');
+            patcher.remove('a.b');
+            patcher.remove('a.e');
 
             //Assert
-            expect(patcher.get()).toEqual({a: {b: {}}});
+            expect(patcher.get()).toEqual({a: {}});
         });
 
         it('should remove all data if no path provided while considering the initial type', () => {
@@ -233,7 +239,16 @@ describe('Patch Diff', () => {
         });
     });
     describe('splice', () => {
-        it.todo('future');
+        it.failing('should apply data changes to arrays', () => {
+            //Arrange
+            const patcher = new PatchDiff([1, 2, 3]);
+
+            //Act
+            patcher.splice({index: 1, itemsToRemove: [2,3], 5: 'b'});
+
+            //Assert
+            expect(patcher.get()).toEqual([1, 4, 5, 3]);
+        });
     });
     describe('get', () => {
         it('should return the underlying object', () => {
@@ -432,8 +447,49 @@ describe('Patch Diff', () => {
             //Assert
             expect(patcher.get()).toEqual({a: {b: {c: 5, f: {g: 'h'}}}});
         });
+
+        it('should cache sub patcher by default', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: 1});
+
+            //Act
+            const subPatcher1 = patcher.at('a');
+            const subPatcher2 = patcher.at('a');
+
+            //Assert
+            expect(subPatcher1).toBe(subPatcher2);
+        });
+
+        it('should allow to opt out of sub patcher caching', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: 1});
+
+            //Act
+            const subPatcher1 = patcher.at('a', false);
+            const subPatcher2 = patcher.at('a', false);
+
+            //Assert
+            expect(subPatcher1).not.toBe(subPatcher2);
+        });
+
+        it('should throw an error if non whitelisted path is being accessed', () => {
+            //Arrange
+            const patcher = new PatchDiff({
+                a: {
+                    b: {
+                        c: 'd',
+                        e: 'f'
+                    }
+                }
+            });
+            patcher.whitelist(['c']);
+
+            //Act & Assert
+            expect(() => patcher.at('a')).toThrowError('at(): path "a" is not allowed by whitelist');
+            expect(() => patcher.at('c')).not.toThrowError();
+        });
     });
-    describe('Whitelist', () => {
+    describe('whitelist', () => {
         it('should notify on whitelist additions and removals', () => {
             //Arrange
             const baseObject = {
