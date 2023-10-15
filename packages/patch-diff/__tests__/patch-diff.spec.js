@@ -252,13 +252,12 @@ describe('Patch Diff', () => {
             //Act
             patcher.splice({
                 index: 1,
-                1: 1,
-                2: 'test',
-                4: patcher.options.deleteKeyword,
-                7: 'test2'
+                itemsToRemove: 1,
+                itemsToAdd: [4, 5]
             });
 
             //Assert
+            // __$S object in the result of get
             expect(patcher.get()).toEqual([1, 4, 5, 3]);
         });
     });
@@ -357,7 +356,7 @@ describe('Patch Diff', () => {
             //Act
             patcher.apply(5, 'a.b.c');
             patcher.remove( 'a.b.c');
-            patcher.apply({ e: 'f' }, 'a.b.c');
+            patcher.apply({ e: 'f' }, 'a.b.c');//overrides: g = at(a.b.c) => g.set({})
 
             //Assert snapshot notification
             expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, {});

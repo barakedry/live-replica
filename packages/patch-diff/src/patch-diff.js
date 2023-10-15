@@ -85,7 +85,7 @@ export class PatchDiff extends EventEmitter {
             wrappedPatch = this._wrapper;
         }
 
-        // adjustOverrides
+        // adjustOverrides - allows to override/set specific paths in the patch
         if (options.overrides) {
             options = {...options};
             const overrides = {};
@@ -170,7 +170,7 @@ export class PatchDiff extends EventEmitter {
 
     }
 
-    splice({index, itemsToRemove, ...itemsToAdd}, path, options = {}) {
+    splice({index, itemsToRemove, itemsToAdd}, path, options = {}) {
         options = _defaults(options || {}, this.options);
         path = Utils.concatPath(this._path, path);
         this._applyObject(this._data, Utils.wrapByPath({[this.options.spliceKeyword]: {index, itemsToRemove, itemsToAdd}}, path), '', options, 0);
@@ -497,7 +497,6 @@ export class PatchDiff extends EventEmitter {
 
         // splice treat as primitive
         if (key === this.options.spliceKeyword) {
-            //bug: we cannot spread an object as args, should we Object.values(patchValue.itemsToAdd)?
             appliedValue = this._splice(path, patchValue.index, patchValue.itemsToRemove || 0, ...(patchValue.itemsToAdd || []));
             if (this.retainState) {
                 target[srcKey] = patchValue;
