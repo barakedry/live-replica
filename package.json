@@ -27,9 +27,8 @@
   },
   "homepage": "https://github.com/barakedry/live-replica/",
   "devDependencies": {
-    "chai": "latest",
-    "mocha": "latest",
-    "node.extend": "latest",
+    "@babel/plugin-transform-modules-commonjs": "^7.23.0",
+    "babel-jest": "^29.7.0",
     "lit": "latest",
     "jest": "latest"
   },
@@ -42,5 +41,9 @@
     "lodash-es"
   ],
   "main": "index.js",
-  "types": "./packages/types/index.d.ts"
+  "types": "./packages/types/index.d.ts",
+  "bundleDependencies": [
+    "@msgpack/msgpack",
+    "lodash-es"
+  ]
 }

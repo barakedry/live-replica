@@ -1,19 +1,12 @@
 /**
  * Created by barakedry on 6/21/15.
  */
-/*global describe: false, it: false */
-'use strict';
 
-
-const chai = require('chai');
-const assert = chai.assert;
-const PatchDiff = require('../../patch-diff');
-
-const {
+import {
     LiveReplicaPersistence,
     LiveReplicaFilePersistence,
     LiveReplicaMongoDbPersistence
-} = require('../persistency.js');
+} from '../persistency.js';
 
 describe('LiveReplicaPersistence', function () {
     function createBaseObject() {
