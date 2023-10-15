@@ -156,7 +156,32 @@ describe('Patch Diff', () => {
                 });
             });
 
-            it.todo('apply -> options.overrides');
+            it('should allow to apply with certain paths treated as overrides', () => {
+                //Arrange
+                const overrides = {
+                    'a.b.override1': true,
+                    'a.b.override2': true
+                };
+                const patcher = new PatchDiff({a: {b: {
+                    c: {d: 'e'},
+                    override1: {f: 'g'},
+                    override2: {h: 'i'}
+                }}});
+
+                //Act
+                patcher.apply({a: {b: {
+                    c: { appliedToC: 'someValue'},
+                    override1: { overrides1: 'someValue'},
+                    override2: { overrides1: 'someValue'}
+                }}}, '', {overrides});
+
+                //Assert
+                expect(patcher.get()).toEqual({a: {b: {
+                    c: {d: 'e', appliedToC: 'someValue'}, // {d: 'e'} is not overridden, {appliedToC: 'someValue'} is added
+                    override1: {overrides1: 'someValue'}, // {f: 'g'} is overridden
+                    override2: {overrides1: 'someValue'}  // {h: 'i'} is overridden
+                }}});
+            });
         });
     });
     describe('set', () => {
