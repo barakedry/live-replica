@@ -257,7 +257,7 @@ describe('Patch Diff', () => {
             });
 
             //Assert
-            // __$S object in the result of get
+            // bug: __$S object in the result of get
             expect(patcher.get()).toEqual([1, 4, 5, 3]);
         });
     });
@@ -356,7 +356,7 @@ describe('Patch Diff', () => {
             //Act
             patcher.apply(5, 'a.b.c');
             patcher.remove( 'a.b.c');
-            patcher.apply({ e: 'f' }, 'a.b.c');//overrides: g = at(a.b.c) => g.set({})
+            patcher.apply({ e: 'f' }, 'a.b.c');
 
             //Assert snapshot notification
             expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, {});
@@ -374,6 +374,52 @@ describe('Patch Diff', () => {
                 addedObjects: {},
                 differences: {e: "f"},
                 path: "a.b.c"
+            }), expect.any(Object));
+        });
+
+        it('should be able to notify multiple changes in a single update', async () => {
+            //Arrange
+            const initObject = {a: {b: {c: 'd'}, toUpdate: 'f', toDelete: {g: 'h'}}};
+            const patcher = new PatchDiff(initObject);
+            const spy = jest.fn();
+            patcher.subscribe('a', (diff,differences,options) => {
+                console.log('a', diff,differences,options);
+                spy(diff,differences,options);
+            });
+
+            //Act
+            const overrideObject = {a: {b: 'objectToString', toUpdate: 'newValue', newObject: {}}};
+            patcher.set(overrideObject);
+
+            //Assert snapshot notification
+            expect(spy).toHaveBeenCalledWith(initObject.a, {snapshot: true}, {});
+            expect(spy).toHaveBeenCalledWith({
+                b: 'objectToString',
+                toUpdate: 'newValue',
+                newObject: {},
+                toDelete: patcher.options.deleteKeyword
+            }, expect.objectContaining({
+                hasAdditions: true,
+                hasAddedObjects: true,
+                hasDeletions: true,
+                hasUpdates: true,
+                hasDifferences: true,
+                additions: {newObject: {}},
+                deletions: {
+                    toDelete: {g: 'h'}
+                },
+                updates: {
+                    b: { oldVal: { c: 'd' }, newVal: 'objectToString' },
+                    toUpdate: { oldVal: 'f', newVal: 'newValue' }
+                },
+                addedObjects: { newObject: true },
+                differences: {
+                    b: 'objectToString',
+                    toUpdate: 'newValue',
+                    newObject: {},
+                    toDelete: patcher.options.deleteKeyword
+                },
+                path: 'a'
             }), expect.any(Object));
         });
 
