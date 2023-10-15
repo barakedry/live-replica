@@ -182,6 +182,40 @@ describe('Patch Diff', () => {
                     override2: {overrides1: 'someValue'}  // {h: 'i'} is overridden
                 }}});
             });
+            
+            describe('Array manipulations', () => {
+                it.each`
+                    test             | initArray   | patchArray     | expectedArray
+                    ${'add item'}    | ${[1,2]}    | ${[1,2,3]}     | ${[1,2,3]}
+                    ${'update item'} | ${[1,2,3]}  | ${[1,3]}       | ${[1,3,3]}
+                    ${'remove item'} | ${[1,2,3]}  | ${[1,'__$$D']} | ${[1,3]}
+                `('should be able to $test', ({initArray, patchArray, expectedArray}) => {
+                    //Arrange
+                    const patcher = new PatchDiff(initArray);
+
+                    //Act
+                    patcher.apply(patchArray);
+
+                    //Assert
+                    expect(patcher.get()).toEqual(expectedArray);
+                });
+
+                it.each`
+                    path               | expectedObject
+                    ${'a[0]'}          | ${{a: ['appliedValue', 'b', false, { hello: 'world' }]}}
+                    ${'a[1]'}          | ${{a: [1, 'appliedValue', false, { hello: 'world' }]}}
+                    ${'a[3].hello'}    | ${{a: [1, 'b', false, { hello: 'appliedValue' }]}}
+                `('should update array value at given path $path', ({ path, expectedObject }) => {
+                    //Arrange
+                    const patcher = new PatchDiff({a: [1, 'b', false, { hello: 'world' }]});
+
+                    //Act
+                    patcher.apply('appliedValue', path);
+
+                    //Assert
+                    expect(patcher.get()).toEqual(expectedObject);
+                });
+            });
         });
     });
     describe('set', () => {
@@ -495,6 +529,41 @@ describe('Patch Diff', () => {
             //Assert
             expect(spy).toHaveBeenCalledWith('beforeUnsub', {differences: 'beforeUnsub'}, { oldValue: 'd', type: 'update'});
             expect(spy).not.toHaveBeenCalledWith('afterUnsub', {differences: 'afterUnsub'}, { oldValue: 'beforeUnsub', type: 'update'});
+        });
+
+        describe('Array change notifications', () => {
+            it('should notify of all changes on a given path when underlying object is an Array', () => {
+                //Arrange
+                const patcher = new PatchDiff({ parent: ['a', 'b', { objArrItemProp: true }] });
+                const spy = jest.fn();
+                patcher.subscribe('parent[1]', (diff,differences,options) => {
+                    console.log('array change notification', diff,differences,options);
+                    spy(diff,differences,options);
+                });
+
+                //Act
+                patcher.apply(5, 'parent[1]');
+
+                //Assert
+                expect(spy).toHaveBeenCalledWith(5, {differences: 5}, {oldValue: 'b', type: 'update'});
+            });
+
+            it('should notify on changes of multiple levels nested arrays and objects', () => {
+                //Arrange
+                const patcher = new PatchDiff({ parent: ['a', 'b', { objArrItemProp: ['c','d', { secondObjArrItemProp: ['awesome','stuff','really'] }] }] });
+                const spy = jest.fn();
+                const path = 'parent[2].objArrItemProp[2].secondObjArrItemProp[1]';
+                patcher.subscribe(path, (diff,differences,options) => {
+                    console.log('array change notification', diff,differences,options);
+                    spy(diff,differences,options);
+                });
+
+                //Act
+                patcher.apply('fluff', path);
+
+                //Assert
+                expect(spy).toHaveBeenCalledWith('fluff', {differences: 'fluff'}, {oldValue: 'stuff', type: 'update'});
+            });
         });
     });
     describe('getWhenExists', () => {
