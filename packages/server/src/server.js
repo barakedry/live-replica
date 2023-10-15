@@ -105,10 +105,11 @@ export class LiveReplicaServer extends PatchDiff {
         let invokeRpcListener, replicaApplyListener;
 
         let subscriberChange = false;
+        let transformedClientPatch = false;
         const unsubscribeChanges = target.subscribe((patchData, {snapshot, changeType}) => {
-            if (!subscriberChange) {
+            if (transformedClientPatch || !subscriberChange) {
                 const updateInfo  =  snapshot ? {snapshot} : {snapshot : false};
-                if (!snapshot) {
+                if (!snapshot && subscriberChange) {
                     changeRevision++;
                     updateInfo.changeRevision = changeRevision;
                 }
@@ -131,6 +132,7 @@ export class LiveReplicaServer extends PatchDiff {
         if (request.allowWrite) {
 
             replicaApplyListener = (payload) => {
+                transformedClientPatch = writeTransformer !== defaultTransformer;
                 subscriberChange = payload.changeRevision === changeRevision;
                 target.apply(writeTransformer(payload.data));
             };
