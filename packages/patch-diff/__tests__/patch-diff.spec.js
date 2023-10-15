@@ -423,6 +423,22 @@ describe('Patch Diff', () => {
             }), expect.any(Object));
         });
 
+        it('should notify self if parent is deleted', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const spy = jest.fn();
+            patcher.subscribe('a.b.c', (diff,differences,options) => {
+                console.log('a.b.c', diff,differences,options);
+                spy(diff,differences,options);
+            });
+
+            //Act
+            patcher.remove('a.b');
+
+            //Assert
+            expect(spy).toHaveBeenCalledWith(patcher.options.deleteKeyword, {differences: patcher.options.deleteKeyword}, {type: 'deletion'});
+        });
+
         it('should notify of all changes on whitelisted paths and exclude the rest', async () => {
             //Arrange
             const patcher = new PatchDiff({a: 1, b: 2, c: 'd'});
