@@ -135,7 +135,7 @@ export class Replica extends PatchDiff {
             params: this.options.params
         }, (result) => {
             if (result.success) {
-                console.info(`live-replica subscribed to remote path=${this.remotePath} writable=${result.writable} writable=${result.rpc}`);
+                console.info(`live-replica subscribed to remote path=${this.remotePath} writable=${result.writable} rpc=${result.rpc}`);
                 this.options.allowWrite = result.writable;
 
                 this._subscribed = true;
