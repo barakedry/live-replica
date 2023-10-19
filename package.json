@@ -29,17 +29,19 @@
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.23.0",
     "babel-jest": "^29.7.0",
+    "jest": "latest",
     "lit": "latest",
-    "jest": "latest"
+    "typescript": "^5.2.2",
+    "ws": "^8.14.2"
   },
   "dependencies": {
     "@msgpack/msgpack": "latest",
     "lodash-es": "latest"
   },
+  "main": "index.js",
+  "types": "./packages/types/index.d.ts",
   "bundledDependencies": [
     "@msgpack/msgpack",
     "lodash-es"
-  ],
-  "main": "index.js",
-  "types": "./packages/types/index.d.ts"
+  ]
 }

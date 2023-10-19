@@ -5,8 +5,8 @@ export default {
         moduleNameMapper: {
         "\\.(css|less|scss)$": "identity-obj-proxy"
     },
-    "transformIgnorePatterns": ["/node_modules/lodash/"],
-        transform: {
-        "^.+\\.(js|jsx)$": "babel-jest",
+    transformIgnorePatterns: ["/node_modules/lodash/"],
+    transform: {
+        '^.+\\.(js|jsx|ts|tsx|mjs)$': 'babel-jest',
     }
 }
