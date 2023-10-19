@@ -4,8 +4,8 @@ beforeEach(() => {
     jest.resetAllMocks();
 });
 
-export function flushCycle() {
-    return new Promise((resolve) => setTimeout(resolve, 0));
+export function flushCycle(timeout = 0) {
+    return new Promise((resolve) => setTimeout(resolve, timeout));
 }
 
 describe('Patch Diff', () => {
