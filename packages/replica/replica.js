@@ -9,8 +9,8 @@ let replicaId = Date.now();
 const deserializeFunctions  = Symbol('deserializeFunctions');
 const createRPCfunction     = Symbol('createRPCfunction');
 const remoteApply           = Symbol('remoteApply');
-const remoteOverride           = Symbol('remoteOverride');
-const bindToSocket           = Symbol('bindToSocket');
+const remoteOverride        = Symbol('remoteOverride');
+const bindToSocket          = Symbol('bindToSocket');
 
 export class Replica extends PatchDiff {
 

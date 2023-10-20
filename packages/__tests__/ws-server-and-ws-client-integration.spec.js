@@ -1,7 +1,6 @@
 import {WebSocket, WebSocketServer} from 'ws';
 import LiveReplicaWebSocketsServer from "../ws-server/ws-server.js";
 import WebSocketClient from "../ws-client/ws-client.js";
-import {decode} from "@msgpack/msgpack";
 import Replica from "../replica/replica.js";
 
 function createWSServer() {
@@ -22,23 +21,10 @@ function createWebSocket() {
 
         ws.binaryType = 'arraybuffer';
         ws.onerror = async (err) => {
-            // reject(err);
+            reject(err);
         };
         ws.onopen = () => {
             console.info(`Websocket opened`);
-
-            ws.addEventListener('message', (msg) => {
-                try {
-                    const decoded = decode(msg.data);
-                    if (decoded['$event']) {
-                        const event = decoded['$event'];
-                        // this.socketEvents.emit(`${event.channel}.${event.name}`, ...event.args);
-                        console.log(event);
-                    }
-                } catch (e) {
-                }
-            });
-
             resolve(ws);
         };
     });
@@ -59,29 +45,32 @@ describe('WS Server and  WS Client integration', () => {
         //Arrange
         const server = new LiveReplicaWebSocketsServer(wsServer);
         const connection = new WebSocketClient(await createWebSocket());
-        const replica = new Replica('', { connection });
+        const replica = new Replica('root', { connection });
 
         //Act
-        server.set({a: 1, b: 2}, '');
+        await replica.synced;
+        server.set({a: 1, b: 2}, 'root');
         await replica.getWhenExists('a')
 
         //Assert
         expect(replica.get()).toEqual({a: 1, b: 2});
-        expect(server.get()).toEqual({a: 1, b: 2});
+        expect(server.get()).toEqual({ root: {a: 1, b: 2}});
     });
 
     it('should sync replica changes to replica', async () => {
         //Arrange
         const server = new LiveReplicaWebSocketsServer(wsServer);
         const connection = new WebSocketClient(await createWebSocket());
-        const replica = new Replica('', { connection, allowWrite: true });
+        const replica = new Replica('root', { connection, allowWrite: true });
 
         //Act
-        replica.set({a: 1, b: 2});
-        await server.getWhenExists('a')
+        await replica.synced;
+        replica.set({c: 1});
+        await replica.getWhenExists('c');
+        await server.getWhenExists('root.c');
 
         //Assert
-        expect(replica.get()).toEqual({a: 1, b: 2});
-        expect(server.get()).toEqual({a: 1, b: 2});
-    });
+        expect(replica.get()).toEqual({ c: 1 });
+        expect(server.get()).toEqual({ root: { c: 1 }});
+    }, 500);
 });

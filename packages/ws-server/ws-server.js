@@ -91,8 +91,8 @@ Connection.prototype.on = Connection.prototype.addListener;
  */
 export class LiveReplicaWebSocketsServer extends LiveReplicaServer {
 
-    constructor(wsServer) {
-        super();
+    constructor(wsServer, options) {
+        super(options);
 
         if (!wsServer) { return; }
 
