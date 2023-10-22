@@ -29,7 +29,7 @@ class Connection extends EventEmitter {
 
                     this.emit(event, payload, ackFunction);
                 } else {
-                    this.emit('unkown-message', msg);
+                    this.emit('unknown-message', msg);
                 }
             } catch(e) {
                 this.emit('decoding-error', e, data);
