@@ -67,7 +67,7 @@ describe('WS Server and  WS Client integration', () => {
             expect(server.get()).toEqual({ root: {a: 1, b: 2}});
         });
 
-        it('should sync replica changes to replica', async () => {
+        it('should sync replica changes to server', async () => {
             //Arrange
             const replica = new Replica('root', { connection, allowWrite: true });
 
@@ -80,6 +80,28 @@ describe('WS Server and  WS Client integration', () => {
             //Assert
             expect(replica.get()).toEqual({ c: 1 });
             expect(server.get()).toEqual({ root: { c: 1 }});
+        });
+    });
+
+    describe('Middleware', () => {
+        it('should be able to reject replica subscription', (done) => {
+            //Arrange
+            const middlewareFake = jest.fn((request, reject, next) => {
+               reject('reason: testing reject');
+            });
+            server.use(middlewareFake);
+
+            //Act
+            const replicaOptions = {
+                connection,
+                subscribeRejectCallback: jest.fn(function() {
+                    //Assert
+                    expect(replicaOptions.subscribeRejectCallback).toHaveBeenCalledWith('reason: testing reject');
+                    done();
+                }),
+                subscribeSuccessCallback: jest.fn()
+            };
+            const replica = new Replica('root', replicaOptions);
         });
     });
 
