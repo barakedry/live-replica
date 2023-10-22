@@ -50,6 +50,8 @@ afterEach(() => {
 
 afterAll((done) => {
     connection.baseSocket.close();
+    connection.disconnect();
+
     wsServer.close(() => {
         console.log('ws server closed');
         done();
@@ -258,8 +260,6 @@ describe('WS Server and  WS Client integration', () => {
     });
     
     describe('Connection handling', () => {
-        it('should auto reconnect', () => {
-            
-        });
+        it.todo('test disconnect and reconnect');
     });
 });
