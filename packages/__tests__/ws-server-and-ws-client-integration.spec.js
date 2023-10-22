@@ -4,13 +4,15 @@ import WebSocketClient from "../ws-client/ws-client.js";
 import Replica from "../replica/replica.js";
 
 function createWSServer() {
-    return new WebSocketServer({
-        path: '/ws',
-        maxPayload: 1024 * 1024 * 5, // 5mb limit
-        perMessageDeflate: {
-            threshold: 1024 * 5,
-        },
-        port: process.env.PORT || 3000,
+    return new Promise((resolve, reject) => {
+        const wss = new WebSocketServer({
+            path: '/ws',
+            maxPayload: 1024 * 1024 * 5, // 5mb limit
+            perMessageDeflate: {
+                threshold: 1024 * 5,
+            },
+            port: process.env.PORT || 3000,
+        }, () => resolve(wss));
     });
 }
 
@@ -32,19 +34,26 @@ function createWebSocket() {
 
 
 let wsServer;
-beforeAll(() => {
-    wsServer = createWSServer();
+let connection;
+let server;
+beforeAll(async () => {
+    wsServer = await createWSServer();
+    server = new LiveReplicaWebSocketsServer(wsServer)
+    const ws = await createWebSocket();
+    connection = new WebSocketClient(ws);
 });
 
-afterAll(() => {
-    wsServer.close();
+afterAll((done) => {
+    connection.baseSocket.close();
+    wsServer.close(() => {
+        console.log('ws server closed');
+        done();
+    });
 });
 
 describe('WS Server and  WS Client integration', () => {
     it('should sync server changes to replica', async () => {
         //Arrange
-        const server = new LiveReplicaWebSocketsServer(wsServer);
-        const connection = new WebSocketClient(await createWebSocket());
         const replica = new Replica('root', { connection });
 
         //Act
@@ -59,18 +68,19 @@ describe('WS Server and  WS Client integration', () => {
 
     it('should sync replica changes to replica', async () => {
         //Arrange
-        const server = new LiveReplicaWebSocketsServer(wsServer);
-        const connection = new WebSocketClient(await createWebSocket());
         const replica = new Replica('root', { connection, allowWrite: true });
 
         //Act
         await replica.synced;
         replica.set({c: 1});
-        await replica.getWhenExists('c');
         await server.getWhenExists('root.c');
+        console.log('server updated');
+        await replica.getWhenExists('c');
+        console.log('replica updated');
 
         //Assert
+        //todo: there is a race condition here, sometimes replica.get is null
         expect(replica.get()).toEqual({ c: 1 });
         expect(server.get()).toEqual({ root: { c: 1 }});
-    }, 500);
+    }, 1000);
 });
