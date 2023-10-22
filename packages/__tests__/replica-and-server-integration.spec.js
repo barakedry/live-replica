@@ -2,6 +2,7 @@ import { EventEmitter} from "../events/events.js";
 import { LiveReplicaServer } from '../server';
 import { Replica } from '../replica/replica';
 import LiveReplicaSocket from "../socket/socket.js";
+import {eventName} from "../common/event-name.js";
 
 function createBaseSocket() {
     const connection = new EventEmitter();
@@ -10,6 +11,28 @@ function createBaseSocket() {
     connection.fake = true;
     return connection;
 }
+
+class ServerConnection {
+    constructor(socket) {
+        this.socket = socket;
+    }
+
+
+    send(event, ...args) {
+        event = eventName(event);
+        this.socket.emit(event, ...args);
+    }
+
+    addListener(event, handler) {
+        this.socket.on(eventName(event), handler);
+    }
+
+    removeListener(event, handler) {
+        this.socket.removeListener(eventName(event), handler);
+    }
+}
+ServerConnection.prototype.on = ServerConnection.prototype.addListener;
+
 describe('Replica and Server integration', () => {
     it('should keep replica and server in sync', () => {
         //Arrange
@@ -62,26 +85,34 @@ describe('Replica and Server integration', () => {
         expect(server.get()).toEqual({a: 3});
     });
 
-    it.failing('should sync server with replica changes', async () => {
+    it.only('should sync server with replica changes', async () => {
         //Arrange
-        const dataObject = {a: 1, b: 2};
-        const server = new LiveReplicaServer({ path:'root', dataObject });
+        const dataObject = { root: {a: 1, b: 2} };
+        const server = new LiveReplicaServer();
+        // server.use((request, accept, reject) => {
+        //     request.allowWrite = false;
+        //     accept();
+        // });
+        server.set(dataObject);
         const replica = new Replica('root', {
             allowRPC: true,
             allowWrite: true
         });
-        const connection = new LiveReplicaSocket(createBaseSocket());
+
+        const socket = createBaseSocket();
+        const replicaConnection = new LiveReplicaSocket(socket);
 
         //Act
-        server.onConnect(connection);
-        replica.subscribeRemote(connection, jest.fn(), jest.fn());
+        server.onConnect(new ServerConnection(socket));
+        replica.subscribeRemote(replicaConnection, jest.fn(), jest.fn());
         replica.set({ a: 3 });
-        await replica.getWhenExists('a');
-        // await server.getWhenExists('root.a');
+        // replica.apply({ a: 3 });
+        await replica.getWhenExists();
+        await server.getWhenExists();
 
         //Assert
         expect(replica.get()).toEqual({ a: 3 });
-        // expect(server.get()).toEqual({ a: 3 });
+        expect(server.get()).toEqual({ root: {a: 1, b: 2}});
     }, 500);
 
     it('should not allow any replica changes without explicitly requesting write permission', () => {

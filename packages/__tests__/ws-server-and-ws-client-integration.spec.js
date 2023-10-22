@@ -52,35 +52,51 @@ afterAll((done) => {
 });
 
 describe('WS Server and  WS Client integration', () => {
-    it('should sync server changes to replica', async () => {
-        //Arrange
-        const replica = new Replica('root', { connection });
+    describe('Sync', () => {
+        it('should sync server changes to replica', async () => {
+            //Arrange
+            const replica = new Replica('root', { connection });
 
-        //Act
-        await replica.synced;
-        server.set({a: 1, b: 2}, 'root');
-        await replica.getWhenExists('a')
+            //Act
+            await replica.synced;
+            server.set({a: 1, b: 2}, 'root');
+            await replica.getWhenExists('a')
 
-        //Assert
-        expect(replica.get()).toEqual({a: 1, b: 2});
-        expect(server.get()).toEqual({ root: {a: 1, b: 2}});
+            //Assert
+            expect(replica.get()).toEqual({a: 1, b: 2});
+            expect(server.get()).toEqual({ root: {a: 1, b: 2}});
+        });
+
+        it('should sync replica changes to replica', async () => {
+            //Arrange
+            const replica = new Replica('root', { connection, allowWrite: true });
+
+            //Act
+            await replica.synced;
+            replica.set({c: 1});
+            await server.getWhenExists('root.c');
+            await replica.getWhenExists('c');
+
+            //Assert
+            expect(replica.get()).toEqual({ c: 1 });
+            expect(server.get()).toEqual({ root: { c: 1 }});
+        });
     });
 
-    it('should sync replica changes to replica', async () => {
-        //Arrange
-        const replica = new Replica('root', { connection, allowWrite: true });
+    describe('RPC', () => {
+        it.todo('should be able to invoke methods on server from the replica');
+        it('should be able to invoke methods on server from the replica', () => {
+            //Arrange
+            const replica = new Replica('root', { connection, allowRPC: true });
 
-        //Act
-        await replica.synced;
-        replica.set({c: 1});
-        await server.getWhenExists('root.c');
-        console.log('server updated');
-        await replica.getWhenExists('c');
-        console.log('replica updated');
+            //Act
 
-        //Assert
-        //todo: there is a race condition here, sometimes replica.get is null
-        expect(replica.get()).toEqual({ c: 1 });
-        expect(server.get()).toEqual({ root: { c: 1 }});
-    }, 1000);
+        });
+    });
+    
+    describe('Connection handling', () => {
+        it('should auto reconnect', () => {
+            
+        });
+    });
 });

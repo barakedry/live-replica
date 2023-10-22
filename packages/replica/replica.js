@@ -189,11 +189,6 @@ export class Replica extends PatchDiff {
         }
     }
 
-    async reset() {
-        await this.unsubscribeRemote();
-        super.set(Array.isArray(this.get()) ? [] : {});
-    }
-
     unsubscribeRemote() {
         if (!this.connection) { return; }
         if (!this._subscribed) { return; }
