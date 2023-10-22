@@ -134,7 +134,7 @@ describe('WS Server and  WS Client integration', () => {
             await readWriteReplica.synced;
             //modify the replicas
             readOnlyReplica.set({key: 'val'}, 'a');
-            readWriteReplica.set({ c: {key: 'val'}, d: 5});
+            readWriteReplica.set({ c: {key: 'val'}, d: 5 });
             //wait for the changes to reflect on replica and server
             await readWriteReplica.getWhenExists('c');
             await server.getWhenExists('readwrite.c');
@@ -148,13 +148,65 @@ describe('WS Server and  WS Client integration', () => {
     });
 
     describe('RPC', () => {
-        it.todo('should be able to invoke methods on server from the replica');
-        it('should be able to invoke methods on server from the replica', () => {
+        it('should be able to invoke methods on server from the replica', async () => {
             //Arrange
             const replica = new Replica('root', { connection, allowRPC: true });
+            server.set({
+                root: {
+                    myRPC: function myRPC() {
+                        return 'hello';
+                    }
+                }
+            });
+            await replica.getWhenExists('myRPC');
 
             //Act
+             const result = await replica.data.myRPC();
 
+            //Assert
+            expect(result).toEqual('hello');
+        });
+
+        it('should be able to invoke async methods on server from the replica', async () => {
+            //Arrange
+            const replica = new Replica('root', { connection, allowRPC: true });
+            server.set({
+                root: {
+                    myRPC: function myRPC() {
+                        return new Promise((resolve) => {
+                            setTimeout(() => resolve('hello after 1ms'), 1);
+                        });
+                    }
+                }
+            });
+            await replica.getWhenExists('myRPC');
+
+            //Act
+            const result = await replica.data.myRPC();
+
+            //Assert
+            expect(result).toEqual('hello after 1ms');
+        });
+
+        it('should resolve with error for async rejections', async () => {
+            //Arrange
+            const replica = new Replica('root', { connection, allowRPC: true });
+            server.set({
+                root: {
+                    myRPC: function myRPC() {
+                        return new Promise((resolve, reject) => {
+                            const error = new Error();
+                            error.name = 'RPCError';
+                            error.message = 'testing rpc errors';
+                            setTimeout(() => reject(error), 1);
+                        });
+                    }
+                }
+            });
+            await replica.getWhenExists('myRPC');
+
+            //Act & Assert
+            await expect(replica.data.myRPC()).rejects.toThrow('testing rpc errors');
         });
     });
     
