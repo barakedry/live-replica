@@ -2,6 +2,7 @@ import {WebSocket, WebSocketServer} from 'ws';
 import LiveReplicaWebSocketsServer from "../ws-server/ws-server.js";
 import WebSocketClient from "../ws-client/ws-client.js";
 import Replica from "../replica/replica.js";
+import {flushCycle} from "../patch-diff/__tests__/patch-diff.spec.js";
 
 function createWSServer() {
     return new Promise((resolve, reject) => {
@@ -56,19 +57,44 @@ afterAll((done) => {
 });
 
 describe('WS Server and  WS Client integration', () => {
+    describe('Error handling', () => {
+        it.each([
+            ['not provided', undefined],
+            ['not instance of LiveReplicaSocket', {}]
+        ])('should throw if socket is %s', (_desc, socket) => {
+            const replica = new Replica('root');
+
+            //Act & Assert
+            expect(() => replica.subscribeRemote(socket)).toThrow('undefined connection or not a LiveReplicaSocket');
+        });
+    });
+
     describe('Sync', () => {
+        it('should notify on successful subscription', (done) => {
+            //Act
+            const replicaOptions = {
+                connection,
+                subscribeSuccessCallback: jest.fn(function() {
+                    //Assert
+                    expect(replicaOptions.subscribeSuccessCallback).toHaveBeenCalledWith({success: true, writable: null, rpc: null});
+                    done();
+                })
+            };
+            const replica = new Replica('root', replicaOptions);
+        });
+
         it('should sync server changes to replica', async () => {
             //Arrange
             const replica = new Replica('root', { connection });
 
             //Act
             await replica.synced;
-            server.set({a: 1, b: 2}, 'root');
+            server.set({a: 1, b: {c: 2}}, 'root');
             await replica.getWhenExists('a')
 
             //Assert
-            expect(replica.get()).toEqual({a: 1, b: 2});
-            expect(server.get()).toEqual({ root: {a: 1, b: 2}});
+            expect(replica.get()).toEqual({a: 1, b: { c: 2 }});
+            expect(server.get()).toEqual({ root: {a: 1, b: { c: 2}}});
         });
 
         it('should sync replica changes to server', async () => {
@@ -77,13 +103,34 @@ describe('WS Server and  WS Client integration', () => {
 
             //Act
             await replica.synced;
-            replica.set({c: 1});
-            await server.getWhenExists('root.c');
-            await replica.getWhenExists('c');
+            replica.set({c: 1, e: 3});
+            replica.remove('e');
+            replica.apply({d: 2});
+
+            await server.getWhenExists('root.d');
+            await replica.getWhenExists('d');
 
             //Assert
-            expect(replica.get()).toEqual({ c: 1 });
-            expect(server.get()).toEqual({ root: { c: 1 }});
+            expect(replica.get()).toEqual({ c: 1, d: 2 });
+            expect(server.get()).toEqual({ root: { c: 1, d: 2 }});
+        });
+
+        it('should allow to unsubscribe', async () => {
+            //Arrange
+            server.set({a: 1, b: {c: 2}}, 'root');
+            const replica = new Replica('root', { connection, allowWrite: true });
+            await replica.getWhenExists('a');
+            const destroyedCallback = jest.fn();
+            replica.on('destroyed', destroyedCallback);
+
+            //Act
+            await replica.destroy();
+            server.set({a: 2}, 'root');
+            await flushCycle(10);
+
+            //Assert
+            expect(replica.get()).toEqual({a: 1, b: { c: 2 }});
+            expect(destroyedCallback).toBeCalled();
         });
     });
 
