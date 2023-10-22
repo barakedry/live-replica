@@ -43,6 +43,10 @@ beforeAll(async () => {
     connection = new WebSocketClient(ws);
 });
 
+afterEach(() => {
+    server.destroy();
+});
+
 afterAll((done) => {
     connection.baseSocket.close();
     wsServer.close(() => {
@@ -84,7 +88,7 @@ describe('WS Server and  WS Client integration', () => {
     });
 
     describe('Middleware', () => {
-        it('should be able to reject replica subscription', (done) => {
+        it('should be able to reject replica subscriptions', (done) => {
             //Arrange
             const middlewareFake = jest.fn((request, reject, next) => {
                reject('reason: testing reject');
@@ -102,6 +106,44 @@ describe('WS Server and  WS Client integration', () => {
                 subscribeSuccessCallback: jest.fn()
             };
             const replica = new Replica('root', replicaOptions);
+        });
+
+        it('should be able to modify replica subscriptions', async () => {
+            //Arrange
+            const middlewareFake = jest.fn((request, reject, next) => {
+                //middleware forces some client subscriptions to be read only
+                if (request.path === 'readonly') {
+                    request.allowWrite = false;
+                    request.allowRPC = false;
+                } else {
+                    request.allowWrite = true;
+                    request.allowRPC = true;
+                }
+                next();
+            });
+            server.use(middlewareFake);
+            const initObject = { readonly: { a: 1 }, readwrite: { b: 1}};
+            server.set(initObject);
+
+            //Act
+            //create two replicas, one read only and one read write
+            const readOnlyReplica = new Replica('readonly', { connection });
+            const readWriteReplica = new Replica('readwrite', { connection });
+            //wait for both replicas to connect
+            await readOnlyReplica.synced;
+            await readWriteReplica.synced;
+            //modify the replicas
+            readOnlyReplica.set({key: 'val'}, 'a');
+            readWriteReplica.set({ c: {key: 'val'}, d: 5});
+            //wait for the changes to reflect on replica and server
+            await readWriteReplica.getWhenExists('c');
+            await server.getWhenExists('readwrite.c');
+
+
+            //Assert
+            expect(readOnlyReplica.get()).toEqual({ a: 1 });
+            expect(readWriteReplica.get()).toEqual({c: { key: 'val' }, d: 5 });
+            expect(server.get()).toEqual({ readonly: { a: 1 }, readwrite: {c: { key: 'val' }, d: 5 }});
         });
     });
 
