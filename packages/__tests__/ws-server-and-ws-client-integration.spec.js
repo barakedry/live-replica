@@ -258,8 +258,4 @@ describe('WS Server and  WS Client integration', () => {
             await expect(replica.data.myRPC()).rejects.toThrow('testing rpc errors');
         });
     });
-    
-    describe('Connection handling', () => {
-        it.todo('test disconnect and reconnect');
-    });
 });
