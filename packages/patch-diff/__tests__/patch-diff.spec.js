@@ -205,6 +205,7 @@ describe('Patch Diff', () => {
                     ${'a[0]'}          | ${{a: ['appliedValue', 'b', false, { hello: 'world' }]}}
                     ${'a[1]'}          | ${{a: [1, 'appliedValue', false, { hello: 'world' }]}}
                     ${'a[3].hello'}    | ${{a: [1, 'b', false, { hello: 'appliedValue' }]}}
+                    ${'a["3"].hello'}  | ${{a: [1, 'b', false, { hello: 'appliedValue' }]}}
                 `('should update array value at given path $path', ({ path, expectedObject }) => {
                     //Arrange
                     const patcher = new PatchDiff({a: [1, 'b', false, { hello: 'world' }]});
