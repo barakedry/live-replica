@@ -8,5 +8,11 @@ export default {
     transformIgnorePatterns: ["/node_modules/lodash/"],
     transform: {
         '^.+\\.(js|jsx|ts|tsx|mjs)$': 'babel-jest',
-    }
+    },
+    collectCoverage: true,
+    coverageThreshold: {
+        global: {
+            lines: 79
+        },
+    },
 }

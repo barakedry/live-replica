@@ -116,7 +116,6 @@ describe('PatcherProxy', () => {
             expect(result).not.toBe(initArr);
         });
 
-        //todo: which splice is invoked here?!
         it('should be able to use splice as in Array prototype', () => {
             //Arrange
             const initArr = ['a', 'b'];
