@@ -3,6 +3,7 @@ import LiveReplicaWebSocketsServer from "../ws-server/ws-server.js";
 import WebSocketClient from "../ws-client/ws-client.js";
 import Replica from "../replica/replica.js";
 import {flushCycle} from "../patch-diff/__tests__/patch-diff.spec.js";
+import {oncePerSubscription} from "../server/src/middlewares.js";
 
 function createWSServer() {
     return new Promise((resolve, reject) => {
@@ -193,6 +194,36 @@ describe('WS Server and  WS Client integration', () => {
             expect(readOnlyReplica.get()).toEqual({ a: 1 });
             expect(readWriteReplica.get()).toEqual({c: { key: 'val' }, d: 5 });
             expect(server.get()).toEqual({ readonly: { a: 1 }, readwrite: {c: { key: 'val' }, d: 5 }});
+        });
+
+        describe('OncePerSubscription', () => {
+            it('should invoke middleware callbacks once on first subscription', async () => {
+                //Arrange
+                const onFirstSubscribe = jest.fn((req, reject, approve) => approve());
+                const onLastUnsubscribe = jest.fn((lastRequest) => console.log('last request', lastRequest));
+                server.set({a: {b: {c: 1}}});
+                server.use(oncePerSubscription(onFirstSubscribe, onLastUnsubscribe));
+
+                //Act
+                //new Replicas will connect and create subscription requests on the server
+                const replicaA = new Replica('a', { connection });
+                const replicaB = new Replica('a', { connection });
+
+                //wait for the replicas to connect
+                await replicaA.getWhenExists('b');
+                await flushCycle(10);
+
+                //destroy the replicas and trigger unsubscribe
+                replicaA.destroy();
+                replicaB.destroy();
+                await flushCycle(10);
+
+                //Assert - onFirstSubscribe and onLastUnsubscribe should be called exactly once for each path
+                expect(onFirstSubscribe).toBeCalledWith(expect.objectContaining({path: 'a'}), expect.any(Function), expect.any(Function));
+                expect(onFirstSubscribe).toBeCalledTimes(1);
+                expect(onLastUnsubscribe).toBeCalledWith(expect.objectContaining({path: 'a'}));
+                expect(onLastUnsubscribe).toBeCalledTimes(1);
+            });
         });
     });
 
