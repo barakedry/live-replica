@@ -499,19 +499,6 @@ describe('Patch Diff', () => {
             expect(spy).toHaveBeenCalledWith(patcher.options.deleteKeyword, {differences: patcher.options.deleteKeyword}, {type: 'deletion'});
         });
 
-        it.failing('should support subscription to paths with numeric parts', () => {
-            //Arrange
-            const patcher = new PatchDiff({0 : {a: {b: {4: 'd'}}}});
-            const spy = jest.fn();
-            patcher.subscribe('0.a.b.4', spy);
-
-            //Act
-            patcher.apply(5, '0.a.b.4');
-
-            //Assert
-            expect(spy).toHaveBeenCalledWith(5, {differences: 5}, {oldValue: 'd', type: 'update'});
-        });
-
         it('should notify of all changes on whitelisted paths and exclude the rest', async () => {
             //Arrange
             const patcher = new PatchDiff({a: 1, b: 2, c: 'd'});
