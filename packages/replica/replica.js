@@ -9,8 +9,8 @@ let replicaId = Date.now();
 const deserializeFunctions  = Symbol('deserializeFunctions');
 const createRPCfunction     = Symbol('createRPCfunction');
 const remoteApply           = Symbol('remoteApply');
-const remoteOverride           = Symbol('remoteOverride');
-const bindToSocket           = Symbol('bindToSocket');
+const remoteOverride        = Symbol('remoteOverride');
+const bindToSocket          = Symbol('bindToSocket');
 
 export class Replica extends PatchDiff {
 
@@ -135,7 +135,7 @@ export class Replica extends PatchDiff {
             params: this.options.params
         }, (result) => {
             if (result.success) {
-                console.info(`live-replica subscribed to remote path=${this.remotePath} writable=${result.writable} writable=${result.rpc}`);
+                console.info(`live-replica subscribed to remote path=${this.remotePath} writable=${result.writable} rpc=${result.rpc}`);
                 this.options.allowWrite = result.writable;
 
                 this._subscribed = true;
@@ -187,11 +187,6 @@ export class Replica extends PatchDiff {
             options.local = true;
             super.remove(path, options);
         }
-    }
-
-    async reset() {
-        await this.unsubscribeRemote();
-        super.set(Array.isArray(this.get()) ? [] : {});
     }
 
     unsubscribeRemote() {

@@ -29,7 +29,7 @@ class Connection extends EventEmitter {
 
                     this.emit(event, payload, ackFunction);
                 } else {
-                    this.emit('unkown-message', msg);
+                    this.emit('unknown-message', msg);
                 }
             } catch(e) {
                 this.emit('decoding-error', e, data);
@@ -91,8 +91,8 @@ Connection.prototype.on = Connection.prototype.addListener;
  */
 export class LiveReplicaWebSocketsServer extends LiveReplicaServer {
 
-    constructor(wsServer) {
-        super();
+    constructor(wsServer, options) {
+        super(options);
 
         if (!wsServer) { return; }
 
