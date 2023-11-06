@@ -36,10 +36,10 @@ export function observed(options = {}) {
                 if (PatcherProxy.isProxy(value)) {
                     proxy = value;
                 } else if (value instanceof PatchDiff) {
-                    proxy = value.data
+                    proxy = value.getData(options);
                 } else {
                     const patchDiff = new PatchDiff(value, {readonly: false});
-                    proxy = patchDiff.data;
+                    proxy = patchDiff.getData(options);
                 }
 
                 this[propertyKey] = proxy;
