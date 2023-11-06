@@ -4,8 +4,8 @@ beforeEach(() => {
     jest.resetAllMocks();
 });
 
-export function flushCycle() {
-    return new Promise((resolve) => setTimeout(resolve, 0));
+export function flushCycle(timeout = 0) {
+    return new Promise((resolve) => setTimeout(resolve, timeout));
 }
 
 describe('Patch Diff', () => {
@@ -156,7 +156,67 @@ describe('Patch Diff', () => {
                 });
             });
 
-            it.todo('apply -> options.overrides');
+            it('should allow to apply with certain paths treated as overrides', () => {
+                //Arrange
+                const overrides = {
+                    'a.b.override1': true,
+                    'a.b.override2': true
+                };
+                const patcher = new PatchDiff({a: {b: {
+                    c: {d: 'e'},
+                    override1: {f: 'g'},
+                    override2: {h: 'i'}
+                }}});
+
+                //Act
+                patcher.apply({a: {b: {
+                    c: { appliedToC: 'someValue'},
+                    override1: { overrides1: 'someValue'},
+                    override2: { overrides1: 'someValue'}
+                }}}, '', {overrides});
+
+                //Assert
+                expect(patcher.get()).toEqual({a: {b: {
+                    c: {d: 'e', appliedToC: 'someValue'}, // {d: 'e'} is not overridden, {appliedToC: 'someValue'} is added
+                    override1: {overrides1: 'someValue'}, // {f: 'g'} is overridden
+                    override2: {overrides1: 'someValue'}  // {h: 'i'} is overridden
+                }}});
+            });
+            
+            describe('Array manipulations', () => {
+                it.each`
+                    test             | initArray   | patchArray     | expectedArray
+                    ${'add item'}    | ${[1,2]}    | ${[1,2,3]}     | ${[1,2,3]}
+                    ${'update item'} | ${[1,2,3]}  | ${[1,3]}       | ${[1,3,3]}
+                    ${'remove item'} | ${[1,2,3]}  | ${[1,'__$$D']} | ${[1,3]}
+                `('should be able to $test', ({initArray, patchArray, expectedArray}) => {
+                    //Arrange
+                    const patcher = new PatchDiff(initArray);
+
+                    //Act
+                    patcher.apply(patchArray);
+
+                    //Assert
+                    expect(patcher.get()).toEqual(expectedArray);
+                });
+
+                it.each`
+                    path               | expectedObject
+                    ${'a[0]'}          | ${{a: ['appliedValue', 'b', false, { hello: 'world' }]}}
+                    ${'a[1]'}          | ${{a: [1, 'appliedValue', false, { hello: 'world' }]}}
+                    ${'a[3].hello'}    | ${{a: [1, 'b', false, { hello: 'appliedValue' }]}}
+                    ${'a["3"].hello'}  | ${{a: [1, 'b', false, { hello: 'appliedValue' }]}}
+                `('should update array value at given path $path', ({ path, expectedObject }) => {
+                    //Arrange
+                    const patcher = new PatchDiff({a: [1, 'b', false, { hello: 'world' }]});
+
+                    //Act
+                    patcher.apply('appliedValue', path);
+
+                    //Assert
+                    expect(patcher.get()).toEqual(expectedObject);
+                });
+            });
         });
     });
     describe('set', () => {
@@ -257,7 +317,7 @@ describe('Patch Diff', () => {
             });
 
             //Assert
-            // __$S object in the result of get
+            // bug: __$S object in the result of get
             expect(patcher.get()).toEqual([1, 4, 5, 3]);
         });
     });
@@ -356,7 +416,7 @@ describe('Patch Diff', () => {
             //Act
             patcher.apply(5, 'a.b.c');
             patcher.remove( 'a.b.c');
-            patcher.apply({ e: 'f' }, 'a.b.c');//overrides: g = at(a.b.c) => g.set({})
+            patcher.apply({ e: 'f' }, 'a.b.c');
 
             //Assert snapshot notification
             expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, {});
@@ -375,6 +435,68 @@ describe('Patch Diff', () => {
                 differences: {e: "f"},
                 path: "a.b.c"
             }), expect.any(Object));
+        });
+
+        it('should be able to notify multiple changes in a single update', async () => {
+            //Arrange
+            const initObject = {a: {b: {c: 'd'}, toUpdate: 'f', toDelete: {g: 'h'}}};
+            const patcher = new PatchDiff(initObject);
+            const spy = jest.fn();
+            patcher.subscribe('a', (diff,differences,options) => {
+                console.log('a', diff,differences,options);
+                spy(diff,differences,options);
+            });
+
+            //Act
+            const overrideObject = {a: {b: 'objectToString', toUpdate: 'newValue', newObject: {}}};
+            patcher.set(overrideObject);
+
+            //Assert snapshot notification
+            expect(spy).toHaveBeenCalledWith(initObject.a, {snapshot: true}, {});
+            expect(spy).toHaveBeenCalledWith({
+                b: 'objectToString',
+                toUpdate: 'newValue',
+                newObject: {},
+                toDelete: patcher.options.deleteKeyword
+            }, expect.objectContaining({
+                hasAdditions: true,
+                hasAddedObjects: true,
+                hasDeletions: true,
+                hasUpdates: true,
+                hasDifferences: true,
+                additions: {newObject: {}},
+                deletions: {
+                    toDelete: {g: 'h'}
+                },
+                updates: {
+                    b: { oldVal: { c: 'd' }, newVal: 'objectToString' },
+                    toUpdate: { oldVal: 'f', newVal: 'newValue' }
+                },
+                addedObjects: { newObject: true },
+                differences: {
+                    b: 'objectToString',
+                    toUpdate: 'newValue',
+                    newObject: {},
+                    toDelete: patcher.options.deleteKeyword
+                },
+                path: 'a'
+            }), expect.any(Object));
+        });
+
+        it('should notify self if parent is deleted', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const spy = jest.fn();
+            patcher.subscribe('a.b.c', (diff,differences,options) => {
+                console.log('a.b.c', diff,differences,options);
+                spy(diff,differences,options);
+            });
+
+            //Act
+            patcher.remove('a.b');
+
+            //Assert
+            expect(spy).toHaveBeenCalledWith(patcher.options.deleteKeyword, {differences: patcher.options.deleteKeyword}, {type: 'deletion'});
         });
 
         it('should notify of all changes on whitelisted paths and exclude the rest', async () => {
@@ -408,6 +530,41 @@ describe('Patch Diff', () => {
             //Assert
             expect(spy).toHaveBeenCalledWith('beforeUnsub', {differences: 'beforeUnsub'}, { oldValue: 'd', type: 'update'});
             expect(spy).not.toHaveBeenCalledWith('afterUnsub', {differences: 'afterUnsub'}, { oldValue: 'beforeUnsub', type: 'update'});
+        });
+
+        describe('Array change notifications', () => {
+            it('should notify of all changes on a given path when underlying object is an Array', () => {
+                //Arrange
+                const patcher = new PatchDiff({ parent: ['a', 'b', { objArrItemProp: true }] });
+                const spy = jest.fn();
+                patcher.subscribe('parent[1]', (diff,differences,options) => {
+                    console.log('array change notification', diff,differences,options);
+                    spy(diff,differences,options);
+                });
+
+                //Act
+                patcher.apply(5, 'parent[1]');
+
+                //Assert
+                expect(spy).toHaveBeenCalledWith(5, {differences: 5}, {oldValue: 'b', type: 'update'});
+            });
+
+            it('should notify on changes of multiple levels nested arrays and objects', () => {
+                //Arrange
+                const patcher = new PatchDiff({ parent: ['a', 'b', { objArrItemProp: ['c','d', { secondObjArrItemProp: ['awesome','stuff','really'] }] }] });
+                const spy = jest.fn();
+                const path = 'parent[2].objArrItemProp[2].secondObjArrItemProp[1]';
+                patcher.subscribe(path, (diff,differences,options) => {
+                    console.log('array change notification', diff,differences,options);
+                    spy(diff,differences,options);
+                });
+
+                //Act
+                patcher.apply('fluff', path);
+
+                //Assert
+                expect(spy).toHaveBeenCalledWith('fluff', {differences: 'fluff'}, {oldValue: 'stuff', type: 'update'});
+            });
         });
     });
     describe('getWhenExists', () => {

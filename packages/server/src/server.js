@@ -1,5 +1,4 @@
 import { PatchDiff } from '../../patch-diff/index.js';
-import { PatcherProxy } from '../../proxy/proxy.js';
 import { MiddlewareChain } from './middleware-chain.js';
 import { Utils } from '../../utils/utils.js';
 

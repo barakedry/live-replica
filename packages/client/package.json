@@ -7,13 +7,13 @@
   "scripts": {
     "test": "jest"
   },
-    "dependencies": {
-        "@live-replica/patch-diff": "*",
-        "@live-replica/proxy": "*",
-        "@live-replica/socket": "*",
-        "@live-replica/worker-server": "*",
-        "@live-replica/worker-socket": "*"
-    },
+  "dependencies": {
+      "@live-replica/patch-diff": "*",
+      "@live-replica/proxy": "*",
+      "@live-replica/socket": "*",
+      "@live-replica/worker-server": "*",
+      "@live-replica/worker-socket": "*"
+  },
   "author": "Barak Edry",
   "license": "Apache-2.0"
 }
