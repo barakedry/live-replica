@@ -1,6 +1,5 @@
 export * from '../patch-diff/index.js';
 export * from '../proxy/proxy.js';
-export * from '../proxy/proxy-api.js';
 export * from '../replica/replica.js';
 export * from '../server/src/server.js';
 export * from '../server/src/middlewares.js';

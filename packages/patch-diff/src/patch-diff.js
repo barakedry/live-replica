@@ -1,7 +1,7 @@
 import { EventEmitter } from '../../events/events.js';
 import { Utils } from '../../utils/utils.js';
 import { DiffTracker } from "./diff-tracker.js";
-import { PatcherProxy } from "../../proxy/proxy.js";
+import {create, isProxy, revoke, unwrap} from "../../proxy/proxy.js";
 
 const logError = (msg) => {console.error('LiveReplica PatchDiff: ' + msg);};
 
@@ -64,8 +64,8 @@ export class PatchDiff extends EventEmitter {
         }
 
 
-        if (PatcherProxy.isProxy(patch)) {
-            patch = PatcherProxy.unwrap(patch);
+        if (isProxy(patch)) {
+            patch = unwrap(patch);
         }
 
 
@@ -117,8 +117,8 @@ export class PatchDiff extends EventEmitter {
         }
 
 
-        if (PatcherProxy.isProxy(fullDocument)) {
-            fullDocument = PatcherProxy.unwrap(fullDocument);
+        if (isProxy(fullDocument)) {
+            fullDocument = unwrap(fullDocument);
         }
 
         let wrapped = Utils.wrapByPath(fullDocument, path);
@@ -144,8 +144,6 @@ export class PatchDiff extends EventEmitter {
         options = _defaults(options || {}, this.options);
 
         if (!path && !this._path) {
-            //this._emitInnerDeletions('', this.get(), this.options);
-            PatcherProxy.markDirtyByRef(this._data);
             this.destroyProxy();
             this._data = Array.isArray(this._data) ? [] : {};
             return;
@@ -643,7 +641,7 @@ export class PatchDiff extends EventEmitter {
         levelDiffs.hasDifferences = true;
 
         if (_isObject(existingValue)) {
-            PatcherProxy.markDirtyByRef(existingValue);
+            revoke(existingValue);
             //levelDiffs.addChildTracking(this._emitInnerDeletions(path, existingValue, options), key)
             const childDiffs = this._emitInnerDeletions(Utils.pushKeyToPath(path, key, isArray), existingValue, options);
             levelDiffs.addChildTracking(childDiffs, key);
@@ -731,7 +729,7 @@ export class PatchDiff extends EventEmitter {
         levelDiffs.hasDeletions = true;
         levelDiffs.hasDifferences = true;
         levelDiffs.deletions = deletedObject;
-        PatcherProxy.markDirtyByRef(deletedObject);
+        revoke(deletedObject);
         return levelDiffs;
     }
 
@@ -740,18 +738,14 @@ export class PatchDiff extends EventEmitter {
     }
 
     getData({immediateFlush} = {}) {
-        return PatcherProxy.create(this, '', null, this.isReadOnly, immediateFlush);
-        // if (!this.proxies.has(this)) {
-        //     const proxy = PatcherProxy.create(this, '', null, this.isReadOnly, immediateFlush);
-        //     this.proxies.set(this, proxy);
-        // }
-        // return this.proxies.get(this);
+        return create(this);
     }
 
-    /* istanbul ignore next */
+    /* istanbul ign
+    ore next */
     destroyProxy() {
         if (this.proxies.has(this)) {
-            PatcherProxy.destroy(this.proxies.get(this));
+            revoke(this.proxies.get(this));
             this.proxies.delete(this);
         }
     }
