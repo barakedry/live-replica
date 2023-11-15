@@ -1,12 +1,13 @@
-import { PatcherProxy, Replica } from '@live-replica/client';
+import { isProxy, getPatchDiff, Replica } from '@live-replica/client';
 
 export function replicaByData(data) {
-    if (PatcherProxy.proxyProperties.has(data)) {
-        const root = PatcherProxy.getRoot(data);
-        const basePath = PatcherProxy.getPath(data);
-        const replica = PatcherProxy.proxyProperties.get(root).patcher;
+    if (isProxy(data)) {
+        const patcher = getPatchDiff(data);
+        // const root = PatcherProxy.getRoot(data);
+        // const basePath = PatcherProxy.getPath(data);
+        // const replica = PatcherProxy.proxyProperties.get(root).patcher;
 
-        return {replica, basePath};
+        return {replica: patcher.root, basePath: patcher._path};
     } else if (data instanceof Replica) {
         return {replica: data, basePath: ''};
     }

@@ -1,4 +1,4 @@
-import {PatchDiff, PatcherProxy} from '../client/index.js';
+import {PatchDiff, isProxy} from '../client/index.js';
 import {LiveReplicaController} from './controller.js';
 
 export function observed(options = {}) {
@@ -33,7 +33,7 @@ export function observed(options = {}) {
                 }
 
                 let proxy;
-                if (PatcherProxy.isProxy(value)) {
+                if (isProxy(value)) {
                     proxy = value;
                 } else if (value instanceof PatchDiff) {
                     proxy = value.getData(options);

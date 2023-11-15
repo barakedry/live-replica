@@ -1,5 +1,6 @@
 export const proxies = new WeakMap();
 export const patchers = new WeakMap();
+export const revocables = new WeakMap();
 const ArrayMutatingMethods = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'copyWithin', 'fill']);
 
 function hasProxy(value) {
@@ -10,8 +11,8 @@ export function getProxy(value) {
     return proxies.get(value);
 }
 
-export function isProxy(value) {
-    return proxies.has(value);
+export function isProxy(proxy) {
+    return patchers.has(proxy);
 }
 
 export function unwrap(valueOrProxy) {
@@ -20,6 +21,14 @@ export function unwrap(valueOrProxy) {
     }
 
     return valueOrProxy;
+}
+
+export function getPatchDiff(proxy) {
+    if (!isProxy(proxy)) {
+        throw new TypeError(`trying to getPatchDiff a non LiveReplica Proxy type`);
+    }
+
+    return patchers.get(proxy);
 }
 
 export function observe(proxy, path, cb) {
@@ -118,8 +127,17 @@ export function revoke(targetOrProxy) {
 
     if (!isProxy(proxy)) { return false; }
 
+
+    let values;
+    try {
+        values = Object.values(proxy);
+    } catch (e) {
+        return false;
+    }
+
+
     // revoke all nested proxies
-    Object.values(proxy).forEach((value) => {
+    values.forEach((value) => {
         if (typeof value === 'object') {
             revoke(value);
         }
@@ -127,12 +145,13 @@ export function revoke(targetOrProxy) {
 
     patchers.delete(patchers.get(proxy));
     proxies.delete(proxy);
-
-    proxy[ProxySymbol].revoke();
+    revocables.get(proxy).revoke();
     return true;
 }
 
 export function create(patchDiff, options = {}) {
+
+    const DeferOption = {defer: true};
 
     const handlers = {
         get(_target, propKey, receiver) {
@@ -177,7 +196,7 @@ export function create(patchDiff, options = {}) {
             }
 
 
-            patchDiff.set(value, propKey);
+            patchDiff.set(value, propKey, DeferOption);
             return true;
         },
 
@@ -185,7 +204,7 @@ export function create(patchDiff, options = {}) {
             const target = patchDiff.get();
             const value = target[propKey];
 
-            patchDiff.delete(propKey);
+            patchDiff.remove(propKey, DeferOption);
 
             if (typeof value === 'object') {
                 // revoke proxy
@@ -209,7 +228,10 @@ export function create(patchDiff, options = {}) {
     const value = patchDiff.get();
     const revocable = Proxy.revocable(value, handlers);
     const proxy = revocable.proxy;
+    revocables.set(proxy, revocable);
     proxies.set(value, proxy);
     patchers.set(proxy, patchDiff);
     return proxy;
 }
+
+export const createProxy = create;

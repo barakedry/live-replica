@@ -5,7 +5,7 @@ beforeEach(() => {
     jest.resetAllMocks();
 });
 
-describe('PatcherProxy', () => {
+describe('Proxy', () => {
 
     describe('Object handling', () => {
         it('should be able to add object property', async () => {
@@ -28,7 +28,7 @@ describe('PatcherProxy', () => {
 
             //Act
             delete patcherProxy.a;
-            await flushCycle();
+            //await flushCycle();
 
             //Assert
             expect(patcher.get()).toEqual({});
@@ -41,7 +41,7 @@ describe('PatcherProxy', () => {
 
             //Act
             patcherProxy.a = 'd';
-            await flushCycle();
+            //await flushCycle();
 
             //Assert
             expect(patcher.get()).toEqual({a: 'd'});
@@ -70,7 +70,7 @@ describe('PatcherProxy', () => {
 
             //Act
             patcherProxy.push('b');
-            await flushCycle();
+            //await flushCycle();
 
             //Assert
             expect(patcher.get()).toEqual(['a', 'b']);
@@ -83,7 +83,7 @@ describe('PatcherProxy', () => {
 
             //Act
             patcherProxy.pop();
-            await flushCycle();
+            //await flushCycle();
 
             //Assert
             expect(patcher.get()).toEqual([]);
@@ -96,7 +96,7 @@ describe('PatcherProxy', () => {
 
             //Act
             patcherProxy[0] = 'b';
-            await flushCycle();
+            //await flushCycle();
 
             //Assert
             expect(patcher.get()).toEqual(['b']);

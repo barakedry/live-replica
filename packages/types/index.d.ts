@@ -46,26 +46,114 @@ declare module '@live-replica/live-replica' {
         differences?: object | Array<object>,
     }
 
-    export type SubscribeCallback = (differencesOrSnapshot?: object, changeInfo?: DiffInfo) => void;
+    export type Proxy = object;
+    export type ProxyOptions = { readonly : boolean }
+
+    /**
+     * a callback to call when the data changes
+     * this callback will be called once immediately after subscription with the current data as full snapshot and then with patches of the differences when the data changes
+     * @param patchOrSnapshot a full snapshot or a patch of the differences
+     */
+    export type SubscribeCallback = (patchOrSnapshot?: object, changeInfo?: DiffInfo, context?:any) => void;
     export type UnsubscribeCallback = () => void;
+
     export type SpliceParams = { index: number, itemsToRemove: number, itemsToAdd?: Array<any> }
 
+    export type MutationOptions = {
+        defer?: boolean, // defers firing subscription callbacks to the next tick, useful when applying multiple mutations in a row, the last callback will be fired with aggregated patch of all mutations
+        context: any, // external context to pass to subscription callback when called
+        [key: string]: any
+    }
+
+    export type MergeOptions = MutationOptions & {
+        overrides?: {[path:string]: true}, // paths to override (replace) when merging a patch
+    };
+
+    type DifferencesPatch = object;
+
+    /**
+     * Manage a data object via interface of mutating methods such as apply, set, splice, remove
+     * allows to subscribe to changes and apply patches to update the data object
+     */
     export class PatchDiff extends EventEmitter {
-        apply(patch: object, path?: string, options?: object);
 
-        set(fullDocument: object, path?: string, options?: object);
+        /**
+         * Merge a patch into the managed data object
+         * @param patch a patch to merge
+         * @param path (optional) a path to merge the patch into
+         * @param options (optional) options for the merge
+         * @returns a patch of the differences caused by the merge
+         */
+        apply(patch: object, path?: string, options?: MergeOptions) : DifferencesPatch;
 
-        remove(path?: string, options?: object);
 
-        splice(spliceParams: SpliceParams, path?: string, options?: object);
+        /**
+         * Set a value in the managed data object at a path
+         * @param value the value to set (must be an object if path is not provided)
+         * @param path (optional) a path to set the value at
+         * @param options (optional) options for the set
+         * @returns a patch of the differences caused by the set operation
+         */
+        set(value: any, path?: string, options?: MutationOptions) : DifferencesPatch;
 
+        /**
+         * Remove a value in the managed data object at a path
+         * @param path (optional) a path to remove the value at
+         * @param options (optional) options for the remove
+         */
+        remove(path?: string, options?: MutationOptions) : DifferencesPatch;
+
+        /**
+         * Splice an array in the managed data object at a path
+         * @param spliceParams the splice parameters
+         * @param path (optional) a path to the array to be spliced
+         * @param options (optional) options for the splice
+         * @returns a patch of the differences caused by the splice operation
+         */
+        splice(spliceParams: SpliceParams, path?: string, options?: MutationOptions);
+
+        /**
+         * Get a value from the managed data object at a path
+         * @param path (optional) a path to get the value at
+         * @returns the value at the path
+         */
         get(path?: string, callback?: (data: object) => void);
+
+
         get(callback?: (data: object) => void);
 
+        /**
+         * Get a clone of the managed data object at a path
+         * @param path (optional) a path to get the clone at
+         * @returns a clone of the value at the path
+         */
         getClone(path?: string): object;
 
+
+        /**
+         * Subscribe to changes in the managed data object at a path
+         * @param path a path to subscribe to changes at
+         * @param callback (optional) a callback to call when the data changes
+         * @returns a function to unsubscribe
+         */
         subscribe(path: string, callback?: SubscribeCallback): UnsubscribeCallback;
+
+
+        /**
+         * Subscribe to changes in the managed data object
+         * @param callback (optional) a callback to call when the data changes
+         * @returns a function to unsubscribe
+         */
         subscribe(callback: SubscribeCallback): UnsubscribeCallback;
+
+
+        /**
+         * Returns a scoped PatchDiff at a relative path (uses this as its prototype object)
+         * useful for working at a sub path of the managed data object and passing it around
+         * @param subPath a relative path to scope the PatchDiff at
+         * @param cached (optional) whether to return a cached PatchDiff for the sub path (default: true)
+         */
+        at(subPath, cached?): PatchDiff;
 
         whitelist(keys: KeyList);
 
@@ -73,18 +161,14 @@ declare module '@live-replica/live-replica' {
 
         whenAnything(path?: string): Promise<object>;
 
-        at(subPath, cached?): PatchDiff;
-
         getFullPath(subPath?: string): string;
 
         get data(): Proxy;
 
+        get root(): PatchDiff;
+
         getData(proxyOptions?: Partial<ProxyOptions>): Proxy
     }
-
-
-    export type Proxy = object;
-    export type ProxyOptions = { immediateFlush: boolean }
 
 
     export class Origin extends PatchDiff {
@@ -163,16 +247,6 @@ declare module '@live-replica/live-replica' {
         handleWebSocket(socket);
     }
 
-    export class PatcherProxy {
-        public static isProxy(proxy): boolean;
-
-        public static unwrap(proxy): object;
-
-        public static getPatchDiff(proxy): PatchDiff;
-
-        public static create(patcher: PatchDiff, path: string, root?: PatchDiff, readonly?: boolean, immediateFlush?: boolean);
-    }
-
     export type ApplyOptions = {
         emitEvents?: boolean
         maxKeysInLevel?: 1000,
@@ -181,6 +255,14 @@ declare module '@live-replica/live-replica' {
     };
 
     export type LiveReplicaProxy = object;
+
+    export function hasProxy(value:any): boolean;
+
+    export function getProxy(value:any): LiveReplicaProxy;
+
+    export function isProxy(value:any): boolean;
+
+    export function getPatchDiff(proxy: LiveReplicaProxy): PatchDiff;
 
     export function observe(object: LiveReplicaProxy, cb: SubscribeCallback): UnsubscribeCallback;
 
@@ -200,6 +282,7 @@ declare module '@live-replica/live-replica' {
 
     export function merge(object: LiveReplicaProxy, partial: object);
 
+    export function createProxy(patchDiff: PatchDiff, options?: object): LiveReplicaProxy;
 
     export type ObservedOptions = {
         onChange: string; // on change method name on the class

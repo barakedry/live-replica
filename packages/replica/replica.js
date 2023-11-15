@@ -12,6 +12,10 @@ const remoteApply           = Symbol('remoteApply');
 const remoteOverride        = Symbol('remoteOverride');
 const bindToSocket          = Symbol('bindToSocket');
 
+const LocalMutation = {context: {local: true}};
+// lock localMutation
+Object.freeze(LocalMutation);
+
 export class Replica extends PatchDiff {
 
     // private
@@ -146,8 +150,8 @@ export class Replica extends PatchDiff {
                 super.emit('_subscribed', this.get());
 
                 if (this.options.allowWrite) {
-                    this.subscribe((data, diff, options) => {
-                        if (options.local) {
+                    this.subscribe((data, diff, context) => {
+                        if (context.local) {
                             this.connection.send(`apply:${this.id}`, {data, changeRevision: this.changeRevision});
                         }
                     });
@@ -161,31 +165,27 @@ export class Replica extends PatchDiff {
         });
     }
 
-    apply(patch, path, options = {}) {
+    apply(patch, path, options) {
         if (this.options.allowWrite) {
-            options.local = true;
-            super.apply(patch, path, options);
+            super.apply(patch, path, options ? {...options, ...LocalMutation} : LocalMutation);
         }
     }
 
-    set(fullDocument, path, options = {}) {
+    set(fullDocument, path, options) {
         if (this.options.allowWrite) {
-            options.local = true;
-            super.set(fullDocument, path, options);
+            super.set(fullDocument, path, options ? {...options, ...LocalMutation} : LocalMutation);
         }
     }
 
-    splice(patch, path, options = {}) {
+    splice(patch, path, options) {
         if (this.options.allowWrite) {
-            options.local = true;
-            super.splice(patch, path, options);
+            super.splice(patch, path, options ? {...options, ...LocalMutation} : LocalMutation);
         }
     }
 
-    remove(path, options = {}) {
+    remove(path, options) {
         if (this.options.allowWrite) {
-            options.local = true;
-            super.remove(path, options);
+            super.remove(path, options ? {...options, ...LocalMutation} : LocalMutation);
         }
     }
 
