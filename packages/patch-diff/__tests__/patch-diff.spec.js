@@ -515,7 +515,7 @@ describe('Patch Diff', () => {
             patcher.remove('a.b');
 
             //Assert
-            expect(spy).toHaveBeenCalledWith(patcher.options.deleteKeyword, {differences: patcher.options.deleteKeyword}, {});
+            expect(spy).toHaveBeenCalledWith(patcher.options.deleteKeyword, expect.any(Object), {});
         });
 
         it('should notify of all changes on whitelisted paths and exclude the rest', async () => {

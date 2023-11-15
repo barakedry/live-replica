@@ -138,7 +138,7 @@ export function revoke(targetOrProxy) {
 
     // revoke all nested proxies
     values.forEach((value) => {
-        if (typeof value === 'object') {
+        if (typeof value === 'object' && value !== null) {
             revoke(value);
         }
     });
@@ -151,7 +151,7 @@ export function revoke(targetOrProxy) {
 
 export function create(patchDiff, options = {}) {
 
-    const DeferOption = {defer: true};
+    const mutationOptions = options.immediateFlush ? {} : {defer: true};
 
     const handlers = {
         get(_target, propKey, receiver) {
@@ -176,7 +176,7 @@ export function create(patchDiff, options = {}) {
 
             const value = target[propKey];
 
-            if (typeof value === 'object') {
+            if (typeof value === 'object' && value !== null) {
                 if (hasProxy(value)) {
                     return getProxy(value);
                 }
@@ -196,7 +196,7 @@ export function create(patchDiff, options = {}) {
             }
 
 
-            patchDiff.set(value, propKey, DeferOption);
+            patchDiff.set(value, propKey, mutationOptions);
             return true;
         },
 
@@ -204,9 +204,9 @@ export function create(patchDiff, options = {}) {
             const target = patchDiff.get();
             const value = target[propKey];
 
-            patchDiff.remove(propKey, DeferOption);
+            patchDiff.remove(propKey, mutationOptions);
 
-            if (typeof value === 'object') {
+            if (typeof value === 'object' && value !== null) {
                 // revoke proxy
                 revoke(value);
             }
@@ -224,6 +224,16 @@ export function create(patchDiff, options = {}) {
             return target[Symbol.iterator];
         }
     };
+
+    if (options.readonly) {
+        handlers.set = () => {
+            throw new Error(`Cannot set property on readonly live-replica proxy`);
+        };
+
+        handlers.deleteProperty = () => {
+            throw new Error(`Cannot delete property on readonly live-replica proxy`);
+        }
+    }
 
     const value = patchDiff.get();
     const revocable = Proxy.revocable(value, handlers);

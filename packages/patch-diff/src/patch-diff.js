@@ -429,6 +429,7 @@ export class PatchDiff extends EventEmitter {
         super.on(path, handler);
 
         return () => {
+            clearTimeout(lastTimeout);
             if (!handler) { return; }
             this.removeListener(path, handler);
             handler = null;
@@ -650,7 +651,7 @@ export class PatchDiff extends EventEmitter {
                     levelDiffs.additions[key] = appliedValue;
                     levelDiffs.differences[key] = appliedValue;
                     const leafPath =  Utils.pushKeyToPath(path, srcKey, isTargetArray);
-                    this.emit((leafPath || '*'),  {differences: appliedValue}, {...options, type: 'addition'});
+                    this.emit((leafPath || '*'),  {differences: appliedValue, additions: appliedValue}, options);
                 }
             }
             // existing
@@ -803,9 +804,9 @@ export class PatchDiff extends EventEmitter {
             if (_isObject(deletedObject[key])) {
                 childDiffs = this._emitInnerDeletions(innerPath, deletedObject[key], options);
                 levelDiffs.addChildTracking(childDiffs, key);
-                this.emit(innerPath, childDiffs);
+                this.emit(innerPath, childDiffs, options);
             } else {
-                this.emit((innerPath || '*'),  {differences: options.deleteKeyword}, {type: 'deletion'});
+                this.emit((innerPath || '*'),  {differences: options.deleteKeyword, deletions: deletedObject[key]}, options);
             }
 
             levelDiffs.differences[key] = options.deleteKeyword;

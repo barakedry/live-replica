@@ -2,6 +2,7 @@ import {directive} from 'lit/directive.js';
 import {AsyncDirective} from 'lit-html/async-directive.js';
 import {noChange} from 'lit';
 import {replicaByData, extractBasePathAndProperty, concatPath} from "./utils.js";
+import { isProxy, getPatchDiff, Replica } from '@live-replica/client';
 
 export class LiveReplicaDirective extends AsyncDirective {
     // When the observable changes, unsubscribe to the old one and
@@ -22,18 +23,29 @@ export class LiveReplicaDirective extends AsyncDirective {
     subscribe(dataOrReplica, relativePath, transformer) {
         this.unsubscribe?.();
 
+        if (!relativePath || typeof relativePath !== 'string') {
+            throw new Error('live directive requires a path string');
+        }
+
         this.replica = dataOrReplica;
         this.path = relativePath;
 
-        let { replica, basePath } = replicaByData(dataOrReplica);
-        let property;
+        let replica;
+        if (dataOrReplica instanceof Replica) {
+            replica = dataOrReplica;
+        } if (isProxy(dataOrReplica)) {
+            replica = getPatchDiff(dataOrReplica);
+        } else {
+            throw new Error('LiveReplicaDirective can only be used with a LiveReplica Proxy or Replica instance');
+        }
 
-        let path = concatPath(basePath, relativePath);
+        let property, path;
+        if (relativePath) {
+            ({path, property} = extractBasePathAndProperty(relativePath));
 
-        ({path, property} = extractBasePathAndProperty(path));
-
-        if (path) {
-            replica = replica.at(path);
+            if (path) {
+                replica = replica.at(path);
+            }
         }
 
         this.baseObject = replica.get();

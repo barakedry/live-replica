@@ -1,4 +1,5 @@
 import {extractBasePathAndProperty, replicaByData, concatPath} from "./utils.js";
+import { isProxy, getPatchDiff, Replica } from '@live-replica/client';
 
 const deferredDisconnections = new WeakMap();
 export class LiveReplicaController {
@@ -12,13 +13,24 @@ export class LiveReplicaController {
     watch(data, path, cb) {
 
         const {host, hostConnected} = this;
-        let { replica, basePath } = replicaByData(data);
-        let property;
-        ({path, property} = extractBasePathAndProperty(path));
 
-        path = concatPath(basePath, path);
+        let replica;
+
+        if (data instanceof Replica) {
+            replica = data;
+        } if (isProxy(data)) {
+            replica = getPatchDiff(data);
+        } else {
+            throw new Error('watch can only be used with a LiveReplica Proxy or Replica instance');
+        }
+
+        let property;
         if (path) {
-            replica = replica.at(path);
+            ({path, property} = extractBasePathAndProperty(path));
+
+            if (path) {
+                replica = replica.at(path);
+            }
         }
 
         let unsubscribe = replica.subscribe(function (patch, diff) {
