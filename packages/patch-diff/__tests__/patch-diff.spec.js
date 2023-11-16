@@ -532,9 +532,9 @@ describe('Patch Diff', () => {
 
             //Assert
 
-            expect(spy).toHaveBeenCalledWith(1, {snapshot: true}, {});
-            expect(spy).toHaveBeenCalledWith('changeToA', {differences: 'changeToA', updates: {newVal: 'changeToA', oldVal: 1}}, {});
-            expect(spy).not.toHaveBeenCalledWith('changeToB', {differences: 'changeToB', updates: {newVal: 'changeToB', oldVal: 2}}, {});
+            expect(spy).toHaveBeenCalledWith(1, {snapshot: true}, {}, false);
+            expect(spy).toHaveBeenCalledWith('changeToA', {differences: 'changeToA', updates: {newVal: 'changeToA', oldVal: 1}}, {}, false);
+            expect(spy).not.toHaveBeenCalledWith('changeToB', {differences: 'changeToB', updates: {newVal: 'changeToB', oldVal: 2}}, {}, false);
         });
 
         it('should allow to unsubscribe', async () => {
@@ -549,9 +549,9 @@ describe('Patch Diff', () => {
             patcher.apply('afterUnsub', 'a.b.c');
 
             //Assert
-            expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, expect.any(Object));
-            expect(spy).toHaveBeenCalledWith('beforeUnsub', expect.any(Object), expect.any(Object));
-            expect(spy).not.toHaveBeenCalledWith('afterUnsub', expect.any(Object), expect.any(Object));
+            expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, expect.any(Object), false);
+            expect(spy).toHaveBeenCalledWith('beforeUnsub', expect.any(Object), expect.any(Object), false);
+            expect(spy).not.toHaveBeenCalledWith('afterUnsub', expect.any(Object), expect.any(Object), false);
         });
 
         describe('Array change notifications', () => {
@@ -691,8 +691,10 @@ describe('Patch Diff', () => {
             };
             const patcher = new PatchDiff(baseObject);
             const spy = jest.fn();
-            patcher.subscribe('*', spy);
+
             patcher.whitelist(['allowParent', 'allowParent2', 'allowParent3']);
+
+            patcher.subscribe(spy);
 
             //Act
             patcher.whitelist(['allowParent', 'allowParent2', 'allowParent4']);
@@ -711,7 +713,13 @@ describe('Patch Diff', () => {
                 'hasDifferences': true
             };
 
-            expect(spy).toBeCalledWith(differences, completeEvent, {});
+            expect(spy).toBeCalledWith({
+                allowParent: 'a',
+                allowParent2: 'b',
+                allowParent3: 'c',
+            }, { snapshot: true }, {}, false);
+
+            expect(spy).toBeCalledWith(differences, completeEvent, {}, false);
         });
     });
 

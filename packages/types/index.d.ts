@@ -53,15 +53,17 @@ declare module '@live-replica/live-replica' {
      * a callback to call when the data changes
      * this callback will be called once immediately after subscription with the current data as full snapshot and then with patches of the differences when the data changes
      * @param patchOrSnapshot a full snapshot or a patch of the differences
+     * @param changeInfo information about the change
+    *  @param context the context passed from mutating methods
      */
-    export type SubscribeCallback = (patchOrSnapshot?: object, changeInfo?: DiffInfo, context?:any) => void;
+    export type SubscribeCallback = (patchOrSnapshot?: object, changeInfo?: DiffInfo, context?:any, deferred?:boolean) => void;
     export type UnsubscribeCallback = () => void;
 
     export type SpliceParams = { index: number, itemsToRemove: number, itemsToAdd?: Array<any> }
 
     export type MutationOptions = {
         defer?: boolean, // defers firing subscription callbacks to the next tick, useful when applying multiple mutations in a row, the last callback will be fired with aggregated patch of all mutations
-        context: any, // external context to pass to subscription callback when called
+        context?: any, // external context to pass to subscription callback when called
         [key: string]: any
     }
 
@@ -222,6 +224,9 @@ declare module '@live-replica/live-replica' {
     }
 
     export class Replica extends PatchDiff {
+
+        static create(initObject: object, options: ReplicaOptions): LiveReplicaProxy;
+
         constructor(remotePath: string, options: Partial<ReplicaOptions>);
 
         public remotePath: string;
@@ -283,6 +288,14 @@ declare module '@live-replica/live-replica' {
     export function merge(object: LiveReplicaProxy, partial: object);
 
     export function createProxy(patchDiff: PatchDiff, options?: object): LiveReplicaProxy;
+
+    type ConnectionResults = {
+        writable: boolean,
+        rpc: boolean
+    };
+
+    export function connect(proxy:LiveReplicaProxy, connection: Socket<any>, remotePath:string, params:object): Promise<ConnectionResults>;
+    export function disconnect(proxy:LiveReplicaProxy): Promise<any>;
 
     export type ObservedOptions = {
         onChange: string; // on change method name on the class

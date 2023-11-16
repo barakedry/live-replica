@@ -1,5 +1,6 @@
 import { PatchDiff } from "../patch-diff/index.js";
 import { LiveReplicaSocket } from '../socket/socket.js';
+import { isProxy, getPatchDiff } from '../proxy/proxy.js';
 import { Utils } from '../utils/utils.js';
 const { concatPath } = Utils;
 
@@ -165,6 +166,14 @@ export class Replica extends PatchDiff {
         });
     }
 
+    async connect(connection, remotePath, params) {
+        return new Promise((resolve, reject) => {
+            this.remotePath = remotePath;
+            this.options.params = params;
+            this.subscribeRemote(connection, resolve, reject);
+        });
+    }
+
     apply(patch, path, options) {
         if (this.options.allowWrite) {
             super.apply(patch, path, options ? {...options, ...LocalMutation} : LocalMutation);
@@ -236,5 +245,41 @@ export class Replica extends PatchDiff {
 }
 
 Replica.prototype.override = Replica.prototype.set;
+Replica.prototype.disconnect = Replica.prototype.unsubscribeRemote;
+
+Replica.create = function create(initData = {}, options = {}) {
+    const replica = new Replica('', {dataObject: initData, ...options});
+    return replica.data;
+};
+
+function replicaByProxy(proxy) {
+    if (!isProxy(proxy)) {
+        throw new TypeError(`trying to connect a non LiveReplica Proxy type`);
+    }
+
+    if (!(connection && connection instanceof LiveReplicaSocket)) {
+        throw new TypeError(`connection must be a LiveReplicaSocket`);
+    }
+
+    const replica = getPatchDiff(proxy);
+
+    if (!(replica instanceof Replica)) {
+        throw new TypeError(`trying to connect a non LiveReplica Replica type`);
+    }
+
+    return replica;
+}
+
+// functional interface (passing proxy)
+
+export async function connect(proxy, connection, remotePath, params) {
+    const replica = replicaByProxy(proxy);
+    return replica.connect(connection, remotePath, params);
+}
+
+export async function disconnect(proxy) {
+    const replica = replicaByProxy(proxy);
+    return replica.disconnect();
+}
 
 export default Replica;
