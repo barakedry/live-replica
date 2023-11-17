@@ -46,8 +46,15 @@ declare module '@live-replica/live-replica' {
         differences?: object | Array<object>,
     }
 
-    export type Proxy = object;
-    export type ProxyOptions = { readonly : boolean }
+    export type LiveReplicaProxy = object;
+    export type Proxy<T> = T | LiveReplicaProxy;
+    export type ProxyOptions = { readonly? : boolean, immediateFlush?: boolean }
+
+    export type DeepPartial<T> = T extends object ? {
+        [P in keyof T]?: DeepPartial<T[P]>;
+    } : T;
+
+    export type Patch<T> = DeepPartial<T> | string | undefined;
 
     /**
      * a callback to call when the data changes
@@ -56,7 +63,7 @@ declare module '@live-replica/live-replica' {
      * @param changeInfo information about the change
     *  @param context the context passed from mutating methods
      */
-    export type SubscribeCallback = (patchOrSnapshot?: object, changeInfo?: DiffInfo, context?:any, deferred?:boolean) => void;
+    export type SubscribeCallback<T> = (patchOrSnapshot?: Patch<T>, changeInfo?: DiffInfo, context?:any, deferred?:boolean) => void;
     export type UnsubscribeCallback = () => void;
 
     export type SpliceParams = { index: number, itemsToRemove: number, itemsToAdd?: Array<any> }
@@ -77,7 +84,7 @@ declare module '@live-replica/live-replica' {
      * Manage a data object via interface of mutating methods such as apply, set, splice, remove
      * allows to subscribe to changes and apply patches to update the data object
      */
-    export class PatchDiff extends EventEmitter {
+    export class PatchDiff<T> extends EventEmitter {
 
         /**
          * Merge a patch into the managed data object
@@ -86,7 +93,7 @@ declare module '@live-replica/live-replica' {
          * @param options (optional) options for the merge
          * @returns a patch of the differences caused by the merge
          */
-        apply(patch: object, path?: string, options?: MergeOptions) : DifferencesPatch;
+        apply(patch: Patch<T>, path?: string, options?: MergeOptions) : Patch<T>;
 
 
         /**
@@ -96,7 +103,7 @@ declare module '@live-replica/live-replica' {
          * @param options (optional) options for the set
          * @returns a patch of the differences caused by the set operation
          */
-        set(value: any, path?: string, options?: MutationOptions) : DifferencesPatch;
+        set(value: any, path?: string, options?: MutationOptions) : Patch<T>;
 
         /**
          * Remove a value in the managed data object at a path
@@ -138,7 +145,7 @@ declare module '@live-replica/live-replica' {
          * @param callback (optional) a callback to call when the data changes
          * @returns a function to unsubscribe
          */
-        subscribe(path: string, callback?: SubscribeCallback): UnsubscribeCallback;
+        subscribe(path: string, callback?: SubscribeCallback<T>): UnsubscribeCallback;
 
 
         /**
@@ -146,7 +153,7 @@ declare module '@live-replica/live-replica' {
          * @param callback (optional) a callback to call when the data changes
          * @returns a function to unsubscribe
          */
-        subscribe(callback: SubscribeCallback): UnsubscribeCallback;
+        subscribe(callback: SubscribeCallback<T>): UnsubscribeCallback;
 
 
         /**
@@ -155,45 +162,46 @@ declare module '@live-replica/live-replica' {
          * @param subPath a relative path to scope the PatchDiff at
          * @param cached (optional) whether to return a cached PatchDiff for the sub path (default: true)
          */
-        at(subPath, cached?): PatchDiff;
+        at(subPath, cached?): PatchDiff<any>;
 
         whitelist(keys: KeyList);
 
-        getWhenExists(path?: string): Promise<object>;
+        getWhenExists(path?: string): Promise<any>;
 
-        whenAnything(path?: string): Promise<object>;
+        whenAnything(path?: string): Promise<any>;
 
         getFullPath(subPath?: string): string;
 
-        get data(): Proxy;
+        get data(): Proxy<T>;
+        getData(proxyOptions?: Partial<ProxyOptions>): Proxy<T>
 
-        get root(): PatchDiff;
+        get root(): PatchDiff<any>;
 
-        getData(proxyOptions?: Partial<ProxyOptions>): Proxy
+
     }
 
 
-    export class Origin extends PatchDiff {
-        get data(): Proxy;
+    export class Origin<T> extends PatchDiff<T> {
+        get data(): Proxy<T>;
     }
 
     export type SubscriptionRequest = ReplicaPermissions & {
         path: string;
-        readTransformer?: (data: any, part?: PatchDiff) => any;
-        writeTransformer?: (data: any, part?: PatchDiff) => any;
+        readTransformer?: (data: Patch<any>, scope?: PatchDiff<any>) => Patch<any>;
+        writeTransformer?: (data: Patch<any>, scope?: PatchDiff<any>) => Patch<any>;
         whitelist?: KeyList;
-        target?: Origin;
+        target?: Origin<any>;
         params?: object,
         [key: string]: any;
     }
 
     export type Middleware = (request: SubscriptionRequest, reject: (reason: string) => void, next: (request: SubscriptionRequest) => void) => void;
 
-    export class Server extends PatchDiff {
+    export class Server<T> extends PatchDiff<T> {
 
         use(middleware: Middleware);
 
-        at(subPath): Origin;
+        at(subPath): Origin<any>;
     }
 
 
@@ -223,7 +231,7 @@ declare module '@live-replica/live-replica' {
         connection: Socket<any>
     }
 
-    export class Replica extends PatchDiff {
+    export class Replica<T> extends PatchDiff<T> {
 
         static create(initObject: object, options: ReplicaOptions): LiveReplicaProxy;
 
@@ -231,9 +239,10 @@ declare module '@live-replica/live-replica' {
 
         public remotePath: string;
 
-        at(subPat: string): Replica;
+        at(subPat: string): Replica<any>;
 
         subscribed: Promise<any>;
+
         synced: Promise<any>;
 
         subscribeRemote(connection: Socket<any>, subscribeSuccessCallback: Function, subscribeRejectCallback: Function)
@@ -248,7 +257,7 @@ declare module '@live-replica/live-replica' {
     export class WebSocketClient extends Socket<WebSocket> {
     }
 
-    export class WebSocketServer extends Server {
+    export class WebSocketServer extends Server<any> {
         handleWebSocket(socket);
     }
 
@@ -259,19 +268,17 @@ declare module '@live-replica/live-replica' {
         maxListeners?: 1000000
     };
 
-    export type LiveReplicaProxy = object;
-
     export function hasProxy(value:any): boolean;
 
     export function getProxy(value:any): LiveReplicaProxy;
 
     export function isProxy(value:any): boolean;
 
-    export function getPatchDiff(proxy: LiveReplicaProxy): PatchDiff;
+    export function getPatchDiff(proxy: LiveReplicaProxy): PatchDiff<any>;
 
-    export function observe(object: LiveReplicaProxy, cb: SubscribeCallback): UnsubscribeCallback;
+    export function observe(object: LiveReplicaProxy, cb: SubscribeCallback<any>): UnsubscribeCallback;
 
-    export function subscribe(object: LiveReplicaProxy, cb: SubscribeCallback): UnsubscribeCallback;
+    export function subscribe(object: LiveReplicaProxy, cb: SubscribeCallback<any>): UnsubscribeCallback;
 
     export function unwrap(object: LiveReplicaProxy): object;
 
@@ -287,7 +294,7 @@ declare module '@live-replica/live-replica' {
 
     export function merge(object: LiveReplicaProxy, partial: object);
 
-    export function createProxy(patchDiff: PatchDiff, options?: object): LiveReplicaProxy;
+    export function createProxy(patchDiff: PatchDiff<any>, options?: object): LiveReplicaProxy;
 
     type ConnectionResults = {
         writable: boolean,
