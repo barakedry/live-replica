@@ -842,6 +842,11 @@ export class PatchDiff extends EventEmitter {
     }
 }
 
-PatchDiff.prototype.observe = EventEmitter.prototype.on;
 PatchDiff.prototype.override = PatchDiff.prototype.set;
+
+PatchDiff.prototype.merge = PatchDiff.prototype.apply;
+PatchDiff.prototype.patch = PatchDiff.prototype.apply;
+
+PatchDiff.prototype.scope = PatchDiff.prototype.at;
+
 export default PatchDiff;

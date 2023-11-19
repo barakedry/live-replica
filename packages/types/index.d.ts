@@ -75,7 +75,7 @@ declare module '@live-replica/live-replica' {
     }
 
     export type MergeOptions = MutationOptions & {
-        overrides?: {[path:string]: true}, // paths to override (replace) when merging a patch
+        overrides?: {[path:string]: true} | string[], // paths to override (replace) when merging a patch
     };
 
     type DifferencesPatch = object;
@@ -95,6 +95,22 @@ declare module '@live-replica/live-replica' {
          */
         apply(patch: Patch<T>, path?: string, options?: MergeOptions) : Patch<T>;
 
+        /**
+         * alias for apply()
+         * @param patch
+         * @param path
+         * @param options
+         */
+        patch(patch: object, path?: string, options?: MergeOptions) : DifferencesPatch;
+
+        /**
+         * alias for apply()
+         * @param patch a patch to merge
+         * @param path (optional) a path to merge the patch into
+         * @param options (optional) options for the merge
+         * @returns a patch of the differences caused by the merge
+         */
+        merge(patch: object, path?: string, options?: MergeOptions) : DifferencesPatch;
 
         /**
          * Set a value in the managed data object at a path
@@ -104,6 +120,14 @@ declare module '@live-replica/live-replica' {
          * @returns a patch of the differences caused by the set operation
          */
         set(value: any, path?: string, options?: MutationOptions) : Patch<T>;
+
+        /**
+         * alias for set()
+         * @param value
+         * @param path
+         * @param options
+         */
+        override(value: any, path?: string, options?: MutationOptions) : DifferencesPatch;
 
         /**
          * Remove a value in the managed data object at a path
@@ -129,7 +153,7 @@ declare module '@live-replica/live-replica' {
         get(path?: string, callback?: (data: object) => void);
 
 
-        get(callback?: (data: object) => void);
+        //get(callback?: (data: object) => void);
 
         /**
          * Get a clone of the managed data object at a path
@@ -164,6 +188,18 @@ declare module '@live-replica/live-replica' {
          */
         at(subPath, cached?): PatchDiff<any>;
 
+        /**
+         * alias for at()
+         * @param subPath a relative path to scope the PatchDiff at
+         * @param cached (optional) whether to return a cached PatchDiff for the sub path (default: true)
+         */
+        scope(subPath, cached?): PatchDiff;
+
+
+        /**
+         * Sets a whitelist of keys to restrict mutations and reads to a subset of keys managed by the PatchDiff
+         * @param keys
+         */
         whitelist(keys: KeyList);
 
         getWhenExists(path?: string): Promise<any>;
@@ -203,7 +239,6 @@ declare module '@live-replica/live-replica' {
 
         at(subPath): Origin<any>;
     }
-
 
     export class Socket<SocketType> {
         constructor(socket: SocketType);
