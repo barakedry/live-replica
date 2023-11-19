@@ -731,7 +731,6 @@ describe('Patch Diff', () => {
 
             //Act
             proxy.a = 'c';
-            //await flushCycle();
 
             //Assert
             expect(patcher.get()).toEqual({a: 'c'});

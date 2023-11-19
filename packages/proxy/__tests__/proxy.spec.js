@@ -1,5 +1,4 @@
 import PatchDiff from '../../patch-diff/src/patch-diff.js';
-import {flushCycle} from '../../patch-diff/__tests__/patch-diff.spec.js';
 
 beforeEach(() => {
     jest.resetAllMocks();
@@ -15,7 +14,6 @@ describe('Proxy', () => {
 
             //Act
             patcherProxy.b = 'd';
-            await flushCycle();
 
             //Assert
             expect(patcher.get()).toEqual({a: 'b', b: 'd'});
@@ -28,7 +26,6 @@ describe('Proxy', () => {
 
             //Act
             delete patcherProxy.a;
-            //await flushCycle();
 
             //Assert
             expect(patcher.get()).toEqual({});
@@ -41,7 +38,6 @@ describe('Proxy', () => {
 
             //Act
             patcherProxy.a = 'd';
-            //await flushCycle();
 
             //Assert
             expect(patcher.get()).toEqual({a: 'd'});
@@ -70,7 +66,6 @@ describe('Proxy', () => {
 
             //Act
             patcherProxy.push('b');
-            //await flushCycle();
 
             //Assert
             expect(patcher.get()).toEqual(['a', 'b']);
@@ -83,7 +78,6 @@ describe('Proxy', () => {
 
             //Act
             patcherProxy.pop();
-            //await flushCycle();
 
             //Assert
             expect(patcher.get()).toEqual([]);
@@ -96,7 +90,6 @@ describe('Proxy', () => {
 
             //Act
             patcherProxy[0] = 'b';
-            //await flushCycle();
 
             //Assert
             expect(patcher.get()).toEqual(['b']);
