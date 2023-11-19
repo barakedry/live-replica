@@ -266,10 +266,14 @@ declare module '@live-replica/live-replica' {
 
         public remotePath: string;
 
+        connect(connection: Socket<any>, remotePath: string, params?: object): Promise<any>;
+        disconnect(): Promise<any>;
+
         at(subPat: string): Replica;
 
         subscribed: Promise<any>;
         synced: Promise<any>;
+
 
         subscribeRemote(connection: Socket<any>, subscribeSuccessCallback: Function, subscribeRejectCallback: Function)
 

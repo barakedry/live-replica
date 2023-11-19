@@ -19,7 +19,6 @@ server.listen(8080);
 server.set('foo', { bar: 'baz' });
 
 ```
-
 ### Client 
 
 #### Creating a replica
@@ -69,7 +68,8 @@ however, If the proxy is obtained from `Replica.create` and don't have access to
 
 example:
 ```typescript
-await connect(dataProxy, 'foo');
+
+await connect(dataProxy, socket, 'foo');
 
 // read
 console.log(dataProxy.foo) // returns { bar: 'baz' }
