@@ -734,7 +734,15 @@ export class PatchDiff extends EventEmitter {
             levelDiffs.addChildTracking(childDiffs, key);
         }
 
-        this.emit((Utils.pushKeyToPath(path, key) || '*'),  {differences: options.deleteKeyword, deletions: existingValue}, options);
+        this.emit((Utils.pushKeyToPath(path, key) || '*'),  {
+            differences: options.deleteKeyword,
+            deletions: existingValue,
+            hasDeletions: true,
+            hasDifferences: true,
+            hasUpdates: false,
+            hasAdditions: false,
+            hasAddedObjects: false
+        }, options);
 
         return levelDiffs;
     }
