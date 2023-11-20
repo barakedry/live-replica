@@ -3,7 +3,7 @@
   "name": "@live-replica/live-replica",
   "type": "module",
   "version": "0.9.9",
-  "description": "an easy to use real-time objects replica syncing",
+  "description": "real-time objects replica syncing",
   "directories": {
     "test": "tests"
   },
@@ -13,12 +13,18 @@
   },
   "repository": "git+https://github.com/barakedry/live-replica",
   "keywords": [
+    "state",
+    "sync",
+    "state syncing",
+    "reactive",
+    "reactive state",
+    "real-time",
+    "replica",
+    "live-replica",
     "patch",
     "merge",
     "diff",
-    "delta",
-    "dirty",
-    "checking"
+    "delta"
   ],
   "author": "Barak Edry",
   "license": "Apache-2.0",
