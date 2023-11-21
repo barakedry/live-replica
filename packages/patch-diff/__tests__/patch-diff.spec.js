@@ -707,7 +707,6 @@ describe('Patch Diff', () => {
                         console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
-
                     expect(spy).toHaveBeenCalledWith({ c: 'd'}, expect.objectContaining({snapshot: true}), {}, isAggregated);
 
                     //Act
@@ -718,12 +717,7 @@ describe('Patch Diff', () => {
                     //todo: we are not getting any notification for deletion in this case
                     //expect(spy).toHaveBeenCalledWith(patcher.options.deleteKeyword, expect.objectContaining({"addedObjects": {}, "additions": {}, "deletions": {c: 'd'}, "differences": '__$$D', "hasAddedObjects": false, "hasAdditions": true, "hasDeletions": true, "hasDifferences": true, "hasUpdates": false, "path": "a.b", "updates": {}}), {}, isAggregated);
                 });
-
-                /**
-                 * todo: scoped, defer
-                 */
             });
-
         });
 
         describe('Array change notifications', () => {
