@@ -578,14 +578,13 @@ describe('Patch Diff', () => {
                         console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
+                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, expect.objectContaining({snapshot: true}), {}, isAggregated);
 
                     //Act
                     patcher.apply({ e: 'f' }, 'a.b');
 
                     //Assert
                     expect(patcher.get()).toEqual({a: {b: {c: 'd', e: 'f'}}});
-                    // todo: shouldn't snapshot contain {c:'d'} only and not {c: 'd', e: 'f'}?
-                    // expect(spy).toHaveBeenCalledWith({ c: 'd'}, expect.objectContaining({snapshot: true}), {}, isAggregated);
                     expect(spy).toHaveBeenCalledWith({ e: 'f'}, expect.objectContaining({"addedObjects": {}, "additions": {"e": "f"}, "deletions": {}, "differences": {"e": "f"}, "hasAddedObjects": false, "hasAdditions": true, "hasDeletions": false, "hasDifferences": true, "hasUpdates": false, "path": "a.b", "updates": {}}), {}, isAggregated);
                 });
 
@@ -598,14 +597,13 @@ describe('Patch Diff', () => {
                         console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
+                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, expect.objectContaining({snapshot: true}), {}, isAggregated);
 
                     //Act
                     patcher.apply({a: {b: {e: 'f'}}});
 
                     //Assert
                     expect(patcher.get()).toEqual({a: {b: {c: 'd', e: 'f'}}});
-                    // todo: shouldn't snapshot contain {c:'d'} only and not {c: 'd', e: 'f'}?
-                    // expect(spy).toHaveBeenCalledWith({ c: 'd'}, expect.objectContaining({snapshot: true}), {}, isAggregated);
                     expect(spy).toHaveBeenCalledWith({ e: 'f'}, expect.objectContaining({"addedObjects": {}, "additions": {"e": "f"}, "deletions": {}, "differences": {"e": "f"}, "hasAddedObjects": false, "hasAdditions": true, "hasDeletions": false, "hasDifferences": true, "hasUpdates": false, "path": "a.b", "updates": {}}), {}, isAggregated);
                 });
 
@@ -874,9 +872,9 @@ describe('Patch Diff', () => {
                 additions,
                 deletions,
                 differences,
-                'hasAdditions': true,
-                'hasDeletions': true,
-                'hasDifferences': true
+                hasAdditions: true,
+                hasDeletions: true,
+                hasDifferences: true
             };
 
             expect(spy).toBeCalledWith({
