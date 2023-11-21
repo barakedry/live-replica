@@ -566,7 +566,7 @@ describe('Patch Diff', () => {
             expect(spy).not.toHaveBeenCalledWith('afterUnsub', expect.any(Object), expect.any(Object), false);
         });
 
-        describe('Extras', () => {
+        describe('Mutation notifications with or without supplied path', () => {
 
             describe('apply', () => {
                 it('should notify of object change with apply on path', async () => {
