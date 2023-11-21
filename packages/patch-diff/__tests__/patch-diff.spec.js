@@ -423,7 +423,7 @@ describe('Patch Diff', () => {
             patcher.set({ e: { set: 'value' } }, 'a.b.c');
 
             //Assert snapshot notification
-            expect(spy).toHaveBeenCalledWith('d', expect.objectContaining({snapshot: true}), {});
+            expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, {});
             expect(spy).toHaveBeenCalledWith(5, { differences: 5, updates: { oldVal: 'd', newVal: 5 } }, {});
             expect(spy).toHaveBeenCalledWith(patcher.options.deleteKeyword, expect.objectContaining({ differences: patcher.options.deleteKeyword, deletions: 5 }), {});
             expect(spy).toHaveBeenCalledWith({e:'f'}, expect.objectContaining({
@@ -578,7 +578,7 @@ describe('Patch Diff', () => {
                         console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
-                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, expect.objectContaining({snapshot: true}), {}, isAggregated);
+                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
 
                     //Act
                     patcher.apply({ e: 'f' }, 'a.b');
@@ -597,7 +597,7 @@ describe('Patch Diff', () => {
                         console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
-                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, expect.objectContaining({snapshot: true}), {}, isAggregated);
+                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
 
                     //Act
                     patcher.apply({a: {b: {e: 'f'}}});
@@ -617,7 +617,7 @@ describe('Patch Diff', () => {
                         console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
-                    expect(spy).toHaveBeenCalledWith({ c: 'd', e: 'f', g: { h: 'i', j: 'k' }}, expect.objectContaining({snapshot: true}), {}, isAggregated);
+                    expect(spy).toHaveBeenCalledWith({ c: 'd', e: 'f', g: { h: 'i', j: 'k' }}, {snapshot: true}, {}, isAggregated);
 
                     //Act
                     patcher.apply({
@@ -646,7 +646,7 @@ describe('Patch Diff', () => {
                         console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
-                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, expect.objectContaining({snapshot: true}), {}, isAggregated);
+                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
 
                     //Act
                     patcher.set({ e: 'f' }, 'a.b');
@@ -665,7 +665,7 @@ describe('Patch Diff', () => {
                         console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
-                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, expect.objectContaining({snapshot: true}), {}, isAggregated);
+                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
 
                     //Act
                     patcher.set({a: {b: {e: 'f'}}});
@@ -691,7 +691,7 @@ describe('Patch Diff', () => {
                     patcher.remove('a.b');
 
                     //Assert
-                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, expect.objectContaining({snapshot: true}), {}, isAggregated);
+                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
                     expect(patcher.get()).toEqual({a: {}});
                     expect(spy).toHaveBeenCalledWith('__$$D', expect.objectContaining({"deletions": {c: 'd'}, "differences": '__$$D', "hasAddedObjects": false, "hasAdditions": false, "hasDeletions": true, "hasDifferences": true, "hasUpdates": false}), {}, isAggregated);
                 });
@@ -705,7 +705,7 @@ describe('Patch Diff', () => {
                         console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
-                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, expect.objectContaining({snapshot: true}), {}, isAggregated);
+                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
 
                     //Act
                     patcher.remove();

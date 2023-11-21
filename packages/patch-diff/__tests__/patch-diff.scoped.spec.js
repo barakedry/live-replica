@@ -52,7 +52,7 @@ describe('Scoped usage', () => {
                     console.log('scoped a.b', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
                 });
-                expect(spy).toHaveBeenCalledWith({ c: 'd', e: 'f', g: { h: 'i', j: 'k' }}, expect.objectContaining({snapshot: true}), {}, isAggregated);
+                expect(spy).toHaveBeenCalledWith({ c: 'd', e: 'f', g: { h: 'i', j: 'k' }}, {snapshot: true}, {}, isAggregated);
 
                 //Act
                 scoped.apply( { e: 'patch', c: scoped.options.deleteKeyword, g: 5 }, '', {overrides});
@@ -73,7 +73,7 @@ describe('Scoped usage', () => {
                     console.log('scoped a.b', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
                 });
-                expect(spy).toHaveBeenCalledWith({ c: 'd'}, expect.objectContaining({snapshot: true}), {}, isAggregated);
+                expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
 
                 //Act
                 scoped.set({ e: 'f' }, 'c');
@@ -118,7 +118,7 @@ describe('Scoped usage', () => {
                 scoped.remove('c');
 
                 //Assert
-                expect(spy).toHaveBeenCalledWith('d', expect.objectContaining({snapshot: true}), {}, isAggregated);
+                expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, {}, isAggregated);
                 expect(scoped.get()).toEqual({});
                 expect(spy).toHaveBeenCalledWith('__$$D', expect.objectContaining({"deletions": 'd', "differences": '__$$D', "hasAddedObjects": false, "hasAdditions": false, "hasDeletions": true, "hasDifferences": true, "hasUpdates": false}), {}, isAggregated);
             });
@@ -132,7 +132,7 @@ describe('Scoped usage', () => {
                     console.log('scoped a.b subscribe c', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
                 });
-                expect(spy).toHaveBeenCalledWith('d', expect.objectContaining({snapshot: true}), {}, isAggregated);
+                expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, {}, isAggregated);
 
                 //Act
                 scoped.remove();
