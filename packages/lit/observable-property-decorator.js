@@ -1,6 +1,19 @@
 import {PatchDiff, isProxy} from '../client/index.js';
 import {LiveReplicaController} from './controller.js';
 
+const isRevoked = (obj) => {
+    if (!obj || 'object' != typeof obj) {
+        return false;
+    }
+    try {
+        // detect revoked proxy
+        Symbol() in obj;
+        return false;
+    } catch (error) {
+        return true;
+    }
+};
+
 export function observed(options = {}) {
     return function createObservablePropertyDescriptor(target, propertyName) {
 
@@ -12,9 +25,18 @@ export function observed(options = {}) {
         const reactiveController = Symbol();
 
 
+        let revoked = false;
         const descriptor = {
-            get() { return previouslyDefinedDescriptor ? previouslyDefinedDescriptor?.get?.call(this) : this[propertyKey]},
+            get() {
+                if (revoked) {
+                    return undefined;
+                }
+
+                return previouslyDefinedDescriptor ? previouslyDefinedDescriptor?.get?.call(this) : this[propertyKey];
+            },
             set: function(value){
+
+                revoked = false;
 
                 const onChange = options.onChange && typeof this[options.onChange] === 'function' ? this[options.onChange] : () => {};
 
@@ -59,6 +81,7 @@ export function observed(options = {}) {
                         return false;
                     }
 
+                    revoked = isRevoked(this[propertyKey]);
                     return onChange.call(this, diff, changeInfo);
                 });
             },
