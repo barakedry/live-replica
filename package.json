@@ -2,7 +2,7 @@
   "private": true,
   "name": "@live-replica/live-replica",
   "type": "module",
-  "version": "0.9.9",
+  "version": "0.9.10",
   "description": "real-time objects replica syncing",
   "directories": {
     "test": "tests"
