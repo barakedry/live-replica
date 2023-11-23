@@ -363,7 +363,7 @@ export class PatchDiff extends EventEmitter {
         const flush = () => {
             if (!aggregatedPatch) { return; }
 
-            cb(aggregatedPatch, aggregatedChangesInfo, lastOptions.context,  true);
+            cb(aggregatedPatch, aggregatedChangesInfo, lastOptions.context || {},  true);
             aggregatedPatch = undefined;
             aggregatedChangesInfo = undefined;
             lastOptions = undefined;
