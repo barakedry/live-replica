@@ -1,4 +1,5 @@
 import PatchDiff from '../../patch-diff/src/patch-diff.js';
+import {Replica as LiveReplica, get} from "../../../index";
 
 beforeEach(() => {
     jest.resetAllMocks();
@@ -121,5 +122,35 @@ describe('Proxy', () => {
             //Assert
             expect(patcher.get()).toEqual(['a', 'c']);
         });
+    });
+
+    describe('Functional API', () => {
+        // const dataProxy = LiveReplica.create({
+        //     foo: {
+        //         bar: 'baz'
+        //     }
+        // });
+        //
+        // get(dataProxy, 'foo.bar'); // returns 'baz'
+        //
+        // set(dataProxy, 'foo.bar', 'qux'); // sets 'qux' to 'foo.bar'
+        //
+        // merge(dataProxy, 'foo', { bar: 'qux' }); // merges { bar: 'qux' } to 'foo'
+
+        it('should ', () => {
+            //Arrange
+            const dataProxy = LiveReplica.create({
+                foo: {
+                    bar: 'baz'
+                }
+            });
+
+            //Act
+            const result = get(dataProxy, 'foo.bar');
+
+            //Assert
+            expect(result).toEqual('baz');
+        });
+
     });
 });

@@ -836,8 +836,6 @@ export class PatchDiff extends EventEmitter {
         return create(this);
     }
 
-    /* istanbul ign
-    ore next */
     destroyProxy() {
         if (this.proxies.has(this)) {
             revoke(this.proxies.get(this));
