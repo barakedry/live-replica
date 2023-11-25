@@ -1,5 +1,5 @@
 import PatchDiff from '../../patch-diff/src/patch-diff.js';
-import {Replica as LiveReplica, get, set, merge} from "../../../index";
+import {Replica as LiveReplica, get, set, merge, cloneDeep, replace, observe} from "../../../index";
 
 beforeEach(() => {
     jest.resetAllMocks();
@@ -265,7 +265,44 @@ describe('Proxy', () => {
                 expect(result).toThrowError(new TypeError(`trying to merge a non LiveReplica Proxy type`));
             });
 
-            it('should merge value at path', () => {
+            it('should merge value at path and notify observer', () => {
+                //Arrange
+                const dataProxy = LiveReplica.create({
+                    foo: {
+                        bar: 'baz'
+                    }
+                }, {allowWrite: true});
+                const observerSpy = jest.fn();
+
+                //Act
+                observe(dataProxy, 'foo.bar', observerSpy);
+                merge(dataProxy, 'foo', {bar: 'qux'});
+
+                //Assert
+                expect(dataProxy).toEqual({foo: {bar: 'qux'}});
+                expect(observerSpy).toHaveBeenCalledTimes(2);
+                expect(observerSpy).toHaveBeenNthCalledWith(1 ,'baz', {snapshot: true}, {}, false);
+                expect(observerSpy).toHaveBeenNthCalledWith(2 , "qux", {"differences": "qux", "updates": {"newVal": "qux", "oldVal": "baz"}}, {local: true}, false);
+            });
+        });
+
+        describe('cloneDeep', () => {
+            it('should throw for non proxy objects', () => {
+                //Arrange
+                const dataProxy = {
+                    foo: {
+                        bar: 'baz'
+                    }
+                };
+
+                //Act
+                const result = () => cloneDeep(dataProxy, 'foo.bar');
+
+                //Assert
+                expect(result).toThrowError(new TypeError(`trying to cloneDeep a non LiveReplica Proxy type`));
+            });
+
+            it('should clone value at path', () => {
                 //Arrange
                 const dataProxy = LiveReplica.create({
                     foo: {
@@ -274,10 +311,43 @@ describe('Proxy', () => {
                 }, {allowWrite: true});
 
                 //Act
-                merge(dataProxy, 'foo', {bar: 'qux'});
+                const fooClone = cloneDeep(dataProxy, 'foo');
 
                 //Assert
-                expect(dataProxy).toEqual({foo: {bar: 'qux'}});
+                expect(fooClone).toEqual(dataProxy.foo);
+                expect(fooClone).not.toBe(dataProxy.foo);
+            });
+        });
+
+        describe('replace', () => {
+            it('should throw for non proxy objects', () => {
+                //Arrange
+                const dataProxy = {
+                    foo: {
+                        bar: 'baz'
+                    }
+                };
+
+                //Act
+                const result = () => replace(dataProxy, {bar: 'qux'});
+
+                //Assert
+                expect(result).toThrowError(new TypeError(`trying to replace a non LiveReplica Proxy type`));
+            });
+
+            it('should replace the entire proxy value (at root level)', () => {
+                //Arrange
+                const dataProxy = LiveReplica.create({
+                    foo: {
+                        bar: 'baz'
+                    }
+                }, {allowWrite: true});
+
+                //Act
+                replace(dataProxy, {bar: 'qux'});
+
+                //Assert
+                expect(dataProxy).toEqual({bar: 'qux'});
             });
         });
     });
