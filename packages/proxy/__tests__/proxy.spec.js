@@ -1,5 +1,5 @@
 import PatchDiff from '../../patch-diff/src/patch-diff.js';
-import {Replica as LiveReplica, get} from "../../../index";
+import {Replica as LiveReplica, get, set, merge} from "../../../index";
 
 beforeEach(() => {
     jest.resetAllMocks();
@@ -15,22 +15,51 @@ describe('Proxy', () => {
 
             //Act
             patcherProxy.b = 'd';
+            patcherProxy.b = 'd';
+            patcherProxy.c = 'd';
 
             //Assert
-            expect(patcher.get()).toEqual({a: 'b', b: 'd'});
+            expect(patcher.get()).toEqual({a: 'b', b: 'd', c: 'd'});
+        });
+
+        it('should be able to add nested object property', async () => {
+            //Arrange
+            const patcher = new PatchDiff({a: 'b'});
+            const patcherProxy = patcher.getData();
+
+            //Act
+            patcherProxy.b = {c: 'd'};
+            patcherProxy.b.c = 'e';
+            patcherProxy.b.d = 'g';
+
+            //Assert
+            expect(patcher.get()).toEqual({a: 'b', b: {c: 'e', d: 'g'}});
         });
 
         it('should be able to delete object property', async () => {
             //Arrange
-            const patcher = new PatchDiff({a: 'b'});
+            const patcher = new PatchDiff({a: 'b', f: 'g'});
             const patcherProxy = patcher.getData();
 
             //Act
             delete patcherProxy.a;
 
             //Assert
-            expect(patcher.get()).toEqual({});
+            expect(patcher.get()).toEqual({f: 'g'});
         });
+
+        it('should be able to delete a nested object property', async () => {
+            //Arrange
+            const patcher = new PatchDiff({c: {d: 'e'}, f: 'g'});
+            const patcherProxy = patcher.getData();
+
+            //Act
+            delete patcherProxy.c;
+
+            //Assert
+            expect(patcher.get()).toEqual({f: 'g'});
+        });
+
 
         it('should be able to update object property', async () => {
             //Arrange
@@ -42,6 +71,22 @@ describe('Proxy', () => {
 
             //Assert
             expect(patcher.get()).toEqual({a: 'd'});
+        });
+
+        it('should be able to use for..in loop', () => {
+            //Arrange
+            const initObj = {a: 'b', c: 'd'};
+            const patcher = new PatchDiff(initObj);
+            const patcherProxy = patcher.getData();
+            const result = [];
+
+            //Act
+            for (const key in patcherProxy) {
+                result.push(key);
+            }
+
+            //Assert
+            expect(result).toEqual(Object.keys(initObj));
         });
 
         it('should be able to spread object properties', () => {
@@ -125,32 +170,115 @@ describe('Proxy', () => {
     });
 
     describe('Functional API', () => {
-        // const dataProxy = LiveReplica.create({
-        //     foo: {
-        //         bar: 'baz'
-        //     }
-        // });
-        //
-        // get(dataProxy, 'foo.bar'); // returns 'baz'
-        //
-        // set(dataProxy, 'foo.bar', 'qux'); // sets 'qux' to 'foo.bar'
-        //
-        // merge(dataProxy, 'foo', { bar: 'qux' }); // merges { bar: 'qux' } to 'foo'
+        describe('get', () => {
+            it('should throw for non proxy objects', () => {
+                //Arrange
+                const dataProxy = {
+                    foo: {
+                        bar: 'baz'
+                    }
+                };
 
-        it('should ', () => {
-            //Arrange
-            const dataProxy = LiveReplica.create({
-                foo: {
-                    bar: 'baz'
-                }
+                //Act
+                const result = () => get(dataProxy, 'foo.bar');
+
+                //Assert
+                expect(result).toThrowError(new TypeError(`trying to get from a non LiveReplica Proxy type`));
             });
 
-            //Act
-            const result = get(dataProxy, 'foo.bar');
+            it('should get value at path', () => {
+                //Arrange
+                const dataProxy = LiveReplica.create({
+                    foo: {
+                        bar: 'baz'
+                    }
+                }, {allowWrite: true});
 
-            //Assert
-            expect(result).toEqual('baz');
+                //Act
+                const result = get(dataProxy, 'foo.bar');
+
+                //Assert
+                expect(result).toEqual('baz');
+            });
         });
 
+        describe('set', () => {
+            it('should throw for non proxy objects', () => {
+                //Arrange
+                const dataProxy = {
+                    foo: {
+                        bar: 'baz'
+                    }
+                };
+
+                //Act
+                const result = () => set(dataProxy, 'foo.bar', 'qux');
+
+                //Assert
+                expect(result).toThrowError(new TypeError(`trying to set a non LiveReplica Proxy type`));
+            });
+
+            it('should throw if path is not provided', () => {
+                //Arrange
+                const dataProxy = LiveReplica.create({
+                    foo: {
+                        bar: 'baz'
+                    }
+                }, {allowWrite: true});
+
+                //Act
+                const result = () => set(dataProxy, null, 'qux');
+
+                //Assert
+                expect(result).toThrowError(new TypeError(`path cannot be empty`));
+            });
+
+            it('should set value at path', () => {
+                //Arrange
+                const dataProxy = LiveReplica.create({
+                    foo: {
+                        bar: 'baz'
+                    }
+                }, {allowWrite: true});
+
+                //Act
+                set(dataProxy, 'foo.bar', 'qux');
+
+                //Assert
+                expect(dataProxy).toEqual({foo: {bar: 'qux'}});
+            });
+        });
+
+        describe('merge', () => {
+            it('should throw for non proxy objects', () => {
+                //Arrange
+                const dataProxy = {
+                    foo: {
+                        bar: 'baz'
+                    }
+                };
+
+                //Act
+                const result = () => merge(dataProxy, 'foo.bar', 'qux');
+
+                //Assert
+                expect(result).toThrowError(new TypeError(`trying to merge a non LiveReplica Proxy type`));
+            });
+
+            it('should merge value at path', () => {
+                //Arrange
+                const dataProxy = LiveReplica.create({
+                    foo: {
+                        bar: 'baz'
+                    }
+                }, {allowWrite: true});
+
+                //Act
+                merge(dataProxy, 'foo', {bar: 'qux'});
+
+                //Assert
+                expect(dataProxy).toEqual({foo: {bar: 'qux'}});
+            });
+        });
     });
 });

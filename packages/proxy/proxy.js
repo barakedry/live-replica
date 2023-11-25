@@ -101,12 +101,12 @@ export function set(proxy, path, value, options) {
     return patchers.get(proxy).set(value, path, options);
 }
 
-export function merge(proxy, partial) {
+export function merge(proxy, path, partial, options) {
     if (!isProxy(proxy)) {
-        throw new TypeError(`trying to observe a non LiveReplica Proxy type`);
+        throw new TypeError(`trying to merge a non LiveReplica Proxy type`);
     }
 
-    return patchers.get(proxy).apply(partial);
+    return patchers.get(proxy).apply(partial, path, options);
 }
 
 export function cloneDeep(proxy, path) {
