@@ -1,5 +1,5 @@
 import PatchDiff from '../../patch-diff/src/patch-diff.js';
-import {Replica as LiveReplica, get, set, merge, cloneDeep, replace, observe, nextChange} from "../../../index";
+import {Replica as LiveReplica, get, set, merge, cloneDeep, replace, observe, nextChange, patch} from "../../../index";
 
 beforeEach(() => {
     jest.resetAllMocks();
@@ -403,6 +403,53 @@ describe('Proxy', () => {
                 replace(dataProxy.foo, {bar: 'qux2'});
                 const result2 = await nextChange(dataProxy);
                 expect(result2).toEqual({foo: {bar: 'qux2'}});
+            });
+        });
+        
+        describe('patch', () => {
+            it('should throw for non proxy objects', () => {
+                //Arrange
+                const dataProxy = {
+                    foo: {
+                        bar: 'baz'
+                    }
+                };
+
+                //Act
+                const result = () => patch(dataProxy, 'foo.bar', 'qux');
+
+                //Assert
+                expect(result).toThrowError(new TypeError(`trying to patch a non LiveReplica Proxy type`));
+            });
+
+            it('should throw if path is not provided', () => {
+                //Arrange
+                const dataProxy = LiveReplica.create({
+                    foo: {
+                        bar: 'baz'
+                    }
+                }, {allowWrite: true});
+
+                //Act
+                const result = () => patch(dataProxy, null, 'qux');
+
+                //Assert
+                expect(result).toThrowError(new TypeError(`path cannot be empty`));
+            });
+
+            it('should set value at path', () => {
+                //Arrange
+                const dataProxy = LiveReplica.create({
+                    foo: {
+                        bar: 'baz'
+                    }
+                }, {allowWrite: true});
+
+                //Act
+                patch(dataProxy, 'foo', { fizz: 'buzz' });
+
+                //Assert
+                expect(dataProxy).toEqual({foo: {bar: 'baz', fizz: 'buzz'}});
             });
         });
 

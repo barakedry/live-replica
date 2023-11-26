@@ -107,6 +107,18 @@ export function set(proxy, path, value, options) {
     return patchers.get(proxy).set(value, path, options);
 }
 
+export function patch(proxy, path, value, options) {
+    if (!isProxy(proxy)) {
+        throw new TypeError(`trying to patch a non LiveReplica Proxy type`);
+    }
+
+    if (!path) {
+        throw new TypeError(`path cannot be empty`);
+    }
+
+    return patchers.get(proxy).apply(value, path, options);
+}
+
 export function merge(proxy, partial) {
     if (!isProxy(proxy)) {
         throw new TypeError(`trying to merge a non LiveReplica Proxy type`);
