@@ -219,10 +219,37 @@ export function create(patchDiff, options = {}) {
             return Reflect.ownKeys(target);
         },
 
-        enumerate (_target) {
+        has(_target, propKey) {
             const target = patchDiff.get();
-            return target[Symbol.iterator];
-        }
+            return propKey in target;
+        },
+
+        getOwnPropertyDescriptor(_target, propKey) {
+            const target = patchDiff.get();
+            return Reflect.getOwnPropertyDescriptor(target, propKey);
+        },
+
+        getPrototypeOf(_target) {
+            const target = patchDiff.get();
+            return Reflect.getPrototypeOf(target);
+        },
+
+        setPrototypeOf(_target, _proto) {
+            throw new Error(`Cannot set prototype on live-replica proxy`);
+        },
+
+        defneProperty(_target, _propKey, _propDesc) {
+            throw new Error(`Cannot define property on live-replica proxy`);
+        },
+
+        preventExtensions(_target) {
+            throw new Error(`Cannot preventExtensions on live-replica proxy`);
+        },
+
+        isExtensible(_target) {
+            throw new Error(`Cannot isExtensible on live-replica proxy`);
+        },
+
     };
 
     if (options.readonly) {

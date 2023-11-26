@@ -98,8 +98,6 @@ supplying the proxy as the first argument and the path as the second argument
 
 ```
 
-
-
 [![Build Status](https://travis-ci.org/barakedry/live-replica.svg?branch=master)](https://travis-ci.org/barakedry/live-replica)
 [![Coverage Status](https://coveralls.io/repos/github/barakedry/live-replica/badge.svg?branch=master)](https://coveralls.io/github/barakedry/live-replica?branch=master)
 [![npm version](https://badge.fury.io/js/live-replica.svg)](https://badge.fury.io/js/live-replica)
