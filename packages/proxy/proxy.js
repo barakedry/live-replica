@@ -238,7 +238,7 @@ export function create(patchDiff, options = {}) {
             throw new Error(`Cannot set prototype on live-replica proxy`);
         },
 
-        defneProperty(_target, _propKey, _propDesc) {
+        defineProperty(_target, _propKey, _propDesc) {
             throw new Error(`Cannot define property on live-replica proxy`);
         },
 
