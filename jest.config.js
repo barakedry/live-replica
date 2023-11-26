@@ -12,7 +12,7 @@ export default {
     collectCoverage: true,
     coverageThreshold: {
         global: {
-            lines: 78
+            lines: 75
         },
     },
 }

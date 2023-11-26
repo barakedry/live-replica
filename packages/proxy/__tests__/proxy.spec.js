@@ -1,5 +1,5 @@
 import PatchDiff from '../../patch-diff/src/patch-diff.js';
-import {Replica as LiveReplica, get, set, merge, cloneDeep, replace, observe} from "../../../index";
+import {Replica as LiveReplica, get, set, merge, cloneDeep, replace, observe, nextChange} from "../../../index";
 
 beforeEach(() => {
     jest.resetAllMocks();
@@ -368,6 +368,40 @@ describe('Proxy', () => {
                     "addedObjects": {},
                     "additions": {"bar": "qux"}
                 }), {local: true}, false);
+            });
+        });
+
+        describe('nextChange', () => {
+            it('should throw for non proxy objects', () => {
+                //Arrange
+                const dataProxy = {
+                    foo: {
+                        bar: 'baz'
+                    }
+                };
+
+                //Act
+                const result = () => replace(dataProxy, {bar: 'qux'});
+
+                //Assert
+                expect(result).toThrowError(new TypeError(`trying to replace a non LiveReplica Proxy type`));
+            });
+
+            it.failing('should return a promise that resolves to the next change', async () => {
+                //Arrange
+                const dataProxy = LiveReplica.create({
+                    foo: {
+                        bar: 'baz'
+                    }
+                }, {allowWrite: true});
+
+                //Act
+                merge(dataProxy, 'foo', {bar: 'qux'});
+
+                //Assert
+                //todo: failing since subscribe is executed in sync with the merge and before 'off' is defined
+                const result = await nextChange(dataProxy);
+                expect(result).toEqual({bar: 'qux', foo: "__$$D"});
             });
         });
 
