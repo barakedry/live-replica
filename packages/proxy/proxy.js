@@ -61,8 +61,14 @@ export function nextChange(proxy) {
     // @ts-ignore
     const patcher = patchers.get(proxy);
     return new Promise((accept) => {
-        let off = patcher.subscribe((diff) => {
-            if (off) {
+        let off = null;
+        off = patcher.subscribe(async (diff) => {
+            if (!off) {
+                setTimeout(() => {
+                    off();
+                    accept(diff);
+                }, 0);
+            } else {
                 off();
                 accept(diff);
             }
@@ -101,12 +107,12 @@ export function set(proxy, path, value, options) {
     return patchers.get(proxy).set(value, path, options);
 }
 
-export function merge(proxy, path, partial, options) {
+export function merge(proxy, partial) {
     if (!isProxy(proxy)) {
         throw new TypeError(`trying to merge a non LiveReplica Proxy type`);
     }
 
-    return patchers.get(proxy).apply(partial, path, options);
+    return patchers.get(proxy).apply(partial);
 }
 
 export function cloneDeep(proxy, path) {

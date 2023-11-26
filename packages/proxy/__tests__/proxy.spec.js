@@ -276,7 +276,7 @@ describe('Proxy', () => {
 
                 //Act
                 observe(dataProxy, 'foo.bar', observerSpy);
-                merge(dataProxy, 'foo', {bar: 'qux'});
+                merge(dataProxy.foo, {bar: 'qux'});
 
                 //Assert
                 expect(dataProxy).toEqual({foo: {bar: 'qux'}});
@@ -387,7 +387,7 @@ describe('Proxy', () => {
                 expect(result).toThrowError(new TypeError(`trying to replace a non LiveReplica Proxy type`));
             });
 
-            it.failing('should return a promise that resolves to the next change', async () => {
+            it('should return a promise that resolves to the next change', async () => {
                 //Arrange
                 const dataProxy = LiveReplica.create({
                     foo: {
@@ -395,13 +395,14 @@ describe('Proxy', () => {
                     }
                 }, {allowWrite: true});
 
-                //Act
-                merge(dataProxy, 'foo', {bar: 'qux'});
-
-                //Assert
-                //todo: failing since subscribe is executed in sync with the merge and before 'off' is defined
+                //Act & Assert
+                merge(dataProxy.foo, {bar: 'qux'});
                 const result = await nextChange(dataProxy);
-                expect(result).toEqual({bar: 'qux', foo: "__$$D"});
+                expect(result).toEqual({foo: {bar: 'qux'}});
+
+                replace(dataProxy.foo, {bar: 'qux2'});
+                const result2 = await nextChange(dataProxy);
+                expect(result2).toEqual({foo: {bar: 'qux2'}});
             });
         });
 
