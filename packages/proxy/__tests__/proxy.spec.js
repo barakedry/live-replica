@@ -281,8 +281,11 @@ describe('Proxy', () => {
                 //Assert
                 expect(dataProxy).toEqual({foo: {bar: 'qux'}});
                 expect(observerSpy).toHaveBeenCalledTimes(2);
-                expect(observerSpy).toHaveBeenNthCalledWith(1 ,'baz', {snapshot: true}, {}, false);
-                expect(observerSpy).toHaveBeenNthCalledWith(2 , "qux", {"differences": "qux", "updates": {"newVal": "qux", "oldVal": "baz"}}, {local: true}, false);
+                expect(observerSpy).toHaveBeenNthCalledWith(1, 'baz', {snapshot: true}, {}, false);
+                expect(observerSpy).toHaveBeenNthCalledWith(2, "qux", {
+                    "differences": "qux",
+                    "updates": {"newVal": "qux", "oldVal": "baz"}
+                }, {local: true}, false);
             });
         });
 
@@ -342,12 +345,69 @@ describe('Proxy', () => {
                         bar: 'baz'
                     }
                 }, {allowWrite: true});
+                const observerSpy = jest.fn();
 
                 //Act
+                observe(dataProxy, observerSpy);
+                expect(observerSpy).toHaveBeenNthCalledWith(1, {foo: {bar: 'baz'}}, {snapshot: true}, {}, false);
                 replace(dataProxy, {bar: 'qux'});
 
                 //Assert
                 expect(dataProxy).toEqual({bar: 'qux'});
+                expect(observerSpy).toHaveBeenCalledTimes(2);
+                expect(observerSpy).toHaveBeenNthCalledWith(2, {bar: 'qux', foo: "__$$D"}, expect.objectContaining({
+                    "deletions": {"foo": {"bar": "baz"}},
+                    "differences": {"bar": "qux", "foo": "__$$D",},
+                    "hasAddedObjects": false,
+                    "hasAdditions": true,
+                    "hasDeletions": true,
+                    "hasDifferences": true,
+                    "hasUpdates": false,
+                    "path": "$remote",
+                    "updates": {},
+                    "addedObjects": {},
+                    "additions": {"bar": "qux"}
+                }), {local: true}, false);
+            });
+        });
+
+        describe('observe', () => {
+            it('should throw for non proxy objects', () => {
+                //Arrange
+                const dataProxy = {
+                    foo: {
+                        bar: 'baz'
+                    }
+                };
+
+                //Act
+                const result = () => observe(dataProxy, 'foo.bar', () => {
+                });
+
+                //Assert
+                expect(result).toThrowError(new TypeError(`trying to observe a non LiveReplica Proxy type`));
+            });
+
+            it.skip('should observe value at path', () => {
+                //Arrange
+                const dataProxy = LiveReplica.create({
+                    foo: {
+                        bar: 'baz'
+                    }
+                }, {allowWrite: true});
+                const observerSpy = jest.fn();
+
+                //Act
+                observe(dataProxy, 'foo.bar', observerSpy);
+                dataProxy.foo.bar = 'qux';
+
+                //Assert
+                expect(observerSpy).toHaveBeenCalledTimes(2);
+                expect(observerSpy).toHaveBeenNthCalledWith(1, 'baz', {snapshot: true}, {}, false);
+                expect(observerSpy).toHaveBeenNthCalledWith(2, "qux", {
+                    "differences": "qux",
+                    "updates": {"newVal": "qux", "oldVal": "baz"}
+                }, {local: true}, false);
             });
         });
     });
