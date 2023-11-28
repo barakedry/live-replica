@@ -1,5 +1,5 @@
 import PatchDiff from '../../patch-diff/src/patch-diff.js';
-import {Replica as LiveReplica, get, set, merge, cloneDeep, replace, observe, nextChange} from "../../../index";
+import {Replica as LiveReplica, get, set, merge, cloneDeep, replace, observe, nextChange, patch} from "../../../index";
 
 beforeEach(() => {
     jest.resetAllMocks();
@@ -276,7 +276,7 @@ describe('Proxy', () => {
 
                 //Act
                 observe(dataProxy, 'foo.bar', observerSpy);
-                merge(dataProxy, 'foo', {bar: 'qux'});
+                merge(dataProxy.foo, {bar: 'qux'});
 
                 //Assert
                 expect(dataProxy).toEqual({foo: {bar: 'qux'}});
@@ -387,7 +387,42 @@ describe('Proxy', () => {
                 expect(result).toThrowError(new TypeError(`trying to replace a non LiveReplica Proxy type`));
             });
 
-            it.failing('should return a promise that resolves to the next change', async () => {
+            it('should return a promise that resolves to the next change', async () => {
+                //Arrange
+                const dataProxy = LiveReplica.create({
+                    foo: {
+                        bar: 'baz'
+                    }
+                }, {allowWrite: true});
+
+                //Act & Assert
+                merge(dataProxy.foo, {bar: 'qux'});
+                const result = await nextChange(dataProxy);
+                expect(result).toEqual({foo: {bar: 'qux'}});
+
+                replace(dataProxy.foo, {bar: 'qux2'});
+                const result2 = await nextChange(dataProxy);
+                expect(result2).toEqual({foo: {bar: 'qux2'}});
+            });
+        });
+        
+        describe('patch', () => {
+            it('should throw for non proxy objects', () => {
+                //Arrange
+                const dataProxy = {
+                    foo: {
+                        bar: 'baz'
+                    }
+                };
+
+                //Act
+                const result = () => patch(dataProxy, 'foo.bar', 'qux');
+
+                //Assert
+                expect(result).toThrowError(new TypeError(`trying to patch a non LiveReplica Proxy type`));
+            });
+
+            it('should throw if path is not provided', () => {
                 //Arrange
                 const dataProxy = LiveReplica.create({
                     foo: {
@@ -396,12 +431,25 @@ describe('Proxy', () => {
                 }, {allowWrite: true});
 
                 //Act
-                merge(dataProxy, 'foo', {bar: 'qux'});
+                const result = () => patch(dataProxy, null, 'qux');
 
                 //Assert
-                //todo: failing since subscribe is executed in sync with the merge and before 'off' is defined
-                const result = await nextChange(dataProxy);
-                expect(result).toEqual({bar: 'qux', foo: "__$$D"});
+                expect(result).toThrowError(new TypeError(`path cannot be empty`));
+            });
+
+            it('should set value at path', () => {
+                //Arrange
+                const dataProxy = LiveReplica.create({
+                    foo: {
+                        bar: 'baz'
+                    }
+                }, {allowWrite: true});
+
+                //Act
+                patch(dataProxy, 'foo', { fizz: 'buzz' });
+
+                //Assert
+                expect(dataProxy).toEqual({foo: {bar: 'baz', fizz: 'buzz'}});
             });
         });
 

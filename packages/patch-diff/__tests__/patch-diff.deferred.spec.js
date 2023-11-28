@@ -160,7 +160,7 @@ describe('deferred', () => {
             //Assert
             expect(patcher.get()).toEqual({});
             await flushCycle();
-            //todo: we are not getoHaveBeenNthCalledWithtting any notification for deletion in this case
+            //todo: we are not getting any notification for deletion in this case
             expect(spy).toHaveBeenNthCalledWith(2, patcher.options.deleteKeyword, expect.objectContaining({"addedObjects": {}, "additions": {}, "deletions": {c: 'd'}, "differences": '__$$D', "hasAddedObjects": false, "hasAdditions": true, "hasDeletions": true, "hasDifferences": true, "hasUpdates": false, "path": "a.b", "updates": {}}), {}, isAggregated);
         });
     });
