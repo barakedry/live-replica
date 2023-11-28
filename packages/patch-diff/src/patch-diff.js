@@ -34,7 +34,7 @@ function aggregate(patch1, patch2) {
     const length = keys.length;
     for (let i = 0; i < length; i++) {
         const key = keys[i];
-        if (typeof patch2[key] === 'object') {
+        if (_isObject(patch2[key])) {
             patch1[key] = aggregate(_isObject(patch1[key])  ? patch1[key] : createByType(patch2[key]), patch2[key]);
         } else {
             patch1[key] = patch2[key];
