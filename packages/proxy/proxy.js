@@ -229,7 +229,7 @@ export function create(patchDiff, options = {}) {
                 revoke(value);
             }
 
-            return !!value;
+            return true;
         },
 
         ownKeys(_target)  {

@@ -380,7 +380,7 @@ export class PatchDiff extends EventEmitter {
                              (lastOptions?.context && !_isEqual(lastOptions.context, options.context));
 
             if (flushNow) {
-                if (!aggregatedPatch) {
+                if (aggregatedPatch) {
                     flush();
                 }
 

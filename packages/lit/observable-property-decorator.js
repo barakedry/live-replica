@@ -1,4 +1,4 @@
-import {PatchDiff, isProxy} from '../client/index.js';
+import {PatchDiff, isProxy, get} from '../client/index.js';
 import {LiveReplicaController} from './controller.js';
 
 const isRevoked = (obj) => {
@@ -92,3 +92,32 @@ export function observed(options = {}) {
         return descriptor;
     }
 }
+
+/*
+export function watchPath(propertyName, path = '', deep = false) {
+    return (proto, decoratedFnName) => {
+        const connectedCallback = proto.connectedCallback;
+        const disconnectedCallback = proto.disconnectedCallback;
+        const propertyKey = Symbol(`_${propertyName}`);
+        let unwatch;
+        proto.connectedCallback = function() {
+            connectedCallback?.call(this);
+
+            unwatch = watch(this[propertyKey], path, (diff, changeInfo) => {
+                if (deep) {
+                    this[decoratedFnName](get(this[propertyKey], path), diff, changeInfo);
+                } else {
+                    if (typeof diff !== 'object' || changeInfo.hasAddedObjects) {
+                        this[decoratedFnName](diff);
+                    }
+                }
+            });
+        }
+
+        proto.disconnectedCallback = function() {
+            disconnectedCallback?.call(this);
+            unwatch?.();
+        }
+    };
+}
+ */
