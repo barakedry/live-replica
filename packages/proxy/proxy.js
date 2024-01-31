@@ -1,6 +1,7 @@
 export const proxies = new WeakMap();
 export const patchers = new WeakMap();
 export const revocables = new WeakMap();
+export const softRevoked = new WeakSet();
 const ArrayMutatingMethods = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'copyWithin', 'fill']);
 
 function hasProxy(value) {
@@ -156,15 +157,20 @@ export function revoke(targetOrProxy) {
 
     // revoke all nested proxies
     values.forEach((value) => {
-        if (typeof value === 'object' && value !== null) {
+        if (isObject(value)) {
             revoke(value);
         }
     });
 
     patchers.delete(patchers.get(proxy));
     proxies.delete(proxy);
-    revocables.get(proxy).revoke();
+    softRevoked.add(proxy);
+    //revocables.get(proxy).revoke();
     return true;
+}
+
+function isObject(value) {
+    return typeof value === 'object' && value !== null;
 }
 
 export function create(patchDiff, options = {}) {
@@ -174,7 +180,6 @@ export function create(patchDiff, options = {}) {
     const handlers = {
         get(_target, propKey, receiver) {
             const target = patchDiff.get();
-
             // handle arrays
             if (Array.isArray(target)) {
                 if (typeof target[propKey] === 'function') {
@@ -192,9 +197,9 @@ export function create(patchDiff, options = {}) {
                 }
             }
 
-            const value = target[propKey];
+            const value = target?.[propKey];
 
-            if (typeof value === 'object' && value !== null) {
+            if (isObject(value)) {
                 if (hasProxy(value)) {
                     return getProxy(value);
                 }
@@ -206,6 +211,11 @@ export function create(patchDiff, options = {}) {
         },
 
         set(_target, propKey, value) {
+
+            if (isRevoked()) {
+                throw new Error(`Cannot set property on revoked live-replica proxy`);
+            }
+
             const target = patchDiff.get();
             value = unwrap(value);
 
@@ -219,12 +229,17 @@ export function create(patchDiff, options = {}) {
         },
 
         deleteProperty(_target, propKey) {
+
+            if (isRevoked()) {
+                throw new Error(`Cannot delete property on revoked live-replica proxy`);
+            }
+
             const target = patchDiff.get();
             const value = target[propKey];
 
             patchDiff.remove(propKey, mutationOptions);
 
-            if (typeof value === 'object' && value !== null) {
+            if (isObject(value)) {
                 // revoke proxy
                 revoke(value);
             }
@@ -239,7 +254,7 @@ export function create(patchDiff, options = {}) {
 
         has(_target, propKey) {
             const target = patchDiff.get();
-            return propKey in target;
+            return isObject(target) && propKey in target;
         },
 
         getOwnPropertyDescriptor(_target, propKey) {
@@ -286,6 +301,11 @@ export function create(patchDiff, options = {}) {
     revocables.set(proxy, revocable);
     proxies.set(value, proxy);
     patchers.set(proxy, patchDiff);
+
+    function isRevoked() {
+        return softRevoked.has(proxy);
+    }
+
     return proxy;
 }
 

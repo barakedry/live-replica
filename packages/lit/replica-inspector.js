@@ -357,6 +357,8 @@ const defaultValueByType = {
 
 class ReplicaInspector extends LitElement {
 
+    expanded = new WeakSet();
+
     static get properties() {
         return {
             replica: Object
@@ -545,17 +547,33 @@ class ReplicaInspector extends LitElement {
         const value = parent[key];
         const type = typeof value;
         const dataType = (type === 'object' && Array.isArray(value)) || type;
-        const textValue = JSON.stringify(value);
+
+        const isExpanded = this.expanded.has(value);
+        const toggleExpanded = () => {
+
+            if (type !== 'object') {
+                return;
+            }
+
+            if (this.expanded.has(value)) {
+                this.expanded.delete(value);
+            } else {
+                this.expanded.add(value);
+            }
+
+            this.requestUpdate();
+        }
+
         return html`
-            <li class="${type}" data-type="${dataType}">
+            <li class="${type}" data-type="${dataType}" ?expanded=${isExpanded}>
                 <button class='delete' title='Delete' @click="${() => this.deleteProperty(parent, key)}"></button>
-                <button class="expandCollapse" @click=${expandCollapse}></button>
-                <span class="keyValuePair" @click=${expandCollapse}>
+                <button class="expandCollapse" @click=${toggleExpanded}></button>
+                <span class="keyValuePair" @click=${toggleExpanded}>
                     <label class="key">${key}:</label>
                     ${this.renderValueByType(value, type, parent, key)}                    
                 </span>
                 <button class="duplicate" @click=${() => this.duplicateProperty(parent, value)}></button>
-                ${type === 'object' ? this.renderObject(value) : ''}
+                ${type === 'object' && isExpanded ? this.renderObject(value) : ''}
             </li>`;
     }
 
