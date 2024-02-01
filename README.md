@@ -141,14 +141,22 @@ class MyElement extends LitElement {
         
     // this will have the same effect as the LiveReplicaController example below, it will update the element on state changes and unwatch on disconnectedCallback
     @observed() @state() myState = LiveReplica.create();
+    
+    disconnectReplica: () => void;
 
-    constructor() {
-        super();
-        connect(this.myState, socket, 'server.path');
+    connectedCallback() {
+        super.connectedCallback?.();
+        this.disconnectReplica?.(); // in case of re-connecting to the domm
+        this.disconnectReplica = connect(this.myState, socket, 'server.path');
+    }
+    
+    disconnectedCallback() {
+        this.disconnectReplica?.();
+        super.disconnectedCallback?.();
     }
 
     render() {
-        return html`${myState?.some?.path?.inside}`;
+        return html`<div>${myState?.some?.path?.inside}</div>`;
     }
 }
 ```
@@ -176,16 +184,19 @@ class MyElement extends LitElement {
         
         const lrController = new LiveReplicaController(this);
 
-        
-        lrController.watch(replica); // updates element on replica state changes and unwatch on disconnectedCallback
+        // updates element on replica changes and unwatch on disconnectedCallback
+        lrController.watch(replica); 
 
-        lrController.watch(replica, 'some.path.inside'); // updates element only when anything inside 'some.path.inside' changes and unwatch on disconnectedCallback
-        // optionally include a watch callback to be called on state changes
-        lrController.watch(replica, (replica) => {
-            console.log(replica.data);
-        });
+        // updates element only when 'some.path.inside' changes and unwatch on disconnectedCallback
+        lrController.watch(replica, 'some.path.inside');
         
-        // it is very likley that you will 
+        // optionally provide a watch callback to be called on state changes
+        lrController.watch(replica, 'some.path', (diff) => {
+            if (!diff?.inside) {
+                return false; // returning false will prevent the element from updating
+            }
+        });
+         
     }
 
     render() {
