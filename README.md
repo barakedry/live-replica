@@ -4,7 +4,7 @@ Efficient real-time state syncing
 Live Replica provides magic like state syncing, 
 allowing client replicas to subscribe to an entire hierarchical data structures or a subset (using jsonpath like syntax) on the server memory.
 
-Upon successful subscription, the client replica receives a complete snapshot it subscribed to and then kept in sync with the server state in real-time.
+Upon successful subscription, the client replica receives a complete snapshot and then kept in sync with the server state in real-time.
 The server will only send the data (delta) that has changed since the last state that is relevant to the part that the client is subscribed to.
 
 (documentation is still work in progress)
