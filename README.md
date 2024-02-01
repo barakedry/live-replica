@@ -12,7 +12,7 @@ For updates only the delta required for the subscribed part to be up-to-date is 
 ## Features
 - Real-time and efficient state syncing using a diff algorithm
 - Powerful observability features on both client and server
-- Bi-directional syncing (client replica's can also update the server state)
+- Bidirectional syncing (client replica's with write access can also update the server state)
 - RPC (Remote Procedure Call) support whenever the server state contains functions 
 - Multiple server and transport implementations
     - WebSocket and Socket.io for browser and node.js
