@@ -2,6 +2,7 @@ import { PatchDiff } from "../patch-diff/index.js";
 import { LiveReplicaSocket } from '../socket/socket.js';
 import { isProxy, getPatchDiff } from '../proxy/proxy.js';
 import { Utils } from '../utils/utils.js';
+import {WebSocketClient} from "../ws-client/ws-client.js";
 const { concatPath } = Utils;
 
 let replicaId = Date.now();
@@ -101,7 +102,7 @@ export class Replica extends PatchDiff {
         this._wrapperKey = '$remote';
 
         if (options.dataObject) {
-            this.set(options.dataObject);
+            super.set(options.dataObject);
         }
 
         this.remotePath = remotePath;
@@ -167,6 +168,10 @@ export class Replica extends PatchDiff {
     }
 
     async connect(connection, remotePath, params) {
+        if (connection instanceof WebSocket)  {
+            connection = new WebSocketClient(connection);
+        }
+
         return new Promise((resolve, reject) => {
             this.remotePath = remotePath;
             this.options.params = params;
@@ -255,10 +260,6 @@ Replica.create = function create(initData = {}, options = {}) {
 function replicaByProxy(proxy) {
     if (!isProxy(proxy)) {
         throw new TypeError(`trying to connect a non LiveReplica Proxy type`);
-    }
-
-    if (!(connection && connection instanceof LiveReplicaSocket)) {
-        throw new TypeError(`connection must be a LiveReplicaSocket`);
     }
 
     const replica = getPatchDiff(proxy);

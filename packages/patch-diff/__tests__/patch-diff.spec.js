@@ -16,7 +16,7 @@ describe('Patch Diff', () => {
                 const patcher = new PatchDiff(null, {maxLevels: 2});
                 patcher.on('error', (error) => {
                     //Assert
-                    expect(error).toEqual(new Error('Trying to apply too deep, stopping at level 3'));
+                    expect(error).toEqual(new Error('Stopped patching, Too many levels - 3 out of 2 allowed levels to path "1.2.3"'));
                     expect(patcher.get()).toEqual({1: {2: {3: {}}}});
                     done();
                 });

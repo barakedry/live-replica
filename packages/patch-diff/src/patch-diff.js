@@ -514,8 +514,9 @@ export class PatchDiff extends EventEmitter {
         }
 
         if (level > options.maxLevels) {
-            logError('Trying to apply too deep, stopping at level %d', level);
-            this.emit('error', new Error('Trying to apply too deep, stopping at level ' + level));
+            const errorMsg = `Stopped patching, Too many levels - ${level} out of ${options.maxLevels} allowed levels to path "${path}"`;
+            logError(errorMsg);
+            this.emit('error', new Error(errorMsg));
 
             return {};
         }
@@ -535,9 +536,9 @@ export class PatchDiff extends EventEmitter {
         }
 
         if (length > options.maxKeysInLevel) {
-            logError('Stopped patching, Too many keys in object - %d out of %d allowed keys.', length, options.maxKeysInLevel);
-            this.emit('error', new Error('Stopped patching, Too many keys in object - ' + length + ' out of ' + options.maxKeysInLevel + ' allowed keys.'));
-
+            const errorMsg = `Stopped patching, Too many keys in object - ${length} out of ${options.maxKeysInLevel} allowed keys to path "${path}"`;
+            logError(errorMsg);
+            this.emit('error', new Error(errorMsg));
             return levelDiffs;
         }
 
