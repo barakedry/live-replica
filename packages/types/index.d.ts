@@ -56,7 +56,7 @@ declare module '@live-replica/live-replica' {
      * @param changeInfo information about the change
     *  @param context the context passed from mutating methods
      */
-    export type SubscribeCallback = (patchOrSnapshot?: object, changeInfo?: DiffInfo, context?:any, deferred?:boolean) => void;
+    export type SubscribeCallback = (patchOrSnapshot?: object, changeInfo?: DiffInfo, context?:any, deferred?:boolean, params?:{[paramName:string]: any}) => void;
     export type UnsubscribeCallback = () => void;
 
     export type SpliceParams = { index: number, itemsToRemove: number, itemsToAdd?: Array<any> }

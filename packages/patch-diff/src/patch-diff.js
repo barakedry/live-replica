@@ -16,6 +16,7 @@ import _isUndefined from '../../../node_modules/lodash-es/isUndefined.js';
 const eventsWithoutPrepend = new Set(['destroyed', 'error', '_subscribed', '_synced']);
 
 const _isFunction = (obj) => typeof obj === 'function';
+const PATH_EVENT_PREFIX = '$path#';
 
 function createByType(obj) {
     if (_isArray(obj)) {
@@ -48,6 +49,66 @@ function index(key, levelDiffs) {
     return Number(key) + (levelDiffs.arrayOffset || 0);
 }
 
+function getAll(current, partsAndKeys, parentParams = {}) {
+    const pathPart = partsAndKeys.shift();
+    const keyName = partsAndKeys.shift();
+    current = current.at(pathPart);
+    const value = current.get();
+    if (value === undefined) {
+        return undefined;
+    } else {
+        if (keyName) {
+            if (typeof value !== 'object') {
+                return undefined;
+            }
+
+            return Object.keys(value).map((key) => {
+                const params = {...parentParams, [keyName]: key};
+                if (partsAndKeys.length) {
+                    return getAll(current.at(key), [...partsAndKeys], params);
+                } else {
+                    return {value: current.get(key), params};
+                }
+            });
+        } else {
+            return {value, params: parentParams};
+        }
+    }
+}
+
+function createPathMatcher(pattern) {
+    // Escape special regex characters in the pattern
+    const regex = /:([\w]+)/g;
+    const keys = [];
+    const replaced = '^' + pattern.replace(regex, (match, capture) => {
+        keys.push(capture);
+        return `:(\\w+)`;
+    // }).replace(/\[/g,'\\\[?').replace(/\]/g,'\\\]?')
+    //   .replace(/\:/g,'\.?').replace(/\./g,'\\.') + '$';
+
+    }).replace(/\[/g,'\\\[?').replace(/\]/g,'\\\]?')
+        .replace(/\:/g,'\.?').replace(/\./g,'\\.')
+        .replace('**','([\\w\\.]+)')
+        .replace('*','(\\w+)')
+    + '$';
+
+    const regexp  = new RegExp(replaced);
+
+    return function match(path) {
+        const matches = path.match(regexp);
+        if (!matches) {
+            return null;
+        }
+
+        const params = {};
+        keys.forEach((key, index) => {
+            params[key] = matches[index + 1];
+        });
+
+        return params;
+    }
+}
+
 export class PatchDiff extends EventEmitter {
     _subs = {};
 
@@ -66,6 +127,7 @@ export class PatchDiff extends EventEmitter {
             emitAdditions: true,
             emitUpdates: true,
             emitDifferences: true,
+            fireGlobalChangeEvents: false,
             maxKeysInLevel: 1000,
             maxLevels: 50,
             maxListeners: 1000000,
@@ -216,6 +278,25 @@ export class PatchDiff extends EventEmitter {
         return Utils.concatPath(this._path, path);
     }
 
+    getAll(pathPattern) {
+
+        const isPattern = pathPattern && (pathPattern.includes('*') || pathPattern.includes(':'));
+        if (!isPattern) {
+            return [{value: this.get(pathPattern), params: {}}];
+        }
+
+        let unnamedKeys = [];
+        pathPattern = pathPattern.replaceAll("*", (match) => {
+            const keyName = `$key_${unnamedKeys.length}`;
+            unnamedKeys.push(keyName);
+            return `[:${keyName}]`;
+        });
+
+        const partsAndKeys = pathPattern.split(/\[:+|\]\./);
+
+        return (getAll(this, partsAndKeys, {})|| []).filter(v => !!v);
+    }
+
     get(path, callback) {
 
         if (typeof path === 'function') {
@@ -339,9 +420,12 @@ export class PatchDiff extends EventEmitter {
 
 
             let path = this._path;
-            path = path || '*';
+            path = path || '';
             path = Utils.fixNumericParts(path);
-            this.emit(path, {differences, hasDifferences: true, hasDeletions, hasAdditions, deletions, additions, changeType: 'whitelist-change'}, {});
+            this.emit(PATH_EVENT_PREFIX + path, {differences, hasDifferences: true, hasDeletions, hasAdditions, deletions, additions, changeType: 'whitelist-change'}, {});
+            if (this.options.fireGlobalChangeEvents) {
+                this.emit('change', {differences, hasDifferences: true, hasDeletions, hasAdditions, deletions, additions, changeType: 'whitelist-change'}, path, {});
+            }
         }
 
         this._whitelist = keySet;
@@ -363,7 +447,7 @@ export class PatchDiff extends EventEmitter {
         const flush = () => {
             if (!aggregatedPatch) { return; }
 
-            cb(aggregatedPatch, aggregatedChangesInfo, lastOptions.context || {},  true);
+            cb(aggregatedPatch, aggregatedChangesInfo, lastOptions.context || {},  true, lastOptions.params);
             aggregatedPatch = undefined;
             aggregatedChangesInfo = undefined;
             lastOptions = undefined;
@@ -374,17 +458,17 @@ export class PatchDiff extends EventEmitter {
             clearTimeout(lastTimeout);
 
             const flushNow = options.defer !== true ||
-                             typeof patch !== 'object' ||
-                             changesInfo.snapshot ||
-                             (lastOptions?.type && lastOptions.type !== options.type) ||
-                             (lastOptions?.context && !_isEqual(lastOptions.context, options.context));
+                typeof patch !== 'object' ||
+                changesInfo.snapshot ||
+                (lastOptions?.type && lastOptions.type !== options.type) ||
+                (lastOptions?.context && !_isEqual(lastOptions.context, options.context));
 
             if (flushNow) {
                 if (aggregatedPatch) {
                     flush();
                 }
 
-                cb(patch, changesInfo, options.context || {}, false);
+                cb(patch, changesInfo, options.context || {}, false, options.params);
                 return;
             }
 
@@ -395,11 +479,18 @@ export class PatchDiff extends EventEmitter {
             lastTimeout = setTimeout(flush, 0);
         }
 
-        fn(this.get(subPath), {snapshot: true}, this.options);
+        const isPattern = subPath.includes('*') || subPath.includes(':');
+        if (isPattern) {
+            this.getAll(subPath).forEach(({value, params}) => {
+                fn(value, {snapshot: true}, {...this.options, params});
+            });
+        } else {
+            fn(this.get(subPath), {snapshot: true}, this.options);
+        }
 
         let path = subPath;
         path = Utils.concatPath(this._path, path);
-        path = path || '*';
+        path = path || '';
         path = Utils.fixNumericParts(path);
 
         let handler = (diff, options) => {
@@ -425,13 +516,35 @@ export class PatchDiff extends EventEmitter {
             };
         }
 
+        let changeHandler;
+        if (isPattern) {
+            (this._root || this).options.fireGlobalChangeEvents = true;
 
-        super.on(path, handler);
+            const match = createPathMatcher(path);
+
+            changeHandler = (diff, path, options) => {
+                const matchedParams = match(path);
+                if (matchedParams) {
+                    handler(diff, {
+                        options,
+                        path,
+                        params: matchedParams
+                    });
+                }
+            };
+
+            super.on('change', changeHandler);
+        } else {
+            super.on(PATH_EVENT_PREFIX + path, handler);
+        }
 
         return () => {
             clearTimeout(lastTimeout);
             if (!handler) { return; }
-            this.removeListener(path, handler);
+            this.removeListener(PATH_EVENT_PREFIX + path, handler);
+            if (changeHandler) {
+                this.removeListener('change', changeHandler);
+            }
             handler = null;
         };
     }
@@ -558,7 +671,10 @@ export class PatchDiff extends EventEmitter {
         }
 
         if (options.emitEvents && levelDiffs.hasDifferences) {
-            this.emit((path || '*'), levelDiffs, options);
+            this.emit(PATH_EVENT_PREFIX + (path || ''), levelDiffs, options);
+            if (options.fireGlobalChangeEvents) {
+                this.emit('change', levelDiffs, path, options);
+            }
         }
 
         return levelDiffs;
@@ -652,7 +768,10 @@ export class PatchDiff extends EventEmitter {
                     levelDiffs.additions[key] = appliedValue;
                     levelDiffs.differences[key] = appliedValue;
                     const leafPath =  Utils.pushKeyToPath(path, srcKey, isTargetArray);
-                    this.emit((leafPath || '*'),  {differences: appliedValue, additions: appliedValue}, options);
+                    this.emit(PATH_EVENT_PREFIX + (leafPath || ''),  {differences: appliedValue, additions: appliedValue}, options);
+                    if (options.fireGlobalChangeEvents) {
+                        this.emit('change', {differences: appliedValue, additions: appliedValue}, leafPath, options);
+                    }
                 }
             }
             // existing
@@ -701,8 +820,11 @@ export class PatchDiff extends EventEmitter {
                 levelDiffs.updates[key] = updates;
                 levelDiffs.differences[key] = appliedValue;
                 const leafPath =  Utils.pushKeyToPath(path, srcKey, isTargetArray);
-                //this.emit((leafPath || '*'),  {differences: appliedValue}, {...options, type: 'update', oldValue: existingValue});
-                this.emit((leafPath || '*'),  {differences: appliedValue, updates} , options);
+                //this.emit(PATH_EVENT_PREFIX + (leafPath || ''),  {differences: appliedValue}, {...options, type: 'update', oldValue: existingValue});
+                this.emit(PATH_EVENT_PREFIX + (leafPath || ''),  {differences: appliedValue, updates} , options);
+                if (options.fireGlobalChangeEvents) {
+                    this.emit('change', {differences: appliedValue, updates}, leafPath, options);
+                }
             }
 
         }
@@ -735,7 +857,8 @@ export class PatchDiff extends EventEmitter {
             levelDiffs.addChildTracking(childDiffs, key);
         }
 
-        this.emit((Utils.pushKeyToPath(path, key) || '*'),  {
+        const eventPath = Utils.pushKeyToPath(path, key) || '';
+        this.emit(PATH_EVENT_PREFIX + eventPath,  {
             differences: options.deleteKeyword,
             deletions: existingValue,
             hasDeletions: true,
@@ -744,6 +867,18 @@ export class PatchDiff extends EventEmitter {
             hasAdditions: false,
             hasAddedObjects: false
         }, options);
+
+        if (options.fireGlobalChangeEvents) {
+            this.emit('change', {
+                differences: options.deleteKeyword,
+                deletions: existingValue,
+                hasDeletions: true,
+                hasDifferences: true,
+                hasUpdates: false,
+                hasAdditions: false,
+                hasAddedObjects: false
+            }, eventPath, options);
+        }
 
         return levelDiffs;
     }
@@ -813,9 +948,15 @@ export class PatchDiff extends EventEmitter {
             if (_isObject(deletedObject[key])) {
                 childDiffs = this._emitInnerDeletions(innerPath, deletedObject[key], options);
                 levelDiffs.addChildTracking(childDiffs, key);
-                this.emit(innerPath, childDiffs, options);
+                this.emit(PATH_EVENT_PREFIX + innerPath, childDiffs, options);
+                if (options.fireGlobalChangeEvents) {
+                    this.emit('change', childDiffs, innerPath, options);
+                }
             } else {
-                this.emit((innerPath || '*'),  {differences: options.deleteKeyword, deletions: deletedObject[key]}, options);
+                this.emit(PATH_EVENT_PREFIX + (innerPath || ''),  {differences: options.deleteKeyword, deletions: deletedObject[key]}, options);
+                if (options.fireGlobalChangeEvents) {
+                    this.emit('change', {differences: options.deleteKeyword, deletions: deletedObject[key]}, innerPath, options);
+                }
             }
 
             levelDiffs.differences[key] = options.deleteKeyword;
