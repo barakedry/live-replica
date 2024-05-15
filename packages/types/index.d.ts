@@ -167,17 +167,19 @@ declare module '@live-replica/live-replica' {
          * Subscribe to changes in the managed data object at a path
          * @param path a path to subscribe to changes at
          * @param callback (optional) a callback to call when the data changes
+         * @param skipInitial (optional) whether to skip the initial callback with the current data (default: false)
          * @returns a function to unsubscribe
          */
-        subscribe(path: string, callback?: SubscribeCallback): UnsubscribeCallback;
+        subscribe(path: string, callback?: SubscribeCallback, skipInitial?:boolean): UnsubscribeCallback;
 
 
         /**
          * Subscribe to changes in the managed data object
          * @param callback (optional) a callback to call when the data changes
+         * @param skipInitial (optional) whether to skip the initial callback with the current data (default: false)
          * @returns a function to unsubscribe
          */
-        subscribe(callback: SubscribeCallback): UnsubscribeCallback;
+        subscribe(callback: SubscribeCallback, skipInitial?:boolean): UnsubscribeCallback;
 
 
         /**
