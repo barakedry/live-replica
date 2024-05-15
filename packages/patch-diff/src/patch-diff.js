@@ -432,8 +432,9 @@ export class PatchDiff extends EventEmitter {
     }
 
 
-    subscribe (subPath, fn) {
+    subscribe (subPath, fn, skipInitial = false) {
         if (typeof subPath === 'function') {
+            skipInitial = fn;
             fn = subPath;
             subPath = '';
         }
@@ -480,12 +481,15 @@ export class PatchDiff extends EventEmitter {
         }
 
         const isPattern = subPath.includes('*') || subPath.includes(':');
-        if (isPattern) {
-            this.getAll(subPath).forEach(({value, params}) => {
-                fn(value, {snapshot: true}, {...this.options, params});
-            });
-        } else {
-            fn(this.get(subPath), {snapshot: true}, this.options);
+
+        if (!skipInitial) {
+            if (isPattern) {
+                this.getAll(subPath).forEach(({value, params}) => {
+                    fn(value, {snapshot: true}, {...this.options, params});
+                });
+            } else {
+                fn(this.get(subPath), {snapshot: true}, this.options);
+            }
         }
 
         let path = subPath;
