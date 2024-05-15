@@ -292,7 +292,7 @@ export class PatchDiff extends EventEmitter {
             return `[:${keyName}]`;
         });
 
-        const partsAndKeys = pathPattern.split(/\[:+|\]\./);
+        const partsAndKeys = pathPattern.split(/\[:+|\]\./).map((item, index) => { return index > 0 ? item.split(']')[0] : item});
 
         return (getAll(this, partsAndKeys, {})|| []).filter(v => !!v);
     }

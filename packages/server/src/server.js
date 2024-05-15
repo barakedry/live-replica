@@ -5,7 +5,7 @@ import { Utils } from '../../utils/utils.js';
 const defaultTransformer = (data, dataPart) => data;
 function serializeFunctions(data) {
 
-    if (typeof data !== 'object') {
+    if (typeof data !== 'object' || data === null) {
         return data;
     }
 
