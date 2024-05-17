@@ -71,7 +71,7 @@ function getAll(current, partsAndKeys, parentParams = {}) {
                 }
             });
         } else {
-            return {value, params: parentParams};
+            return {value, params: parentParams, isPattern: true};
         }
     }
 }
@@ -128,8 +128,8 @@ export class PatchDiff extends EventEmitter {
             emitUpdates: true,
             emitDifferences: true,
             fireGlobalChangeEvents: false,
-            maxKeysInLevel: 1000,
-            maxLevels: 50,
+            maxKeysInLevel: 10000,
+            maxLevels: 60,
             maxListeners: 1000000,
             disableSplices: true,
             ...options
@@ -282,7 +282,7 @@ export class PatchDiff extends EventEmitter {
 
         const isPattern = pathPattern && (pathPattern.includes('*') || pathPattern.includes(':'));
         if (!isPattern) {
-            return [{value: this.get(pathPattern), params: {}}];
+            return [{value: this.get(pathPattern), params: {}, isPattern: false}];
         }
 
         let unnamedKeys = [];

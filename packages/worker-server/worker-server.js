@@ -58,11 +58,11 @@ class Connection extends EventEmitter {
  *  LiveReplicaWorkerSocket
  */
 export class WorkerServer extends LiveReplicaServer {
-    constructor() {
+    constructor(options) {
         if (!self) {
             throw new Error('WorkerServer can be initiated only inside a web worker')
         }
-        super();
+        super(options);
 
         this._masterConnection = new Connection();
         this.onConnect(this._masterConnection)

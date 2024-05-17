@@ -150,7 +150,7 @@ declare module '@live-replica/live-replica' {
          * Get a value from the managed data object at a path
          * @param pathPattern
          */
-        getAll(pathPattern:string) : Array<{value: any, params: object}>
+        getAll(pathPattern:string) : Array<{value: any, params: object, isPattern?:boolean}>
 
 
         //get(callback?: (data: object) => void);
