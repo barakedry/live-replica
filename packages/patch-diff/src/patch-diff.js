@@ -81,16 +81,16 @@ function createPathMatcher(pattern) {
     const regex = /:([\w]+)/g;
     const keys = [];
     const replaced = '^' + pattern.replace(regex, (match, capture) => {
-        keys.push(capture);
-        return `:(\\w+)`;
-    // }).replace(/\[/g,'\\\[?').replace(/\]/g,'\\\]?')
-    //   .replace(/\:/g,'\.?').replace(/\./g,'\\.') + '$';
+            keys.push(capture);
+            return `:(\\w+)`;
+            // }).replace(/\[/g,'\\\[?').replace(/\]/g,'\\\]?')
+            //   .replace(/\:/g,'\.?').replace(/\./g,'\\.') + '$';
 
-    }).replace(/\[/g,'\\\[?').replace(/\]/g,'\\\]?')
-        .replace(/\:/g,'\.?').replace(/\./g,'\\.')
-        .replace('**','([\\w\\.]+)')
-        .replace('*','(\\w+)')
-    + '$';
+        }).replace(/\[/g,'\\\[?').replace(/\]/g,'\\\]?')
+            .replace(/\:/g,'\.?').replace(/\./g,'\\.')
+            .replace('**','([\\w\\.]+)')
+            .replace('*','(\\w+)')
+        + '$';
 
     const regexp  = new RegExp(replaced);
 
@@ -837,10 +837,6 @@ export class PatchDiff extends EventEmitter {
     }
 
     _deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray) {
-        if (_isObject(existingValue)) {
-            revoke(existingValue);
-        }
-
         if (options.patchDeletions) {
             if (isArray) {
                 target.splice(index(key, levelDiffs), 1);
@@ -855,7 +851,7 @@ export class PatchDiff extends EventEmitter {
         levelDiffs.hasDeletions = true;
         levelDiffs.hasDifferences = true;
 
-        if (_isObject(existingValue)) {
+        if (_isObject(existingValue) && !options.skipInnerDeletionEvents) {
             //levelDiffs.addChildTracking(this._emitInnerDeletions(path, existingValue, options), key)
             const childDiffs = this._emitInnerDeletions(Utils.pushKeyToPath(path, key, isArray), existingValue, options);
             levelDiffs.addChildTracking(childDiffs, key);
@@ -882,6 +878,10 @@ export class PatchDiff extends EventEmitter {
                 hasAdditions: false,
                 hasAddedObjects: false
             }, eventPath, options);
+        }
+
+        if (_isObject(existingValue)) {
+            revoke(existingValue);
         }
 
         return levelDiffs;

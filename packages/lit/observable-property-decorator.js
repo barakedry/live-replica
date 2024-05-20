@@ -22,8 +22,8 @@ export function observed(options = {}) {
 
         const propertyKey = Symbol(`_${propertyName}`);
         const unwatchKey = Symbol(`unwatch${propertyName}`);
+        const lastSetKey = Symbol(`last_${propertyName}`);
         const reactiveController = Symbol();
-
 
         let revoked = false;
         const descriptor = {
@@ -40,8 +40,9 @@ export function observed(options = {}) {
 
                 const onChange = options.onChange && typeof this[options.onChange] === 'function' ? this[options.onChange] : () => {};
 
-                if (this[propertyKey] === value) { return; }
+                if (this[propertyKey] === value || this[lastSetKey] === value) { return; }
                 const prevValue = this[propertyKey];
+                this[lastSetKey] = value;
 
                 this[unwatchKey]?.();
 
