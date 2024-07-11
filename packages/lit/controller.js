@@ -1,5 +1,5 @@
 import {extractBasePathAndProperty, replicaByData, concatPath} from "./utils.js";
-import { isProxy, getPatchDiff, Replica } from '@live-replica/client';
+import { isProxy, getPatchDiff, PatchDiff } from '@live-replica/client';
 
 const deferredDisconnections = new WeakMap();
 export class LiveReplicaController {
@@ -16,12 +16,12 @@ export class LiveReplicaController {
 
         let replica;
 
-        if (data instanceof Replica) {
+        if (data instanceof PatchDiff) {
             replica = data;
-        } if (isProxy(data)) {
+        } else if (isProxy(data)) {
             replica = getPatchDiff(data);
         } else {
-            throw new Error('watch can only be used with a LiveReplica Proxy or Replica instance');
+            throw new Error('watch can only be used with a LiveReplica Proxy, Replica or PatchDiff instance');
         }
 
         let property;
@@ -33,7 +33,13 @@ export class LiveReplicaController {
             }
         }
 
+        const deleteKeyword = replica.options.deleteKeyword;
         let unsubscribe = replica.subscribe(function (patch, diff) {
+
+            const selfDelete = patch === deleteKeyword;
+            if (selfDelete)  {
+                patch = undefined;
+            }
 
             let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
 
@@ -42,7 +48,7 @@ export class LiveReplicaController {
             let doRender = true;
 
             if (cb) {
-                const cbReturn = cb.call(host, patch, diff, replica.get(property));
+                const cbReturn = cb.call(host, patch, diff, replica.get(property), selfDelete);
                 if (cbReturn === false) {
                     doRender = false;
                 }
@@ -97,13 +103,14 @@ export class WatchController {
 
         let replica;
 
-        if (data instanceof Replica) {
+        if (data instanceof PatchDiff) {
             replica = data;
-        } if (isProxy(data)) {
+        } else if (isProxy(data)) {
             replica = getPatchDiff(data);
         } else {
-            throw new Error('watch can only be used with a LiveReplica Proxy or Replica instance');
+            throw new Error('watch can only be used with a LiveReplica Proxy, Replica or PatchDiff instance');
         }
+
 
         let property;
         if (path) {
@@ -114,7 +121,13 @@ export class WatchController {
             }
         }
 
+        const deleteKeyword = replica.options.deleteKeyword;
         let unsubscribe = replica.subscribe(function (patch, diff) {
+
+            const selfDelete = patch === deleteKeyword;
+            if (selfDelete)  {
+                patch = undefined;
+            }
 
             let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
 
@@ -123,7 +136,7 @@ export class WatchController {
             let doRender = true;
 
             if (cb) {
-                const cbReturn = cb.call(host, patch, diff, replica.get(property));
+                const cbReturn = cb.call(host, patch, diff, replica.get(property), selfDelete);
                 if (cbReturn === false) {
                     doRender = false;
                 }

@@ -303,6 +303,20 @@ describe('Patch Diff', () => {
             expect(patcher.get()).toEqual({});
             expect(arrPatcher.get()).toEqual([]);
         });
+
+
+        it('should not change anything if removing non existent key', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const before = patcher.getClone();
+
+            //Act
+            patcher.remove('a.b.e');
+
+            expect(patcher.get()).toEqual(before);
+        });
+
+
     });
     describe('splice', () => {
         it.failing('should apply data changes to arrays', () => {
@@ -912,6 +926,20 @@ describe('Patch Diff', () => {
                 expect(spy).toHaveBeenCalledWith('stuff', { snapshot: true }, {});
                 expect(spy).toHaveBeenCalledWith('fluff', { differences: 'fluff', updates: { oldVal: 'stuff', newVal: 'fluff' } }, {});
             });
+        });
+
+        it(' not fire anything if removing non existent key', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const before = patcher.getClone();
+            const spy = jest.fn();
+            patcher.subscribe('a', (diff) => {
+                spy();
+            }, true);
+            //Act
+            patcher.remove('a.b.e');
+
+            expect(spy).not.toHaveBeenCalled();
         });
     });
     describe('getWhenExists', () => {

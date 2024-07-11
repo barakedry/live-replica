@@ -1,4 +1,4 @@
-import {PatchDiff, isProxy, get} from '../client/index.js';
+import {PatchDiff, isProxy, get, getPatchDiff} from '../client/index.js';
 import {LiveReplicaController} from './controller.js';
 
 const isRevoked = (obj) => {
@@ -34,7 +34,7 @@ export function observed(options = {}) {
 
                 return previouslyDefinedDescriptor ? previouslyDefinedDescriptor?.get?.call(this) : this[propertyKey];
             },
-            set: function(value){
+            set: function setObservable(value){
 
                 revoked = false;
 
@@ -65,6 +65,8 @@ export function observed(options = {}) {
                     proxy = patchDiff.getData(options);
                 }
 
+                const patchDiff = getPatchDiff(proxy);
+
                 this[propertyKey] = proxy;
 
                 if (previouslyDefinedDescriptor?.set) {
@@ -77,7 +79,18 @@ export function observed(options = {}) {
                     this[reactiveController] = new LiveReplicaController(this);
                 }
 
-                this[unwatchKey] = this[reactiveController].watch(proxy, undefined, (diff, changeInfo) => {
+                let wasDeleted = false;
+                this[unwatchKey] = this[reactiveController].watch(patchDiff, undefined, (diff, changeInfo, value, selfDelete) => {
+
+                    if (selfDelete) {
+                        proxy = undefined;
+                        this[propertyKey] = undefined;
+                        wasDeleted = true;
+                        previouslyDefinedDescriptor?.set?.call(this, this[propertyKey]);
+                    } else if (wasDeleted &&  value && (typeof value === 'object')) {
+                        setObservable.call(this, patchDiff);
+                    }
+
                     if (changeInfo.selfDelete) {
                         return false;
                     }
