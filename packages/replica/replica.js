@@ -5,7 +5,12 @@ import { Utils } from '../utils/utils.js';
 import {WebSocketClient} from "../ws-client/ws-client.js";
 const { concatPath } = Utils;
 
-let replicaId = Date.now();
+function generateUniqueId() {
+    const timestamp = Date.now().toString(36); // Base36 encoding of the current timestamp
+    const randomPart = Math.random().toString(36).substring(2, 15); // Random part
+
+    return `${timestamp}-${randomPart}`;
+}
 
 // privates
 const deserializeFunctions  = Symbol('deserializeFunctions');
@@ -106,7 +111,7 @@ export class Replica extends PatchDiff {
         }
 
         this.remotePath = remotePath;
-        this.id = ++replicaId;
+        this.id = generateUniqueId();
         this._synced = false;
         this._subscribed = false;
 

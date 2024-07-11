@@ -237,6 +237,7 @@ export class PatchDiff extends EventEmitter {
         options = {
             ...this.options,
             ...options,
+            deletePatch: true
         };
 
         if (!path && !this._path) {
@@ -732,7 +733,7 @@ export class PatchDiff extends EventEmitter {
 
         // new
         if (!this.retainState || !target.hasOwnProperty(srcKey)) {
-            if (options.patchAdditions && patch[key] !== options.deleteKeyword) {
+            if (options.patchAdditions && patch[key] !== options.deleteKeyword && !options.deletePatch) {
 
                 levelDiffs.hasAdditions = true;
                 levelDiffs.hasDifferences = true;
@@ -788,7 +789,7 @@ export class PatchDiff extends EventEmitter {
             if (patch[key] === options.deleteKeyword) {
                 levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isTargetArray);
 
-                // update object
+            // update object
             } else if (isPatchValueObject) {
 
                 // we should replace the target value, todo: array merges check is not sufficient
@@ -809,7 +810,7 @@ export class PatchDiff extends EventEmitter {
 
                 levelDiffs.addChildTracking(childDiffs, key);
 
-                // update primitive
+            // update primitive
             } else {
 
                 target[srcKey] = patchValue;
@@ -844,6 +845,10 @@ export class PatchDiff extends EventEmitter {
             } else {
                 delete target[key];
             }
+        }
+
+        if (existingValue === undefined) {
+            return levelDiffs;
         }
 
         levelDiffs.deletions[key] = existingValue;
