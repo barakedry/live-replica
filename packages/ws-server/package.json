@@ -8,12 +8,12 @@
     "test": "jest"
   },
   "peerDependencies": {
-    "ws": "^7.1.2"
+    "ws": "^8.18.0"
   },
   "dependencies": {
     "@live-replica/server": "*",
     "@live-replica/events": "*",
-    "@msgpack/msgpack": "^1.9.0"
+    "@msgpack/msgpack": "^2.8.0"
   },
   "author": "",
   "license": "Apache-2.0"

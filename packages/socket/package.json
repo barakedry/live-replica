@@ -4,6 +4,7 @@
   "description": "socket abstraction for live-replica",
   "type": "module",
   "main": "socket.js",
+  "dependencies": {},
   "scripts": {
     "test": "jest"
   },

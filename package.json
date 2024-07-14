@@ -8,8 +8,10 @@
     "test": "tests"
   },
   "scripts": {
-    "bootstrap": "npx lerna bootstrap",
-    "test": "jest"
+    "bootstrap-install": "npm install && lerna bootstrap --no-ci",
+    "bootstrap-ci": "npm ci && lerna bootstrap",
+    "test": "jest",
+    "pack": "rm live-replica-live-replica-*.tgz && npm pack"
   },
   "repository": "git+https://github.com/barakedry/live-replica",
   "keywords": [
@@ -38,7 +40,8 @@
     "jest": "latest",
     "lit": "latest",
     "typescript": "^5.2.2",
-    "ws": "^8.14.2"
+    "ws": "^8.18.0",
+    "lerna": "6.6.2"
   },
   "dependencies": {
     "@msgpack/msgpack": "latest",

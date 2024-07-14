@@ -4,6 +4,7 @@
   "description": "server for live-replica.js",
   "main": "src/server.js",
   "type": "module",
+  "dependencies": {},
   "scripts": {
     "test": "jest"
   },

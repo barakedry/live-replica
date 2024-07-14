@@ -1,6 +1,7 @@
 {
   "name": "@live-replica/lit",
   "version": "1.0.0",
+  "dependencies": {},
   "peerDependencies": {
     "lit": "^2.0.0-rc.2"
   }
