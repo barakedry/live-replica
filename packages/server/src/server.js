@@ -105,12 +105,16 @@ export class LiveReplicaServer extends PatchDiff {
 
         let subscriberChange = false;
         let transformedClientPatch = false;
-        const unsubscribeChanges = target.subscribe((patchData, {snapshot, changeType}) => {
+        const unsubscribeChanges = target.subscribe((patchData, {snapshot, changeType, deletePatch}) => {
             if (transformedClientPatch || !subscriberChange) {
                 const updateInfo  =  snapshot ? {snapshot} : {snapshot : false};
                 if (!snapshot && subscriberChange) {
                     changeRevision++;
                     updateInfo.changeRevision = changeRevision;
+                }
+
+                if (deletePatch) {
+                    updateInfo.deletePatch = deletePatch;
                 }
 
                 patchData = readTransformer(patchData, target);

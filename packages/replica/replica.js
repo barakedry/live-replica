@@ -34,7 +34,8 @@ export class Replica extends PatchDiff {
                 this[remoteOverride](delta);
             } else {
                 this.changeRevision = meta.changeRevision;
-                this[remoteApply](delta);
+                const applyOptions = meta.deletePatch ? {deletePatch: true} : undefined;
+                this[remoteApply](delta, applyOptions);
             }
 
             if (!this._synced) {
@@ -84,8 +85,8 @@ export class Replica extends PatchDiff {
         return data;
     }
 
-    [remoteApply](data) {
-        super.apply(this[deserializeFunctions](data));
+    [remoteApply](data, options) {
+        super.apply(this[deserializeFunctions](data), options);
     }
 
     [remoteOverride](data) {

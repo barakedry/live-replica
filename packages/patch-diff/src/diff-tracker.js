@@ -24,13 +24,17 @@ function create(diffsAsArray) {
         updates: {},
         addedObjects: {},
         differences: diffsAsArray ? [] : {},
-        addChildTracking: function addChildTracking(childTracker, key, isNewObject = false) {
+        addChildTracking: function addChildTracking(childTracker, key, isNewObject = false, deletePatch) {
+            if (deletePatch) {
+                this.deletePatch = true;
+            }
+
             if (childTracker.hasAdditions) {
                 this.additions[key] = childTracker.additions;
                 this.hasAdditions = true;
             }
 
-            if (isNewObject) {
+            if (isNewObject && childTracker.hasDifferences) {
                 this.addedObjects[key] = true;
                 this.hasAddedObjects = true;
             } else if (childTracker.hasAddedObjects) {

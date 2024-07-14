@@ -645,7 +645,7 @@ export class PatchDiff extends EventEmitter {
         let isTargetArray = _isArray(target);
 
         if (options.emitEvents) {
-            levelDiffs = DiffTracker.create(isTargetArray && target.length === 0 && _isArray(patch));
+            levelDiffs = DiffTracker.create(isTargetArray && target.length === 0 && _isArray(patch), options.deletePatch);
             levelDiffs.path = path;
         }
 
