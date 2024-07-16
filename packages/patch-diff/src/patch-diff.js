@@ -789,7 +789,7 @@ export class PatchDiff extends EventEmitter {
             if (patch[key] === options.deleteKeyword) {
                 levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isTargetArray);
 
-            // update object
+                // update object
             } else if (isPatchValueObject) {
 
                 // we should replace the target value, todo: array merges check is not sufficient
@@ -810,7 +810,7 @@ export class PatchDiff extends EventEmitter {
 
                 levelDiffs.addChildTracking(childDiffs, key);
 
-            // update primitive
+                // update primitive
             } else {
 
                 target[srcKey] = patchValue;
@@ -909,7 +909,7 @@ export class PatchDiff extends EventEmitter {
                 this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray);
             }
             else if (typeof patch[key] === 'object') {
-                const diffs = DiffTracker.create(_isArray(target[key]) && target[key].length === 0 && _isArray(patch[key]));
+                const diffs = DiffTracker.create(_isArray(target[key]) && target[key].length === 0 && _isArray(patch[key]), options.deletePatch);
                 this._detectDeletionsAtLevel(target[key], patch[key], diffs, Utils.pushKeyToPath(path, key, isArray), options, Array.isArray(target[key]));
                 levelDiffs.addChildTracking(diffs, key);
             }
@@ -945,7 +945,7 @@ export class PatchDiff extends EventEmitter {
         }
 
         if (options.emitEvents) {
-            levelDiffs = DiffTracker.create();
+            levelDiffs = DiffTracker.create(false, options.deletePatch);
             levelDiffs.path = path;
         }
 

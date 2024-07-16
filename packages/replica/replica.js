@@ -86,7 +86,7 @@ export class Replica extends PatchDiff {
     }
 
     [remoteApply](data, options) {
-        super.apply(this[deserializeFunctions](data), options);
+        super.apply(this[deserializeFunctions](data), undefined, options);
     }
 
     [remoteOverride](data) {

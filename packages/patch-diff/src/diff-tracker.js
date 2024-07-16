@@ -12,7 +12,7 @@ function deepAssign(target, patch) {
     return target;
 }
 
-function create(diffsAsArray) {
+function create(diffsAsArray, deletePatch = false) {
     return {
         hasAdditions: false,
         hasAddedObjects: false,
@@ -24,10 +24,8 @@ function create(diffsAsArray) {
         updates: {},
         addedObjects: {},
         differences: diffsAsArray ? [] : {},
-        addChildTracking: function addChildTracking(childTracker, key, isNewObject = false, deletePatch) {
-            if (deletePatch) {
-                this.deletePatch = true;
-            }
+        deletePatch,
+        addChildTracking: function addChildTracking(childTracker, key, isNewObject = false) {
 
             if (childTracker.hasAdditions) {
                 this.additions[key] = childTracker.additions;
