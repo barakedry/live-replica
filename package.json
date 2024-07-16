@@ -11,7 +11,7 @@
     "bootstrap-install": "npm install && lerna bootstrap --no-ci",
     "bootstrap-ci": "npm ci && lerna bootstrap",
     "test": "jest",
-    "pack": "npm version patch && rm live-replica-live-replica-*.tgz && npm pack"
+    "pack": "npm version patch && npm pack"
   },
   "repository": "git+https://github.com/barakedry/live-replica",
   "keywords": [
