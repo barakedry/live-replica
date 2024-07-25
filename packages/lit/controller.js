@@ -131,7 +131,7 @@ export class WatchController {
 
             let lengthChanged = property === 'length' && (diff.hasAdditions || diff.hasDeletions);
 
-            if (!lengthChanged && (property && !patch[property])) { return; }
+            if (!lengthChanged && (property && !patch?.[property])) { return; }
 
             let doRender = true;
 
