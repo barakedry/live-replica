@@ -12,9 +12,14 @@ export class WorkerSocket extends LiveReplicaSocket {
 
     // overrides
 
+    get baseSocket() {
+        return this.worker;
+    }
+
     _addSocketEventListener(eventName, fn) {
         this._emitter.on(eventName, fn);
     }
+
     _addSocketEventListenerOnce(eventName, fn) {
         this._emitter.once(eventName, fn);
     }
@@ -46,10 +51,6 @@ export class WorkerSocket extends LiveReplicaSocket {
         this.worker.postMessage(message);
     }
 
-    get baseSocket() {
-        return this.worker;
-    }
-
     connect(worker) {
         this.worker = worker;
         this.onWorkerMessage = ({data}) => {
@@ -60,6 +61,9 @@ export class WorkerSocket extends LiveReplicaSocket {
         };
 
         this.worker.addEventListener('message', this.onWorkerMessage);
+        if (typeof this.worker.start === 'function') {
+            this.worker.start();
+        }
     }
 
     disconnect() {

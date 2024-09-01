@@ -22,14 +22,20 @@ class Connection extends EventEmitter {
                 this.emit(event, payload, ackFunction);
             }
         };
+    }
 
+    //todo: need a better name here
+    get messagePort() {
+        return self;
+    }
+
+    init() {
         self.addEventListener('message', this.messageFromMaster);
     }
 
-
     send(event, ...args) {
         event = eventName(event);
-        self.postMessage({
+        this.messagePort.postMessage({
             liveReplica: {
                 event,
                 args
@@ -54,6 +60,25 @@ class Connection extends EventEmitter {
 
 }
 
+class MessagePortConnection extends Connection {
+    /**
+     * @param {MessagePort} port
+     */
+    constructor(port) {
+        super();
+        this.port = port;
+    }
+
+    get messagePort() {
+        return this.port;
+    }
+
+    init() {
+        this.port.addEventListener('message', this.messageFromMaster);
+        this.port.start();
+    }
+}
+
 /**
  *  LiveReplicaWorkerSocket
  */
@@ -65,7 +90,17 @@ export class WorkerServer extends LiveReplicaServer {
         super(options);
 
         this._masterConnection = new Connection();
+        this._masterConnection.init();
         this.onConnect(this._masterConnection)
+    }
+
+    /**
+     * @param {MessagePort} port
+     */
+    addPortConnection(port) {
+        const portConnection = new MessagePortConnection(port);
+        portConnection.init();
+        this.onConnect(new MessagePortConnection(port));
     }
 }
 
