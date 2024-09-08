@@ -8,7 +8,7 @@ class Connection extends EventEmitter {
 
         this.setMaxListeners(50000);
 
-        this.messageFromMaster = ({data}) => {
+        this.messageFromPeer = ({data}) => {
             if (data.liveReplica) {
                 const {event, payload, ack} = data.liveReplica;
 
@@ -24,13 +24,12 @@ class Connection extends EventEmitter {
         };
     }
 
-    //todo: need a better name here
     get messagePort() {
         return self;
     }
 
     init() {
-        self.addEventListener('message', this.messageFromMaster);
+        self.addEventListener('message', this.messageFromPeer);
     }
 
     send(event, ...args) {
@@ -74,7 +73,7 @@ class MessagePortConnection extends Connection {
     }
 
     init() {
-        this.port.addEventListener('message', this.messageFromMaster);
+        this.port.addEventListener('message', this.messageFromPeer);
         this.port.start();
     }
 }
@@ -100,7 +99,7 @@ export class WorkerServer extends LiveReplicaServer {
     addPortConnection(port) {
         const portConnection = new MessagePortConnection(port);
         portConnection.init();
-        this.onConnect(new MessagePortConnection(port));
+        this.onConnect(portConnection);
     }
 }
 
