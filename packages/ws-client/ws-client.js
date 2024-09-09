@@ -112,6 +112,7 @@ export class WebSocketClient extends LiveReplicaSocket {
             this._socket.removeEventListener('message', this[onMessage]);
         }
         delete this._socket;
+        // todo: check if we need to call super.disconnect() here
     }
 
     isConnected() { return this._socket && this._socket.readyState === WebSocket.OPEN; }

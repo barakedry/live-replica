@@ -398,7 +398,8 @@ describe('Patch Diff', () => {
                 },
                 itemKey2: {
                     itemVal: 'itemValue2'
-                }
+                },
+                itemKey3: {}
             }};
 
             const patcher = new PatchDiff(initObject);
@@ -406,8 +407,9 @@ describe('Patch Diff', () => {
             const result = patcher.getAll('items[:itemKey].itemVal');
             //Assert
             expect(result).toStrictEqual([
-                {value: 'itemValue1', params: {itemKey: 'itemKey1'}},
-                {value: 'itemValue2', params: {itemKey: 'itemKey2'}}
+                {value: 'itemValue1', params: {itemKey: 'itemKey1'}, isPattern: true},
+                {value: 'itemValue2', params: {itemKey: 'itemKey2'}, isPattern: true},
+                {value: undefined, params: {itemKey: 'itemKey3'}, isPattern: true},
             ]);
         });
 
@@ -513,7 +515,7 @@ describe('Patch Diff', () => {
             const patcher = new PatchDiff(initObject);
             const spy = jest.fn();
             patcher.subscribe('a', (diff, changeInfo, context) => {
-                console.log('a', diff, changeInfo, context);
+                //console.log('a', diff, changeInfo, context);
                 spy(diff, changeInfo, context);
             });
 

@@ -121,6 +121,19 @@ export class Replica extends PatchDiff {
         }
     }
 
+    set connection(connection) {
+        if (this._connection) {
+            this._connection.off(`apply:${this.id}`, this.onApplyEvent);
+            this._connection.off('reconnect', this.onSocketReconnected);
+        }
+
+        this._connection = connection;
+    }
+
+    get connection() {
+        return this._connection;
+    }
+
     subscribeRemote(connection = this.options.connection, subscribeSuccessCallback = this.options.subscribeSuccessCallback, subscribeRejectCallback = this.options.subscribeRejectCallback) {
 
         if (!(connection && connection instanceof LiveReplicaSocket)) {
@@ -128,6 +141,8 @@ export class Replica extends PatchDiff {
         }
 
         this._subscribed = false;
+        this._synced = false;
+
         if (connection !== this.connection) {
             this.connection = connection;
             this[bindToSocket]();
@@ -224,9 +239,7 @@ export class Replica extends PatchDiff {
         this.removeAllListeners();
 
         if (this.connection) {
-            this.connection.off(`apply:${this.id}`, this.onApplyEvent);
-            this.connection.off('reconnect', this.onSocketReconnected);
-            delete this.connection;
+            this.connection = undefined;
         }
 
         this.destroyProxy();

@@ -55,23 +55,29 @@ function getAll(current, partsAndKeys, parentParams = {}) {
     current = current.at(pathPart);
     const value = current.get();
     if (value === undefined) {
-        return undefined;
+        return [{params: parentParams, value: undefined, isPattern: true}];
     } else {
         if (keyName) {
             if (typeof value !== 'object') {
-                return undefined;
+                return [{params: parentParams, value: undefined, isPattern: true}];
             }
 
-            return Object.keys(value).map((key) => {
+            let multi = [];
+            Object.keys(value).forEach((key) => {
                 const params = {...parentParams, [keyName]: key};
                 if (partsAndKeys.length) {
-                    return getAll(current.at(key), [...partsAndKeys], params);
+                    getAll(current.at(key), [...partsAndKeys], params).forEach((v) => {
+                        multi.push(v);
+                    });
                 } else {
-                    return {value: current.get(key), params};
+                    multi.push({value: current.get(key), params});
                 }
             });
+
+            return multi;
+
         } else {
-            return {value, params: parentParams, isPattern: true};
+            return [{value, params: parentParams, isPattern: true}];
         }
     }
 }
@@ -110,7 +116,6 @@ function createPathMatcher(pattern) {
 }
 
 export class PatchDiff extends EventEmitter {
-    _subs = {};
 
     constructor(object, options) {
 
@@ -240,6 +245,7 @@ export class PatchDiff extends EventEmitter {
             deletePatch: true
         };
 
+
         if (!path && !this._path) {
             this.destroyProxy();
             this._data = Array.isArray(this._data) ? [] : {};
@@ -295,7 +301,7 @@ export class PatchDiff extends EventEmitter {
 
         const partsAndKeys = pathPattern.split(/\[:+|\]\./).map((item, index) => { return index > 0 ? item.split(']')[0] : item});
 
-        return (getAll(this, partsAndKeys, {})|| []).filter(v => !!v);
+        return (getAll(this, partsAndKeys, {}) || []).filter(v => !!v);
     }
 
     get(path, callback) {
@@ -571,11 +577,9 @@ export class PatchDiff extends EventEmitter {
         });
     }
 
-    at(subPath, cached = true) {
+    at(subPath) {
 
-        if (cached && this._subs[subPath]) {
-            return this._subs[subPath];
-        }
+        let path = Utils.concatPath(this._path, subPath);
 
         if (this._whitelist) {
             let allowed = false;
@@ -590,7 +594,6 @@ export class PatchDiff extends EventEmitter {
             }
         }
 
-        let path = Utils.concatPath(this._path, subPath);
         let at = Object.create(this);
         at._root = this.root;
         at._whitelist = null;
@@ -602,10 +605,6 @@ export class PatchDiff extends EventEmitter {
         at._wrapper = wrapper;
         at._wrapperInner = wrapperInner;
         at._wrapperKey = lastKey;
-
-        if (cached) {
-            this._subs[subPath] = at;
-        }
 
         return at;
     }
