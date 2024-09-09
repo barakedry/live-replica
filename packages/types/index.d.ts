@@ -186,16 +186,14 @@ declare module '@live-replica/live-replica' {
          * Returns a scoped PatchDiff at a relative path (uses this as its prototype object)
          * useful for working at a sub path of the managed data object and passing it around
          * @param subPath a relative path to scope the PatchDiff at
-         * @param cached (optional) whether to return a cached PatchDiff for the sub path (default: true)
          */
-        at(subPath, cached?): PatchDiff;
+        at(subPath): PatchDiff;
 
         /**
          * alias for at()
          * @param subPath a relative path to scope the PatchDiff at
-         * @param cached (optional) whether to return a cached PatchDiff for the sub path (default: true)
          */
-        scope(subPath, cached?): PatchDiff;
+        scope(subPath): PatchDiff;
 
 
         /**
