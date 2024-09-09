@@ -56,14 +56,11 @@ export class WorkerSocket extends LiveReplicaSocket {
         this.onWorkerMessage = ({data}) => {
             if (data.liveReplica) {
                 const {event, args} = data.liveReplica;
-                this._emitter.emit(event, ...args);
+                this._emitter.emit(event, ...(args || []));
             }
         };
 
         this.worker.addEventListener('message', this.onWorkerMessage);
-        if (typeof this.worker.start === 'function') {
-            this.worker.start();
-        }
     }
 
     disconnect() {
@@ -72,6 +69,13 @@ export class WorkerSocket extends LiveReplicaSocket {
     }
 
     isConnected() { return !!this.socket; }
+}
+
+export class MessagePortSocket extends WorkerSocket {
+    connect(port) {
+        super.connect(port);
+        port.start();
+    }
 }
 
 export default WorkerSocket;
