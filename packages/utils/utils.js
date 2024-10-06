@@ -102,7 +102,7 @@ export const Utils = {
         if (dotIndex > bracketIndex) {
             key = fullPath.substring(dotIndex + 1);
             path = fullPath.substring(0, dotIndex);
-        } else if (stringBracketIndex > bracketIndex) {
+        } else if (stringBracketIndex >= bracketIndex) {
             key = fullPath.substring(stringBracketIndex + 2, fullPath.length -2);
             path = fullPath.substring(0, stringBracketIndex);
         } else {
