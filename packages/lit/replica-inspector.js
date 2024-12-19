@@ -543,6 +543,11 @@ class ReplicaInspector extends LitElement {
         this.requestUpdate()
     }
 
+    copyToClipboard(value) {
+        navigator.clipboard.writeText(JSON.stringify(value, null, 2));
+    }
+
+
     renderProperty(parent, key) {
         const value = parent[key];
         const type = typeof value;
@@ -565,14 +570,15 @@ class ReplicaInspector extends LitElement {
         }
 
         return html`
-            <li class="${type}" data-type="${dataType}" ?expanded=${isExpanded}>
+            <li class="${type}" data-type="${dataType}" ?expanded=${isExpanded} .value=${value}>
                 <button class='delete' title='Delete' @click="${() => this.deleteProperty(parent, key)}"></button>
                 <button class="expandCollapse" @click=${toggleExpanded}></button>
                 <span class="keyValuePair" @click=${toggleExpanded}>
                     <label class="key">${key}:</label>
                     ${this.renderValueByType(value, type, parent, key)}                    
                 </span>
-                <button class="duplicate" @click=${() => this.duplicateProperty(parent, value)}></button>
+<!--                <button class="duplicate" @click=${() => this.duplicateProperty(parent, value)}></button>-->
+                <button class="copyToClipboard" @click=${() => this.copyToClipboard(value)}></button>
                 ${type === 'object' && isExpanded ? this.renderObject(value) : ''}
             </li>`;
     }
