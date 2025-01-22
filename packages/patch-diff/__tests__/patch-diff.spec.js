@@ -272,6 +272,82 @@ describe('Patch Diff', () => {
             expect(patcher.get()).toEqual(expectedObject);
         });
     });
+
+    describe('displace', () => {
+        it('should displace the entire data', () => {
+            //Arrange
+            const patcher = new PatchDiff({hello: {world: {print: 'end'}}});
+            const overrideObject = {hello: {world: {overriddenProperty: 'test'}}};
+
+            //Act
+            patcher.displace(overrideObject);
+
+            //Assert
+            expect(patcher.get()).toBe(overrideObject);
+        });
+
+        it('should displace inner object', () => {
+            //Arrange
+            const patcher = new PatchDiff({hello: {world: {print: 'end'}}});
+            const displacedObject = {overriddenProperty: 'test'};
+
+            //Act
+            patcher.displace(displacedObject, 'hello.world');
+
+            //Assert
+            expect(patcher.get('hello.world')).toBe(displacedObject);
+        });
+
+        it('should displace inner object via at', () => {
+            //Arrange
+            const patcher = new PatchDiff({hello: {world: {print: 'end'}}});
+            const displacedObject = {overriddenProperty: 'test'};
+
+            const at = patcher.at('hello.world');
+
+            //Act
+            at.displace(displacedObject);
+
+            //Assert
+            expect(at.get()).toBe(displacedObject);
+        });
+
+        it('should displace inner object via when nothing exist at path', () => {
+            //Arrange
+            const patcher = new PatchDiff({});
+            const displacedObject = {overriddenProperty: 'test'};
+
+            const at = patcher.at('hello.world');
+
+            //Act
+            at.displace(displacedObject);
+
+            //Assert
+            expect(at.get()).toBe(displacedObject);
+        });
+
+        it('subscribe should fire only on affected changes', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const spy = jest.fn();
+            patcher.subscribe('a.b', (diff, changeInfo, context) => {
+                console.log('a.b', diff, changeInfo, context);
+                spy(diff, changeInfo, context);
+            });
+
+            const displaced = {displaced: true};
+
+            const ab1 = patcher.at('a.b1');
+            ab1.displace(displaced);
+
+            patcher.displace(displaced, 'a.b');
+
+            //Assert snapshot notification
+            expect(spy).toHaveBeenCalledTimes(2);
+        });
+
+    });
+
     describe('remove', () => {
         it('should remove any data at given path', () => {
             //Arrange
@@ -428,6 +504,7 @@ describe('Patch Diff', () => {
             expect(result).toEqual(initObject);
             expect(result).not.toBe(initObject);
         });
+
         it('should return a clone of the underlying object with only whitelisted keys', () => {
             //Arrange
             const initObject = {a: 'b', c: 'd'};
@@ -444,6 +521,7 @@ describe('Patch Diff', () => {
     describe('on', () => {
         it.todo('future');
     });
+
     describe('subscribe', () => {
         it('should notify of all changes on a given path', async () => {
             //Arrange

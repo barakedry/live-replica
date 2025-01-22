@@ -1,4 +1,4 @@
-import { EventEmitter } from '../../events/events.js';
+import { EventEmitter, PATH_EVENT_PREFIX } from '../../events/events.js';
 import { Utils } from '../../utils/utils.js';
 import { DiffTracker } from "./diff-tracker.js";
 import {create, isProxy, revoke, unwrap} from "../../proxy/proxy.js";
@@ -16,7 +16,6 @@ import _isUndefined from '../../../node_modules/lodash-es/isUndefined.js';
 const eventsWithoutPrepend = new Set(['destroyed', 'error', '_subscribed', '_synced']);
 
 const _isFunction = (obj) => typeof obj === 'function';
-const PATH_EVENT_PREFIX = '$path#';
 
 function createByType(obj) {
     if (_isArray(obj)) {
@@ -199,6 +198,59 @@ export class PatchDiff extends EventEmitter {
         if (this._wrapper) {
             delete this._wrapperInner[this._wrapperKey];
         }
+    }
+
+    displace(value, path, options) {
+        if (this._whitelist) {
+            throw new Error('LiveReplica PatchDiff: set is not supported with whitelist');
+        }
+
+        options = {
+            ...this.options,
+            ...options,
+        };
+
+        const fullPath = Utils.concatPath(this._path, path);
+
+        if (fullPath && (!_isString(fullPath))) {
+            logError('cannot displace, invalid path');
+            return;
+        }
+
+        const rootPatcher = (this._root || this);
+
+        const affectedPaths = fullPath ? rootPatcher.listenedPaths : rootPatcher.listenedPaths.filter(p => p.startsWith(fullPath) || fullPath.startsWith(p));
+
+        const currentValuesByPath = {};
+        affectedPaths.forEach((path) => {
+            // if affected by this change
+            const data = rootPatcher.get(path);
+            currentValuesByPath[path] = data;
+        });
+
+        // set the root data
+        if (!fullPath) {
+            this._data = value;
+        } else {
+            const {path:parenPath, key} = Utils.splitPathAndLastKey(fullPath);
+
+            const parent = rootPatcher.get(parenPath);
+            if (!parent) {
+                rootPatcher.displace({[key]: value}, parenPath); // this will create the parent object
+                return;
+            }
+
+            rootPatcher.get(parenPath)[key] = value;
+        }
+
+
+        affectedPaths.forEach((path) => {
+            // if affected by this change
+            const data = rootPatcher.get(path);
+            if (data !== currentValuesByPath[path]) {
+                this.emit(PATH_EVENT_PREFIX + path, {differences: data, hasDifferences: true, changeType: 'displace'}, options);
+            }
+        });
     }
 
     set(fullDocument, path, options) {

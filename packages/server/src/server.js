@@ -107,7 +107,7 @@ export class LiveReplicaServer extends PatchDiff {
         let transformedClientPatch = false;
         const unsubscribeChanges = target.subscribe((patchData, {snapshot, changeType, deletePatch}) => {
             if (transformedClientPatch || !subscriberChange) {
-                const updateInfo  =  snapshot ? {snapshot} : {snapshot : false};
+                const updateInfo  =  snapshot ? {snapshot} : {snapshot : false, displace: changeType === 'displace'};
                 if (!snapshot && subscriberChange) {
                     changeRevision++;
                     updateInfo.changeRevision = changeRevision;
@@ -134,10 +134,12 @@ export class LiveReplicaServer extends PatchDiff {
 
         if (request.allowWrite) {
 
-            replicaApplyListener = (payload) => {
+            replicaApplyListener = (payload, metadata) => {
                 transformedClientPatch = writeTransformer !== defaultTransformer;
                 subscriberChange = payload.changeRevision === changeRevision;
-                target.apply(writeTransformer(payload.data));
+                if (metadata?.displace) {
+                    target.apply(writeTransformer(payload.data));
+                }
             };
 
             connection.on(applyEvent, replicaApplyListener);

@@ -30,7 +30,7 @@ export class Replica extends PatchDiff {
 
         this.changeRevision = 0;
         this.onApplyEvent = (delta, meta = {}) => {
-            if (meta.snapshot) {
+            if (meta.snapshot || meta.displace) {
                 this[remoteOverride](delta);
             } else {
                 this.changeRevision = meta.changeRevision;

@@ -62,7 +62,6 @@ export class LiveReplicaController {
         const unwatch = () => {
             if (unsubscribe) {
                 unsubscribe();
-                console.log('unsubscribed', path);
                 unsubscribe = null;
             }
             this._unwatchers.delete(unwatch);
@@ -150,7 +149,6 @@ export class WatchController {
         return function unwatch() {
             if (unsubscribe) {
                 unsubscribe();
-                console.log('unsubscribed', path);
                 unsubscribe = null;
             }
             delete this._unwatch

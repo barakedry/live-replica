@@ -44,6 +44,7 @@ declare module '@live-replica/live-replica' {
         updates?: object,
         addedObjects?: object,
         differences?: object | Array<object>,
+        changeType?: 'displace' | 'change' | ''
     }
 
     export type Proxy = object;
@@ -113,6 +114,16 @@ declare module '@live-replica/live-replica' {
          * @returns a patch of the differences caused by the set operation
          */
         set(value: any, path?: string, options?: MutationOptions) : DifferencesPatch;
+
+
+        /**
+         * Set a value in the managed data object at a path
+         * @param value the value to set (must be an object if path is not provided)
+         * @param path (optional) a path to set the value at
+         * @param options (optional) options for the set
+         * @returns a patch of the differences caused by the set operation
+         */
+        displace(value: any, path?: string, options?: MutationOptions) : void;
 
         /**
          * alias for set()
