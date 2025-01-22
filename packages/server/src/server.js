@@ -138,6 +138,8 @@ export class LiveReplicaServer extends PatchDiff {
                 transformedClientPatch = writeTransformer !== defaultTransformer;
                 subscriberChange = payload.changeRevision === changeRevision;
                 if (metadata?.displace) {
+                    target.set(writeTransformer(payload.data));
+                } else {
                     target.apply(writeTransformer(payload.data));
                 }
             };
