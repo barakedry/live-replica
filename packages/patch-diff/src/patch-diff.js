@@ -957,7 +957,7 @@ export class PatchDiff extends EventEmitter {
         for (i = 0; i < length; i++) {
             key = keys[i];
 
-            if (!patch.hasOwnProperty(key)) {
+            if (patch[key] === undefined) {
                 existingValue = target[key];
                 this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray);
             }
