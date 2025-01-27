@@ -219,7 +219,7 @@ export class PatchDiff extends EventEmitter {
 
         const rootPatcher = (this._root || this);
 
-        const affectedPaths = fullPath ? rootPatcher.listenedPaths : rootPatcher.listenedPaths.filter(p => p.startsWith(fullPath) || fullPath.startsWith(p));
+        const affectedPaths = this.listenedPaths.filter(p => p.startsWith(fullPath) || fullPath.startsWith(p));
 
         const currentValuesByPath = {};
         affectedPaths.forEach((path) => {
@@ -230,7 +230,7 @@ export class PatchDiff extends EventEmitter {
 
         // set the root data
         if (!fullPath) {
-            this._data = value;
+            this._data = structuredClone(value);
         } else {
             const {path:parenPath, key} = Utils.splitPathAndLastKey(fullPath);
 
@@ -240,7 +240,7 @@ export class PatchDiff extends EventEmitter {
                 return;
             }
 
-            rootPatcher.get(parenPath)[key] = value;
+            rootPatcher.get(parenPath)[key] = structuredClone(value);
         }
 
 
@@ -251,6 +251,8 @@ export class PatchDiff extends EventEmitter {
                 this.emit(PATH_EVENT_PREFIX + path, {differences: data, hasDifferences: true, changeType: 'displace'}, options);
             }
         });
+
+        this.emit(PATH_EVENT_PREFIX, {differences: this._data, hasDifferences: true, changeType: 'displace'}, options);
     }
 
     set(fullDocument, path, options) {
@@ -419,7 +421,7 @@ export class PatchDiff extends EventEmitter {
                 obj = Utils.pickWithKeys(obj, this._whitelist);
             }
 
-            return JSON.parse(JSON.stringify(obj));
+            return structuredClone(obj);
         }
         return undefined;
     }
