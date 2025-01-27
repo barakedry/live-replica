@@ -4,22 +4,16 @@ const PATH_EVENT_PREFIX_LENGTH = PATH_EVENT_PREFIX.length;
 export class EventEmitter {
     listeners = {};
     maxListeners = 10;
-    _listenedPaths = [];
 
     setMaxListeners(num) { this.maxListeners = num; }
 
-    updateListenedPaths() {
-        this._listenedPaths = Object.keys(this.listeners).filter(e => e.startsWith(PATH_EVENT_PREFIX)).map(eventName => eventName.substring(PATH_EVENT_PREFIX_LENGTH)).reverse();
-    }
-
     get listenedPaths() {
-        return this._listenedPaths;
+        return Object.keys(this.listeners).filter(e => e.startsWith(PATH_EVENT_PREFIX)).map(eventName => eventName.substring(PATH_EVENT_PREFIX_LENGTH)).reverse();
     }
 
     on(event, cb) {
         if (!this.listeners[event]) {
             this.listeners[event] = [];
-            this.updateListenedPaths();
         }
 
         if (this.listeners[event].length >= this.maxListeners) {
@@ -42,13 +36,11 @@ export class EventEmitter {
 
         if (this.listeners[event].length === 0) {
             delete this.listeners[event];
-            this.updateListenedPaths();
         }
     }
 
     removeAllListeners(event) {
         delete this.listeners[event];
-        this.updateListenedPaths();
     }
 
     listenersOf(event) {
