@@ -186,10 +186,14 @@ export class PatchDiff extends EventEmitter {
         if (options.overrides) {
             options = {...options};
             const overrides = {};
-            Object.keys(options.overrides).forEach((key) => {
-                const keyPath = Utils.fixNumericParts(Utils.concatPath(Utils.concatPath(this._path, path), key));
-                overrides[keyPath] = options.overrides[key];
-            });
+            if (Array.isArray(options.overrides)) {
+                options.overrides.forEach((path) => {
+                    overrides[Utils.concatPath(this._path, path)] = true;
+                });
+            } else {
+                throw new Error('LiveReplica PatchDiff: invalid overrides must be an array of paths');
+            }
+
             options.overrides = overrides;
         }
 
