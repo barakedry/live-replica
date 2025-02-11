@@ -158,10 +158,10 @@ describe('Patch Diff', () => {
 
             it('should allow to apply with certain paths treated as overrides', () => {
                 //Arrange
-                const overrides = {
-                    'a.b.override1': true,
-                    'a.b.override2': true
-                };
+                const overrides = [
+                    'a.b.override1',
+                    'a.b.override2'
+                ];
                 const patcher = new PatchDiff({a: {b: {
                     c: {d: 'e'},
                     override1: {f: 'g'},
@@ -283,7 +283,7 @@ describe('Patch Diff', () => {
             patcher.displace(overrideObject);
 
             //Assert
-            expect(patcher.get()).toBe(overrideObject);
+            expect(patcher.get()).toEqual(overrideObject);
         });
 
         it('should displace inner object', () => {
@@ -295,7 +295,7 @@ describe('Patch Diff', () => {
             patcher.displace(displacedObject, 'hello.world');
 
             //Assert
-            expect(patcher.get('hello.world')).toBe(displacedObject);
+            expect(patcher.get('hello.world')).toEqual(displacedObject);
         });
 
         it('should displace inner object via at', () => {
@@ -309,7 +309,7 @@ describe('Patch Diff', () => {
             at.displace(displacedObject);
 
             //Assert
-            expect(at.get()).toBe(displacedObject);
+            expect(at.get()).toEqual(displacedObject);
         });
 
         it('should displace inner object via when nothing exist at path', () => {
@@ -323,7 +323,7 @@ describe('Patch Diff', () => {
             at.displace(displacedObject);
 
             //Assert
-            expect(at.get()).toBe(displacedObject);
+            expect(at.get()).toEqual(displacedObject);
         });
 
         it('subscribe should fire only on affected changes', () => {
@@ -729,7 +729,7 @@ describe('Patch Diff', () => {
                 it('should notify of all object changes with apply when patch, deletion and override are used', () => {
                     //Arrange
                     const patcher = new PatchDiff({a: {b: {c: 'd', e: 'f', g: { h: 'i', j: 'k' }}}});
-                    const overrides = { 'a.b.c.g': true };
+                    const overrides =['a.b.c.g'];
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
@@ -864,7 +864,7 @@ describe('Patch Diff', () => {
                 it('should notify of all object changes with apply when patch, deletion and override are used', () => {
                     //Arrange
                     const patcher = new PatchDiff({a: {b: {c: 'd', e: 'f', g: { h: 'i', j: 'k' }}}});
-                    const overrides = { 'a.b.c.g': true };
+                    const overrides = [ 'a.b.c.g' ];
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
