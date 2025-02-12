@@ -38,6 +38,7 @@ export class LiveReplicaServer extends PatchDiff {
         this.proxies = new WeakMap();
 
         this.middlewares = new MiddlewareChain(this);
+        this.unsubMiddlewares = new MiddlewareChain(this);
     }
 
     onConnect(connection) {
@@ -165,16 +166,18 @@ export class LiveReplicaServer extends PatchDiff {
         }
 
         const onUnsubscribe = Utils.once(() => {
-            unsubscribeChanges();
+            this.unsubMiddlewares.start(request, (request) => {
+                unsubscribeChanges();
 
-            if (replicaApplyListener) { connection.removeListener(applyEvent, replicaApplyListener); }
-            if (invokeRpcListener)    { connection.removeListener(invokeRpcEvent, invokeRpcListener); }
+                if (replicaApplyListener) { connection.removeListener(applyEvent, replicaApplyListener); }
+                if (invokeRpcListener)    { connection.removeListener(invokeRpcEvent, invokeRpcListener); }
 
-            connection.removeListener(unsubscribeEvent, onUnsubscribe);
-            connection.removeListener('disconnect', onUnsubscribe);
-            connection.removeListener('close', onUnsubscribe);
+                connection.removeListener(unsubscribeEvent, onUnsubscribe);
+                connection.removeListener('disconnect', onUnsubscribe);
+                connection.removeListener('close', onUnsubscribe);
 
-            this.emit('replica-unsubscribe', request);
+                this.emit('replica-unsubscribe', request);
+            });
         });
 
         connection.on(unsubscribeEvent, onUnsubscribe);
@@ -184,6 +187,10 @@ export class LiveReplicaServer extends PatchDiff {
 
     use(fn) {
         this.middlewares.use(fn);
+    }
+
+    addUnsubscriptionMiddleware(fn) {
+        this.unsubMiddlewares.use(fn);
     }
 
     destroy() {

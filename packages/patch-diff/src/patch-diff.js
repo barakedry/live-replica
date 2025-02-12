@@ -783,7 +783,9 @@ export class PatchDiff extends EventEmitter {
 
                 // add new object
                 if (isPatchValueObject) {
-                    
+
+                    target[srcKey] = patchValue.constructor.call(Object.create(Object.getPrototypeOf(patchValue)));
+
                     childDiffs = this._applyObject(
                         target[srcKey],
                         patchValue,

@@ -14,163 +14,105 @@ export function whitelist(list) {
     }
 }
 
-const serverCounters = new WeakMap();
-const underwaySubscriptionsPerTarget = new WeakMap();
-export function oncePerSubscriptionOld(path, firstSubscriptionCallback, lastSubscriptionCallback, matchPaths = (path1, path2) => path1 === path2) {
+export function oncePerSubscription(path, firstSubscriptionCallback, lastUnsubscriptionCallback) {
 
     if (typeof path === 'function') {
-        lastSubscriptionCallback = firstSubscriptionCallback;
+        lastUnsubscriptionCallback = firstSubscriptionCallback;
         firstSubscriptionCallback = path;
         path = undefined;
     }
 
-    return function onSubscribe(request, reject, approve) {
-        const server = this;
+    const subscribersOfPath = {};
+    const subsciptionPromiseById = new Map();
+    let server;
 
-        if (path && !matchPaths(request.path, path)) {
-            return approve(request);
+    const cleanup = (id, path) => {
+        const subscribers = subscribersOfPath[path];
+        subscribers.delete(id);
+        subsciptionPromiseById.delete(id);
+
+        if (subscribers.size === 0) {
+            delete subscribersOfPath[path];
+        }
+    }
+
+    const onUnsubscribe = async (unsubscriberRequest, next) => {
+
+        const {id, path} = unsubscriberRequest;
+
+        if (path.includes('mappings') && path.includes('rpc')) {
+            console.warn('!!! Unsubscribing from', path);
         }
 
-        if (!serverCounters.has(server)) {
-            serverCounters.set(server, {});
+        if (!server) {
+            assert('unsubscribe before first subscribe, server not set');
         }
 
-        const subscribePath = request.path;
-        const subscribersPerPath = serverCounters.get(server);
-        if (!subscribersPerPath.hasOwnProperty(subscribePath)) {
-            subscribersPerPath[subscribePath] = 0;
-        }
+        // await subsciption to finish before attempting unsubscribe
+        await subsciptionPromiseById.get(id);
+        const subscribers = subscribersOfPath[path];
+        cleanup(id, path);
 
-        if (subscribersPerPath[subscribePath] === 0) {
-            (async () => {
-
-                let awaitingDone;
-                let awaitingFirstSubscriptionHandlingToEnd = true;
-
-                server.on('replica-unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
-                    if (matchPaths(subscribePath, unsubscriberRequest.path)) {
-
-                        if (!subscribersPerPath[subscribePath]) {
-                            assert('')
-                        }
-
-                        subscribersPerPath[subscribePath]--;
-
-                        if (subscribersPerPath[subscribePath] <= 0) {
-                            delete subscribersPerPath[subscribePath];
-                            server.removeListener('replica-unsubscribe', onUnsubscribe);
-                            if (lastSubscriptionCallback) {
-                                if (awaitingFirstSubscriptionHandlingToEnd) {
-                                    awaitingDone = () => { lastSubscriptionCallback.call(server, unsubscriberRequest); };
-                                } else {
-                                    lastSubscriptionCallback.call(server, unsubscriberRequest);
-                                }
-
-                            }
-
-                        }
+        if (subscribers.size === 0) {
+            if (lastUnsubscriptionCallback) {
+                const result = lastUnsubscriptionCallback.call(server, unsubscriberRequest);
+                if (result instanceof Promise) {
+                    const promise = result;
+                    try {
+                        await promise;
+                    } catch (error) {
+                        cleanup(id, path);
                     }
-                });
-
-                const success = await firstSubscriptionCallback.call(server, request, reject, approve);
-                awaitingFirstSubscriptionHandlingToEnd = false;
-
-                if (awaitingDone) {
-                    awaitingDone();
-                    awaitingDone = undefined;
                 }
 
-                if (success === false && subscribersPerPath[subscribePath]) {
-                    subscribersPerPath[subscribePath]--;
-                }
-
-            })();
-
-        } else {
-            approve(request);
+                next(unsubscriberRequest);
+            }
         }
-
-        subscribersPerPath[subscribePath]++;
-    };
-}
-
-
-export function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback, matchPaths = (path1, path2) => path1 === path2) {
-
-    if (typeof path === 'function') {
-        lastSubscriptionCallback = firstSubscriptionCallback;
-        firstSubscriptionCallback = path;
-        path = undefined;
     }
 
     return async function onSubscribe(request, reject, approve) {
-        const server = this;
-
-        if (path && !matchPaths(request.path, path)) {
-            return approve(request);
+        if (!server) {
+            server = this;
+            server.addUnsubscriptionMiddleware(onUnsubscribe);
         }
 
-        if (!serverCounters.has(server)) {
-            serverCounters.set(server, {});
+        const {id, path} = request;
+
+        if (!subscribersOfPath[path]) {
+            subscribersOfPath[path] = new Set();
         }
 
-        if (!underwaySubscribersPerTarget.has(server)) {
-            underwaySubscriptionsPerTarget.set(server, {});
-        }
+        const subscribers = subscribersOfPath[path];
 
-        const subscribersPerPath = serverCounters.get(server);
-        const underwaySubscriptions = underwaySubscribersPerTarget.get(server);
-        const subscribePath = request.path;
-
-        if (!subscribersPerPath.hasOwnProperty(subscribePath)) {
-            subscribersPerPath[subscribePath] = 0;
-        }
-
-        subscribersPerPath[subscribePath]++;
-
-        // for first subscription
-        if (subscribersPerPath[subscribePath] === 1) {
-            const onUnsubscribe = async (unsubscriberRequest) => {
-                if (matchPaths(subscribePath, unsubscriberRequest.path)) {
-
-                    if (!subscribersPerPath[subscribePath]) {
-                        assert('')
-                    }
-
-                    subscribersPerPath[subscribePath]--;
-
-                    if (subscribersPerPath[subscribePath] <= 0) {
-                        delete subscribersPerPath[subscribePath];
-                        server.removeListener('replica-unsubscribe', onUnsubscribe);
-                        if (lastSubscriptionCallback) {
-                            await underwaySubscriptions[rsubscribePath];
-                            lastSubscriptionCallback.call(server, unsubscriberRequest);
-                        }
-                    }
+        // first
+        if (subscribers.size === 0) {
+            subscribers.add(id);
+            let result = firstSubscriptionCallback.call(server, request, reject, approve);
+            if (result instanceof Promise) {
+                const promise = result;
+                subsciptionPromiseById.set(id, promise);
+                try {
+                    result = await promise;
+                } catch (error) {
+                    cleanup(id, path);
+                    reject(error);
+                } finally {
+                    subsciptionPromiseById.delete(id);
                 }
-            };
 
-            // attach unsubscribe handler
-            server.on('replica-unsubscribe', onUnsubscribe);
+            }
 
-            const underway = firstSubscriptionCallback.call(server, request, reject, approve)
 
-            underway.then((success) => {
-                if (success === false && subscribersPerPath[subscribePath]) {
-                    if (subscribersPerPath[subscribePath] <= 0) {
-                        delete subscribersPerPath[subscribePath];
-                        server.removeListener('replica-unsubscribe', onUnsubscribe);
-                    }
-                }
-            }).finally(() => {
-                delete underwaySubscriptions[subscribePath];
-            });
+            if (result === false) {
+                cleanup(id, path);
+                reject('Subscription not approved');
+            }
 
-            underwaySubscriptions[subscribePath] = underway;
-
-        } else {
-            approve(request);
+            return;
         }
 
+        await Promise.all(Array.from(subscribersOfPath[path]).map(id => subsciptionPromiseById.get(id)));
+        subscribers.add(id);
+        approve(request);
     };
 }
