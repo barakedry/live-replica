@@ -257,7 +257,10 @@ export class Replica extends PatchDiff {
     unsubscribeRemote() {
         if (!this.connection) { return; }
 
-        if (!this._subscribed && !this._subscribeInFlight) { return; }
+        if (!this._subscribed && !this._subscribeInFlight) {
+            console.warn('unsubscribeRemote called on an already unsubscribed replica');
+            return;
+        }
 
         const promise = this.connection.send(`unsubscribe:${this.id}`);
         this._subscribed = false;

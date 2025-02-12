@@ -23,13 +23,13 @@ export function oncePerSubscription(path, firstSubscriptionCallback, lastUnsubsc
     }
 
     const subscribersOfPath = {};
-    const subsciptionPromiseById = new Map();
+    const subscriptionPromiseById = new Map();
     let server;
 
     const cleanup = (id, path) => {
         const subscribers = subscribersOfPath[path];
         subscribers.delete(id);
-        subsciptionPromiseById.delete(id);
+        subscriptionPromiseById.delete(id);
 
         if (subscribers.size === 0) {
             delete subscribersOfPath[path];
@@ -49,7 +49,7 @@ export function oncePerSubscription(path, firstSubscriptionCallback, lastUnsubsc
         }
 
         // await subsciption to finish before attempting unsubscribe
-        await subsciptionPromiseById.get(id);
+        await subscriptionPromiseById.get(id);
         const subscribers = subscribersOfPath[path];
         cleanup(id, path);
 
@@ -90,14 +90,14 @@ export function oncePerSubscription(path, firstSubscriptionCallback, lastUnsubsc
             let result = firstSubscriptionCallback.call(server, request, reject, approve);
             if (result instanceof Promise) {
                 const promise = result;
-                subsciptionPromiseById.set(id, promise);
+                subscriptionPromiseById.set(id, promise);
                 try {
                     result = await promise;
                 } catch (error) {
                     cleanup(id, path);
                     reject(error);
                 } finally {
-                    subsciptionPromiseById.delete(id);
+                    subscriptionPromiseById.delete(id);
                 }
 
             }
@@ -111,8 +111,8 @@ export function oncePerSubscription(path, firstSubscriptionCallback, lastUnsubsc
             return;
         }
 
-        await Promise.all(Array.from(subscribersOfPath[path]).map(id => subsciptionPromiseById.get(id)));
         subscribers.add(id);
+        await Promise.all(Array.from(subscribersOfPath[path]).map(id => subscriptionPromiseById.get(id)));
         approve(request);
     };
 }

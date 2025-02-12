@@ -166,6 +166,7 @@ export class LiveReplicaServer extends PatchDiff {
         }
 
         const onUnsubscribe = Utils.once(() => {
+            this.emit('replica-unsubscribing', request);
             this.unsubMiddlewares.start(request, (request) => {
                 unsubscribeChanges();
 
@@ -176,7 +177,10 @@ export class LiveReplicaServer extends PatchDiff {
                 connection.removeListener('disconnect', onUnsubscribe);
                 connection.removeListener('close', onUnsubscribe);
 
+                // old event for backward compatibility
                 this.emit('replica-unsubscribe', request);
+
+                this.emit('replica-unsubscribed', request);
             });
         });
 
