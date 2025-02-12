@@ -23,50 +23,27 @@ export function oncePerSubscription(path, firstSubscriptionCallback, lastUnsubsc
     }
 
     const subscribersOfPath = {};
-    const subscriptionPromiseById = new Map();
     let server;
 
     const cleanup = (id, path) => {
         const subscribers = subscribersOfPath[path];
         subscribers.delete(id);
-        subscriptionPromiseById.delete(id);
 
         if (subscribers.size === 0) {
             delete subscribersOfPath[path];
         }
     }
 
-    const onUnsubscribe = async (unsubscriberRequest, next) => {
+    const onUnsubscribe = (unsubscriberRequest, next) => {
 
         const {id, path} = unsubscriberRequest;
-
-        if (path.includes('mappings') && path.includes('rpc')) {
-            console.warn('!!! Unsubscribing from', path);
-        }
-
-        if (!server) {
-            assert('unsubscribe before first subscribe, server not set');
-        }
-
-        // await subsciption to finish before attempting unsubscribe
-        await subscriptionPromiseById.get(id);
         const subscribers = subscribersOfPath[path];
         cleanup(id, path);
 
-        if (subscribers.size === 0) {
-            if (lastUnsubscriptionCallback) {
-                const result = lastUnsubscriptionCallback.call(server, unsubscriberRequest);
-                if (result instanceof Promise) {
-                    const promise = result;
-                    try {
-                        await promise;
-                    } catch (error) {
-                        cleanup(id, path);
-                    }
-                }
-
-                next(unsubscriberRequest);
-            }
+        if (subscribers.size === 0 && lastUnsubscriptionCallback) {
+            lastUnsubscriptionCallback.call(server, unsubscriberRequest, next);
+        } else {
+            next(unsubscriberRequest);
         }
     }
 
@@ -83,36 +60,14 @@ export function oncePerSubscription(path, firstSubscriptionCallback, lastUnsubsc
         }
 
         const subscribers = subscribersOfPath[path];
-
+        subscribers.add(id);
         // first
-        if (subscribers.size === 0) {
+        if (subscribers.size === 1) {
             subscribers.add(id);
-            let result = firstSubscriptionCallback.call(server, request, reject, approve);
-            if (result instanceof Promise) {
-                const promise = result;
-                subscriptionPromiseById.set(id, promise);
-                try {
-                    result = await promise;
-                } catch (error) {
-                    cleanup(id, path);
-                    reject(error);
-                } finally {
-                    subscriptionPromiseById.delete(id);
-                }
-
-            }
-
-
-            if (result === false) {
-                cleanup(id, path);
-                reject('Subscription not approved');
-            }
-
+            firstSubscriptionCallback.call(server, request, reject, approve);
             return;
         }
 
-        subscribers.add(id);
-        await Promise.all(Array.from(subscribersOfPath[path]).map(id => subscriptionPromiseById.get(id)));
         approve(request);
     };
 }

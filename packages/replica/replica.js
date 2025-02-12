@@ -271,12 +271,10 @@ export class Replica extends PatchDiff {
 
     destroy() {
         this.unsubscribeRemote();
+        this.destroyProxy();
         if (this.connection) {
             this.connection = undefined;
         }
-
-        this.destroyProxy();
-
         this.emit('destroyed');
         this._destroyed = true;
         this.removeAllListeners();
