@@ -51,6 +51,14 @@ export class WorkerSocket extends LiveReplicaSocket {
     }
 
     connect(worker) {
+        if (this.worker === worker) {
+            return;
+        }
+
+        if (this.worker && this.onWorkerMessage) {
+            this.worker.removeEventListener('message', this.onWorkerMessage);
+        }
+
         this.worker = worker;
         this.onWorkerMessage = ({data}) => {
             if (data.liveReplica) {

@@ -106,9 +106,33 @@ export class LiveReplicaServer extends PatchDiff {
 
         let subscriberChange = false;
         let transformedClientPatch = false;
+        let displacedKeys = new Set();
         const unsubscribeChanges = target.subscribe((patchData, {snapshot, changeType, deletePatch}) => {
             if (transformedClientPatch || !subscriberChange) {
                 const updateInfo  =  snapshot ? {snapshot} : {snapshot : false, displace: changeType === 'displace'};
+
+                if (typeof patchData === 'object' && patchData !== null && (changeType === 'displace' || displacedKeys.size)) {
+                    const keys = Object.keys(patchData);
+                    if (changeType === 'displace') {
+                        patchData = {...patchData};
+                        keys.forEach((key) => {
+                            if (displacedKeys.has(key)) {
+                                // already sent to subscribers previously
+                                delete patchData[key];
+                            } else {
+                                displacedKeys.add(key);
+                            }
+
+                        });
+                    } else {
+                        keys.forEach((key) => {
+                            if (displacedKeys.has(key)) {
+                                displacedKeys.delete(key);
+                            }
+                        });
+                    }
+                }
+
                 if (!snapshot && subscriberChange) {
                     changeRevision++;
                     updateInfo.changeRevision = changeRevision;
