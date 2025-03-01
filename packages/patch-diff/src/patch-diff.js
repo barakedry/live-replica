@@ -260,13 +260,16 @@ export class PatchDiff extends EventEmitter {
         let differences = rootPatcher.get(fullPath);
         let currPath = fullPath;
         this.emit(PATH_EVENT_PREFIX + currPath, {differences, hasDifferences: true, changeType: 'displace'}, options);
-        // bubble up the change
-        let split = Utils.splitPathAndLastKey(currPath);
-        while (split.path || split.key) {
-            differences = rootPatcher.get(split.path);
-            this.emit(PATH_EVENT_PREFIX + split.path, {differences, hasDifferences: true, changeType: 'displace'}, options);
-            currPath = split.path;
-            split = Utils.splitPathAndLastKey(currPath);
+
+        if (currPath) {
+            // bubble up the change
+            let split = Utils.splitPathAndLastKey(currPath);
+            while (split.path || split.key) {
+                differences = rootPatcher.get(split.path);
+                this.emit(PATH_EVENT_PREFIX + split.path, {differences, hasDifferences: true, changeType: 'displace'}, options);
+                currPath = split.path;
+                split = Utils.splitPathAndLastKey(currPath);
+            }
         }
     }
 
