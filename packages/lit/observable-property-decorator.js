@@ -14,7 +14,7 @@ const isRevoked = (obj) => {
     }
 };
 
-export function observed(options = {}) {
+export function observed(options = {throttleUpdatesDelay: 0}) {
     return function createObservablePropertyDescriptor(target, propertyName) {
 
         const previouslyDefinedDescriptor = Object.getOwnPropertyDescriptor(target, propertyName) ||
@@ -87,7 +87,7 @@ export function observed(options = {}) {
                         this[propertyKey] = undefined;
                         wasDeleted = true;
                         previouslyDefinedDescriptor?.set?.call(this, this[propertyKey]);
-                    } else if (wasDeleted &&  value && (typeof value === 'object')) {
+                    } else if (wasDeleted && value && (typeof value === 'object')) {
                         setObservable.call(this, patchDiff);
                     }
 
@@ -97,7 +97,7 @@ export function observed(options = {}) {
 
                     revoked = isRevoked(this[propertyKey]);
                     return onChange.call(this, diff, changeInfo);
-                });
+                }, options.throttleUpdatesDelay);
             },
             enumerable: false,
             configurable: true,
