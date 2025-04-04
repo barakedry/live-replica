@@ -997,16 +997,35 @@ export class PatchDiff extends EventEmitter {
             return;
         }
 
-        if (options.emitEvents) {
-            levelDiffs = DiffTracker.create(false, options.deletePatch);
-            levelDiffs.path = path;
-        }
+        levelDiffs = DiffTracker.create(false, options.deletePatch);
+        levelDiffs.path = path;
 
+        // this is often faster than scanning down recursively and emitting events
+        const affectedSubscriberPaths = this.listenedPaths.filter(p => p.startsWith(path));
+        affectedSubscriberPaths.forEach(p => {
+            const subPath = p.substring(path.length + 1);
+            const data = subPath ? _get(deletedObject, subPath) : deletedObject;
+            if (data) {
+                const diffInfo = {
+                    differences: DeleteKeyword,
+                    hasDifferences: true,
+                    hasDeletions: true,
+                    deletions: data,
+                };
+                this.emit(PATH_EVENT_PREFIX + p, diffInfo, options);
+                if (options.fireGlobalChangeEvents) {
+                    this.emit('change', childDiffs, p, options);
+                }
+            }
+        });
+
+        /*
         let keys = _keys(deletedObject);
         const isArray = _isArray(deletedObject);
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
             const innerPath = Utils.pushKeyToPath(path, key, isArray);
+
             if (_isObject(deletedObject[key])) {
                 childDiffs = this._emitInnerDeletions(innerPath, deletedObject[key], options);
                 levelDiffs.addChildTracking(childDiffs, key);
@@ -1023,6 +1042,7 @@ export class PatchDiff extends EventEmitter {
 
             levelDiffs.differences[key] = DeleteKeyword;
         }
+*/
 
         levelDiffs.selfDelete = true;
         levelDiffs.hasDeletions = true;

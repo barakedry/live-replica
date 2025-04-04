@@ -587,6 +587,40 @@ describe('Patch Diff', () => {
             }), {});
         });
 
+        it.only('should notify inner subscribers about deletion of parents', async () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: {d: {e: 'f'}}}}});
+            const spy = jest.fn();
+            patcher.at('a.b.c.d').subscribe((diff, changeInfo, context) => {
+                spy(diff, changeInfo, context);
+            });
+
+
+            //patcher.remove( 'a.b');
+            patcher.apply(  {
+                b: '__$$D',
+                b2: {c: {d: {e: 'f'}}}
+            }, 'a');
+
+            //Assert snapshot notification
+            expect(spy).toHaveBeenCalledWith({e: 'f'}, {snapshot: true}, expect.any(Object));
+            expect(spy).toHaveBeenCalledWith( {e: '__$$D'}, expect.objectContaining({
+                "hasAdditions": false,
+                "hasAddedObjects": false,
+                "hasDeletions": true,
+                "hasUpdates": false,
+                "hasDifferences": true,
+                "deletions": {
+                    "e": "f"
+                },
+                "differences": {
+                    "e": "__$$D"
+                },
+                "deletePatch": true,
+                "path": "a.b.c.d",
+            }), expect.any(Object));
+        });
+
         it('should be able to notify multiple changes in a single update', async () => {
             //Arrange
             const initObject = {a: {b: {c: 'd'}, toUpdate: 'f', toDelete: {g: 'h'}}};
@@ -603,6 +637,7 @@ describe('Patch Diff', () => {
 
             //Assert snapshot notification
             expect(spy).toHaveBeenCalledWith(initObject.a, {snapshot: true}, {});
+
             expect(spy).toHaveBeenCalledWith({
                 b: 'objectToString',
                 toUpdate: 'newValue',
