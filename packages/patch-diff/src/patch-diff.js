@@ -1,7 +1,7 @@
 import { EventEmitter, PATH_EVENT_PREFIX } from '../../events/events.js';
-import { Utils } from '../../utils/utils.js';
+import { concatPath, firstKey, pickWithKeys, wrapByPath, splitPathAndLastKey, parentPath, fixNumericParts, hasSamePrototype, createWrapperWithLastKey, pushKeyToPath, SERIALIZED_FUNCTION } from '../../utils/utils.js';
 import { DiffTracker } from "./diff-tracker.js";
-import {create, isProxy, revoke, unwrap} from "../../proxy/proxy.js";
+import {create, isProxy, revoke, unwrap, } from "../../proxy/proxy.js";
 
 const logError = (msg) => {console.error('LiveReplica PatchDiff: ' + msg);};
 
@@ -147,7 +147,7 @@ export class PatchDiff extends EventEmitter {
 
     apply(patch, path, options) {
 
-        //path = Utils.concatPath(this._path, path);
+        //path = concatPath(this._path, path);
         options = {
             ...this.options,
             ...options,
@@ -164,18 +164,17 @@ export class PatchDiff extends EventEmitter {
             patch = unwrap(patch);
         }
 
-
         if (this._whitelist) {
             if (path) {
-                if (!this._whitelist.has(Utils.firstKey(path))) {
+                if (!this._whitelist.has(firstKey(path))) {
                     return;
                 }
             } else {
-                patch = Utils.pickWithKeys(patch, this._whitelist, false);
+                patch = pickWithKeys(patch, this._whitelist, false);
             }
         }
 
-        let wrappedPatch = Utils.wrapByPath(patch, path);
+        let wrappedPatch = wrapByPath(patch, path);
         if (this._wrapper) {
             this._wrapperInner[this._wrapperKey] = wrappedPatch
             wrappedPatch = this._wrapper;
@@ -187,7 +186,7 @@ export class PatchDiff extends EventEmitter {
             const overrides = {};
             if (Array.isArray(options.overrides)) {
                 options.overrides.forEach((path) => {
-                    overrides[Utils.concatPath(this._path, path)] = true;
+                    overrides[concatPath(this._path, path)] = true;
                 });
             } else {
                 throw new Error('LiveReplica PatchDiff: invalid overrides must be an array of paths');
@@ -213,7 +212,7 @@ export class PatchDiff extends EventEmitter {
             ...options,
         };
 
-        const fullPath = Utils.concatPath(this._path, path);
+        const fullPath = concatPath(this._path, path);
 
         if (fullPath && (!_isString(fullPath))) {
             logError('cannot displace, invalid path');
@@ -235,7 +234,7 @@ export class PatchDiff extends EventEmitter {
         if (!fullPath) {
             this._data = structuredClone(value);
         } else {
-            const {path:parenPath, key} = Utils.splitPathAndLastKey(fullPath);
+            const {path:parenPath, key} = splitPathAndLastKey(fullPath);
 
             const parent = rootPatcher.get(parenPath);
             if (!parent) {
@@ -243,7 +242,12 @@ export class PatchDiff extends EventEmitter {
                 return;
             }
 
-            rootPatcher.get(parenPath)[key] = structuredClone(value);
+            if (value === this.options.deleteKeyword) {
+                delete rootPatcher.get(parenPath)[key];
+            } else {
+                rootPatcher.get(parenPath)[key] = structuredClone(value);
+            }
+
         }
 
 
@@ -264,12 +268,12 @@ export class PatchDiff extends EventEmitter {
         if (currPath) {
             // bubble up the change
 
-            let split = Utils.splitPathAndLastKey(currPath);
+            let split = splitPathAndLastKey(currPath);
             while (split.path || split.key) {
                 differences = {[split.key]: differences};
                 this.emit(PATH_EVENT_PREFIX + split.path, {differences, hasDifferences: true}, options);
                 currPath = split.path;
-                split = Utils.splitPathAndLastKey(currPath);
+                split = splitPathAndLastKey(currPath);
             }
         }
     }
@@ -295,7 +299,7 @@ export class PatchDiff extends EventEmitter {
             fullDocument = unwrap(fullDocument);
         }
 
-        let wrapped = Utils.wrapByPath(fullDocument, path);
+        let wrapped = wrapByPath(fullDocument, path);
 
         if (this._wrapper) {
             this._wrapperInner[this._wrapperKey] = wrapped
@@ -303,7 +307,7 @@ export class PatchDiff extends EventEmitter {
         }
 
 
-        this._applyObject(this._data, wrapped, '', options, 0, Utils.concatPath(this._path, path) || true);
+        this._applyObject(this._data, wrapped, '', options, 0, concatPath(this._path, path) || true);
 
         if (this._wrapper) {
             delete this._wrapperInner[this._wrapperKey];
@@ -326,11 +330,11 @@ export class PatchDiff extends EventEmitter {
             return;
         }
 
-        if (this._whitelist && !this._whitelist.has(Utils.firstKey(path))) {
+        if (this._whitelist && !this._whitelist.has(firstKey(path))) {
             return;
         }
 
-        let wrapped = Utils.wrapByPath(DeleteKeyword, path);
+        let wrapped = wrapByPath(DeleteKeyword, path);
         if (this._wrapper) {
             this._wrapperInner[this._wrapperKey] = wrapped
             wrapped = this._wrapper;
@@ -351,12 +355,12 @@ export class PatchDiff extends EventEmitter {
             ...options,
         };
 
-        path = Utils.concatPath(this._path, path);
-        this._applyObject(this._data, Utils.wrapByPath({[SpliceKeyword]: {index, itemsToRemove, itemsToAdd}}, path), '', options, 0);
+        path = concatPath(this._path, path);
+        this._applyObject(this._data, wrapByPath({[SpliceKeyword]: {index, itemsToRemove, itemsToAdd}}, path), '', options, 0);
     }
 
     getFullPath(path) {
-        return Utils.concatPath(this._path, path);
+        return concatPath(this._path, path);
     }
 
     getAll(pathPattern) {
@@ -385,7 +389,7 @@ export class PatchDiff extends EventEmitter {
             path = undefined;
         }
 
-        const fullPath = Utils.concatPath(this._path, path);
+        const fullPath = concatPath(this._path, path);
         if (fullPath && (!_isString(fullPath))) {
             logError('invalid path, cannot get');
 
@@ -401,11 +405,11 @@ export class PatchDiff extends EventEmitter {
 
         if (this._whitelist) {
             if (path) {
-                if (!this._whitelist.has(Utils.firstKey(path))) {
+                if (!this._whitelist.has(firstKey(path))) {
                     return undefined;
                 }
             } else if (retVal) {
-                retVal = Utils.pickWithKeys(retVal, this._whitelist);
+                retVal = pickWithKeys(retVal, this._whitelist);
             }
         }
 
@@ -417,7 +421,7 @@ export class PatchDiff extends EventEmitter {
                 // subscribe for first data
                 let unsub;
                 let once;
-                const parent = Utils.parentPath(path);
+                const parent = parentPath(path);
                 unsub = this.subscribe(parent, () => {
                     if (!once) {
                         const value = _get(this._data, fullPath);
@@ -438,7 +442,7 @@ export class PatchDiff extends EventEmitter {
         let obj = this.get(path);
         if (obj) {
             if (this._whitelist) {
-                obj = Utils.pickWithKeys(obj, this._whitelist);
+                obj = pickWithKeys(obj, this._whitelist);
             }
 
             return structuredClone(obj);
@@ -448,7 +452,7 @@ export class PatchDiff extends EventEmitter {
 
     on(event, fn, prependPath = true) {
         if (!eventsWithoutPrepend.has(event)) {
-            event = Utils.fixNumericParts(Utils.concatPath(this._path, event));
+            event = fixNumericParts(concatPath(this._path, event));
         }
 
         super.on(event, fn);
@@ -502,7 +506,7 @@ export class PatchDiff extends EventEmitter {
 
             let path = this._path;
             path = path || '';
-            path = Utils.fixNumericParts(path);
+            path = fixNumericParts(path);
             this.emit(PATH_EVENT_PREFIX + path, {differences, hasDifferences: true, hasDeletions, hasAdditions, deletions, additions, changeType: 'whitelist-change'}, {});
             if (this.options.fireGlobalChangeEvents) {
                 this.emit('change', {differences, hasDifferences: true, hasDeletions, hasAdditions, deletions, additions, changeType: 'whitelist-change'}, path, {});
@@ -574,9 +578,9 @@ export class PatchDiff extends EventEmitter {
         }
 
         let path = subPath;
-        path = Utils.concatPath(this._path, path);
+        path = concatPath(this._path, path);
         path = path || '';
-        path = Utils.fixNumericParts(path);
+        path = fixNumericParts(path);
 
         let handler = (diff, options) => {
             fn(diff.differences, diff, options);
@@ -584,7 +588,7 @@ export class PatchDiff extends EventEmitter {
 
         if (this._whitelist) {
             handler = (diff, options) => {
-                const delta = Utils.pickWithKeys(diff.differences, this._whitelist);
+                const delta = pickWithKeys(diff.differences, this._whitelist);
                 if (delta) {
                     fn(delta, diff, options);
                 }
@@ -643,7 +647,7 @@ export class PatchDiff extends EventEmitter {
 
     at(subPath) {
 
-        let path = Utils.concatPath(this._path, subPath);
+        let path = concatPath(this._path, subPath);
 
         if (this._whitelist) {
             let allowed = false;
@@ -662,9 +666,9 @@ export class PatchDiff extends EventEmitter {
         at._root = this.root;
         at._whitelist = null;
         at._subs = {};
-        at._path = Utils.fixNumericParts(path);
+        at._path = fixNumericParts(path);
 
-        const {wrapper, wrapperInner, lastKey} = Utils.createWrapperWithLastKey(path);
+        const {wrapper, wrapperInner, lastKey} = createWrapperWithLastKey(path);
 
         at._wrapper = wrapper;
         at._wrapperInner = wrapperInner;
@@ -725,9 +729,10 @@ export class PatchDiff extends EventEmitter {
 
         // main logic loop, iterate patch keys and apply to dest object
         for (let i = 0; i < length; i++) {
-            let key = keys[i];
+            const key = keys[i];
+            const patchVal = patch[key];
 
-            if (Utils.isValid(patch[key]) && (patch[key] !== target[key])) {
+            if (patchVal !== target[key] && patchVal === patchVal) {
                 levelDiffs = this._applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray);
             }
         }
@@ -773,7 +778,7 @@ export class PatchDiff extends EventEmitter {
         }
 
         if (_isFunction(patchValue)) {
-            appliedValue = Utils.SERIALIZED_FUNCTION;
+            appliedValue = SERIALIZED_FUNCTION;
         } else {
             isPatchValueObject = _isObject(patchValue);
             if (_isUndefined(patchValue)) {
@@ -806,7 +811,7 @@ export class PatchDiff extends EventEmitter {
                     childDiffs = this._applyObject(
                         target[srcKey],
                         patchValue,
-                        Utils.pushKeyToPath(path, key, isTargetArray),
+                        pushKeyToPath(path, key, isTargetArray),
                         options,
                         level + 1,
                         override,
@@ -827,7 +832,7 @@ export class PatchDiff extends EventEmitter {
                     target[srcKey] = patchValue;
                     levelDiffs.additions[key] = appliedValue;
                     levelDiffs.differences[key] = appliedValue;
-                    const leafPath =  Utils.pushKeyToPath(path, srcKey, isTargetArray);
+                    const leafPath =  pushKeyToPath(path, srcKey, isTargetArray);
                     this.emit(PATH_EVENT_PREFIX + (leafPath || ''),  {differences: appliedValue, additions: appliedValue}, options);
                     if (options.fireGlobalChangeEvents) {
                         this.emit('change', {differences: appliedValue, additions: appliedValue}, leafPath, options);
@@ -844,11 +849,11 @@ export class PatchDiff extends EventEmitter {
             if (patch[key] === DeleteKeyword) {
                 levelDiffs = this._deleteAtKey(target, path, key, options, existingValue, levelDiffs, isTargetArray);
 
-                // update object
+           // update object
             } else if (isPatchValueObject) {
 
                 // we should replace the target value, todo: array merges check is not sufficient
-                if (!isExistingValueArray && !Utils.hasSamePrototype(existingValue, patchValue)) {
+                if (!isExistingValueArray && !hasSamePrototype(existingValue, patchValue)) {
 
                     // this is a restructure
                     // handle prototypes
@@ -858,7 +863,7 @@ export class PatchDiff extends EventEmitter {
 
                 childDiffs = this._applyObject(target[srcKey],
                     patchValue,
-                    Utils.pushKeyToPath(path, key, isTargetArray),
+                    pushKeyToPath(path, key, isTargetArray),
                     options,
                     level + 1,
                     override);
@@ -879,7 +884,7 @@ export class PatchDiff extends EventEmitter {
                 levelDiffs.hasDifferences = true;
                 levelDiffs.updates[key] = updates;
                 levelDiffs.differences[key] = appliedValue;
-                const leafPath =  Utils.pushKeyToPath(path, srcKey, isTargetArray);
+                const leafPath =  pushKeyToPath(path, srcKey, isTargetArray);
                 //this.emit(PATH_EVENT_PREFIX + (leafPath || ''),  {differences: appliedValue}, {...options, type: 'update', oldValue: existingValue});
                 this.emit(PATH_EVENT_PREFIX + (leafPath || ''),  {differences: appliedValue, updates} , options);
                 if (options.fireGlobalChangeEvents) {
@@ -911,11 +916,11 @@ export class PatchDiff extends EventEmitter {
 
         if (_isObject(existingValue) && !options.skipInnerDeletionEvents) {
             //levelDiffs.addChildTracking(this._emitInnerDeletions(path, existingValue, options), key)
-            const childDiffs = this._emitInnerDeletions(Utils.pushKeyToPath(path, key, isArray), existingValue, options);
+            const childDiffs = this._emitInnerDeletions(pushKeyToPath(path, key, isArray), existingValue, options);
             levelDiffs.addChildTracking(childDiffs, key);
         }
 
-        const eventPath = Utils.pushKeyToPath(path, key) || '';
+        const eventPath = pushKeyToPath(path, key) || '';
         this.emit(PATH_EVENT_PREFIX + eventPath,  {
             differences: DeleteKeyword,
             deletions: existingValue,
@@ -963,7 +968,7 @@ export class PatchDiff extends EventEmitter {
             }
             else if (typeof patch[key] === 'object') {
                 const diffs = DiffTracker.create(_isArray(target[key]) && target[key].length === 0 && _isArray(patch[key]), options.deletePatch);
-                this._detectDeletionsAtLevel(target[key], patch[key], diffs, Utils.pushKeyToPath(path, key, isArray), options, Array.isArray(target[key]));
+                this._detectDeletionsAtLevel(target[key], patch[key], diffs, pushKeyToPath(path, key, isArray), options, Array.isArray(target[key]));
                 levelDiffs.addChildTracking(diffs, key);
             }
 
@@ -999,32 +1004,32 @@ export class PatchDiff extends EventEmitter {
 
         levelDiffs = DiffTracker.create(false, options.deletePatch);
         levelDiffs.path = path;
-
-        // this is often faster than scanning down recursively and emitting events
-        const affectedSubscriberPaths = this.listenedPaths.filter(p => p.startsWith(path));
-        affectedSubscriberPaths.forEach(p => {
-            const subPath = p.substring(path.length + 1);
-            const data = subPath ? _get(deletedObject, subPath) : deletedObject;
-            if (data) {
-                const diffInfo = {
-                    differences: DeleteKeyword,
-                    hasDifferences: true,
-                    hasDeletions: true,
-                    deletions: data,
-                };
-                this.emit(PATH_EVENT_PREFIX + p, diffInfo, options);
-                if (options.fireGlobalChangeEvents) {
-                    this.emit('change', childDiffs, p, options);
-                }
-            }
-        });
-
         /*
+                // this is often faster than scanning down recursively and emitting events
+                const affectedSubscriberPaths = this.listenedPaths.filter(p => p.startsWith(path));
+                affectedSubscriberPaths.forEach(p => {
+                    const subPath = p.substring(path.length + 1);
+                    const data = subPath ? _get(deletedObject, subPath) : deletedObject;
+                    if (data) {
+                        const diffInfo = {
+                            differences: DeleteKeyword,
+                            hasDifferences: true,
+                            hasDeletions: true,
+                            deletions: data,
+                        };
+                        this.emit(PATH_EVENT_PREFIX + p, diffInfo, options);
+                        if (options.fireGlobalChangeEvents) {
+                            this.emit('change', childDiffs, p, options);
+                        }
+                    }
+                });
+        */
+
         let keys = _keys(deletedObject);
         const isArray = _isArray(deletedObject);
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
-            const innerPath = Utils.pushKeyToPath(path, key, isArray);
+            const innerPath = pushKeyToPath(path, key, isArray);
 
             if (_isObject(deletedObject[key])) {
                 childDiffs = this._emitInnerDeletions(innerPath, deletedObject[key], options);
@@ -1042,7 +1047,6 @@ export class PatchDiff extends EventEmitter {
 
             levelDiffs.differences[key] = DeleteKeyword;
         }
-*/
 
         levelDiffs.selfDelete = true;
         levelDiffs.hasDeletions = true;
