@@ -6,5 +6,6 @@ export * from '../server/src/middlewares.js';
 export * from '../worker-server/worker-server.js';
 export * from '../shared-worker-server/shared-worker-server.js';
 export * from '../worker-socket/worker-socket.js';
+export * from '../message-channel-socket/message-channel-socket.js'
 export * from '../ws-client/ws-client.js';
 export * from '../socketio-client/socketio-client.js';

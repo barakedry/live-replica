@@ -2,10 +2,13 @@ import { eventName } from "../common/event-name.js";
 import { EventEmitter } from '../events/events.js';
 import {LiveReplicaServer} from '../server/index.js';
 
-class Connection extends EventEmitter {
-    constructor() {
+export class MessageChannelConnection extends EventEmitter {
+    port = null;
+
+    constructor(port = self) {
         super();
 
+        this.port = port;
         this.setMaxListeners(50000);
 
         this.messageFromMaster = ({data}) => {
@@ -23,13 +26,13 @@ class Connection extends EventEmitter {
             }
         };
 
-        self.addEventListener('message', this.messageFromMaster);
+        this.port.addEventListener('message', this.messageFromMaster);
     }
 
 
     send(event, ...args) {
         event = eventName(event);
-        self.postMessage({
+        this.port.postMessage({
             liveReplica: {
                 event,
                 args
@@ -59,13 +62,10 @@ class Connection extends EventEmitter {
  */
 export class WorkerServer extends LiveReplicaServer {
     constructor(options) {
-        if (!self) {
+        if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
             throw new Error('WorkerServer can be initiated only inside a web worker')
         }
         super(options);
-
-        this._masterConnection = new Connection();
-        this.onConnect(this._masterConnection)
     }
 }
 

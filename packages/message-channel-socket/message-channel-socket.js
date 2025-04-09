@@ -91,10 +91,14 @@ export class MessageChannelSocket extends LiveReplicaSocket {
      * Disconnects from the MessagePort
      */
     disconnect() {
+
+        this.send('disconnect');
+
         if (this.port && this.onPortMessage) {
             this.port.removeEventListener('message', this.onPortMessage);
         }
 
+        this.port.close?.();
         delete this.port;
     }
 
