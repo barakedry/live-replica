@@ -98,7 +98,6 @@ export class MessageChannelSocket extends LiveReplicaSocket {
             this.port.removeEventListener('message', this.onPortMessage);
         }
 
-        this.port.close?.();
         delete this.port;
     }
 
