@@ -81,15 +81,14 @@ export class WorkerSocket extends LiveReplicaSocket {
         };
 
         this.worker.addEventListener('error', (e) => {
-            console.error("Worker crashed:", e.message);
-            this.disconnect();
+            console.error("Worker Error:", e.message, e);
         });
     }
 
 
     disconnect() {
         this.send('disconnect');
-        this.worker.removeListener('message', this.onWorkerMessage);
+        this.worker.removeEventListener('message', this.onWorkerMessage);
 
         if (this.previuslySetTerminate) {
             this.worker.terminate = this.previuslySetTerminate;

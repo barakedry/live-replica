@@ -11,7 +11,9 @@ export class WebSocketClient extends LiveReplicaSocket {
 
     constructor(socket) {
         super();
-        this.socket = socket;
+        if (socket) {
+            this.socket = socket;
+        }
         this._emitter = new EventEmitter();
         this._emitter.setMaxListeners(50000);
     }

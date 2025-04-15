@@ -28,7 +28,7 @@ export class MessageChannelSocket extends LiveReplicaSocket {
     }
 
     _removeSocketEventListener(eventName, fn) {
-        this._emitter.removeListener(eventName, fn);
+        this._emitter.removeEventListener(eventName, fn);
     }
 
     _socketSend(event, payload, ack) {
