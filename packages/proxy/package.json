@@ -4,6 +4,7 @@
   "description": "",
   "main": "proxy.js",
   "type": "module",
+  "dependencies": {},
   "scripts": {
     "test": "jest"
   },

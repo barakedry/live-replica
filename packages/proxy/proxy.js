@@ -192,7 +192,7 @@ export function create(patchDiff, options = {}) {
                             return result;
                         }
                     } else {
-                        return target[methodName].bind(target);
+                        return target[methodName].bind(proxy);
                     }
                 }
             }

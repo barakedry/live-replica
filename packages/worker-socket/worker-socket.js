@@ -51,6 +51,14 @@ export class WorkerSocket extends LiveReplicaSocket {
     }
 
     connect(worker) {
+        if (this.worker === worker) {
+            return;
+        }
+
+        if (this.worker && this.onWorkerMessage) {
+            this.worker.removeEventListener('message', this.onWorkerMessage);
+        }
+
         this.worker = worker;
         this.onWorkerMessage = ({data}) => {
             if (data.liveReplica) {
@@ -60,10 +68,35 @@ export class WorkerSocket extends LiveReplicaSocket {
         };
 
         this.worker.addEventListener('message', this.onWorkerMessage);
+
+        // monkey patch terminate to detect when the worker is terminated
+        const terminate = this.worker.terminate.bind(this.worker);
+        if (this.worker.hasOwnProperty('terminate')) {
+            this.previuslySetTerminate = this.worker.terminate;
+        }
+
+        this.worker.terminate = (...args) => {
+            this.disconnect();
+            terminate(...args);
+        };
+
+        this.worker.addEventListener('error', (e) => {
+            console.error("Worker Error:", e.message, e);
+        });
     }
 
+
     disconnect() {
-        this.worker.removeListener('message', this.onWorkerMessage);
+        this.send('disconnect');
+        this.worker.removeEventListener('message', this.onWorkerMessage);
+
+        if (this.previuslySetTerminate) {
+            this.worker.terminate = this.previuslySetTerminate;
+            delete this.previuslySetTerminate;
+        } else {
+            delete this.worker.terminate;
+        }
+
         delete this.socket;
     }
 

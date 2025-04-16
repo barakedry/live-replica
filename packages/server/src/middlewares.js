@@ -14,81 +14,60 @@ export function whitelist(list) {
     }
 }
 
-const serverCounters = new WeakMap();
-export function oncePerSubscription(path, firstSubscriptionCallback, lastSubscriptionCallback, matchPaths = (path1, path2) => path1 === path2) {
+export function oncePerSubscription(path, firstSubscriptionCallback, lastUnsubscriptionCallback) {
 
     if (typeof path === 'function') {
-        lastSubscriptionCallback = firstSubscriptionCallback;
+        lastUnsubscriptionCallback = firstSubscriptionCallback;
         firstSubscriptionCallback = path;
         path = undefined;
     }
 
-    return function onSubscribe(request, reject, approve) {
-        const server = this;
+    const subscribersOfPath = {};
+    let server;
 
-        if (path && !matchPaths(request.path, path)) {
-            return approve(request);
+    const cleanup = (id, path) => {
+        const subscribers = subscribersOfPath[path];
+        subscribers.delete(id);
+
+        if (subscribers.size === 0) {
+            delete subscribersOfPath[path];
         }
+    }
 
-        if (!serverCounters.has(server)) {
-            serverCounters.set(server, {});
-        }
+    const onUnsubscribe = (unsubscriberRequest, next) => {
 
-        const subscribePath = request.path;
-        const subscribersPerPath = serverCounters.get(server);
-        if (!subscribersPerPath.hasOwnProperty(subscribePath)) {
-            subscribersPerPath[subscribePath] = 0;
-        }
+        const {id, path} = unsubscriberRequest;
+        const subscribers = subscribersOfPath[path];
+        cleanup(id, path);
 
-        if (subscribersPerPath[subscribePath] === 0) {
-            (async () => {
-
-                let awaitingDone;
-                let awaitingFirstSubscriptionHandlingToEnd = true;
-
-                server.on('replica-unsubscribe', function onUnsubscribe(unsubscriberRequest)  {
-                    if (matchPaths(subscribePath, unsubscriberRequest.path)) {
-
-                        if (!subscribersPerPath[subscribePath]) {
-                            assert('')
-                        }
-
-                        subscribersPerPath[subscribePath]--;
-
-                        if (subscribersPerPath[subscribePath] <= 0) {
-                            delete subscribersPerPath[subscribePath];
-                            server.removeListener('replica-unsubscribe', onUnsubscribe);
-                            if (lastSubscriptionCallback) {
-                                if (awaitingFirstSubscriptionHandlingToEnd) {
-                                    awaitingDone = () => { lastSubscriptionCallback.call(server, unsubscriberRequest); };
-                                } else {
-                                    lastSubscriptionCallback.call(server, unsubscriberRequest);
-                                }
-
-                            }
-
-                        }
-                    }
-                });
-
-                const success = await firstSubscriptionCallback.call(server, request, reject, approve);
-                awaitingFirstSubscriptionHandlingToEnd = false;
-
-                if (awaitingDone) {
-                    awaitingDone();
-                    awaitingDone = undefined;
-                }
-
-                if (success === false && subscribersPerPath[subscribePath]) {
-                    subscribersPerPath[subscribePath]--;
-                }
-
-            })();
-
+        if (subscribers.size === 0 && lastUnsubscriptionCallback) {
+            lastUnsubscriptionCallback.call(server, unsubscriberRequest, next);
         } else {
-            approve(request);
+            next(unsubscriberRequest);
+        }
+    }
+
+    return async function onSubscribe(request, reject, approve) {
+        if (!server) {
+            server = this;
+            server.addUnsubscriptionMiddleware(onUnsubscribe);
         }
 
-        subscribersPerPath[subscribePath]++;
+        const {id, path} = request;
+
+        if (!subscribersOfPath[path]) {
+            subscribersOfPath[path] = new Set();
+        }
+
+        const subscribers = subscribersOfPath[path];
+        subscribers.add(id);
+        // first
+        if (subscribers.size === 1) {
+            subscribers.add(id);
+            firstSubscriptionCallback.call(server, request, reject, approve);
+            return;
+        }
+
+        approve(request);
     };
 }

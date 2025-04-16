@@ -5,7 +5,12 @@ import { Utils } from '../utils/utils.js';
 import {WebSocketClient} from "../ws-client/ws-client.js";
 const { concatPath } = Utils;
 
-let replicaId = Date.now();
+function generateUniqueId() {
+    const timestamp = Date.now().toString(36); // Base36 encoding of the current timestamp
+    const randomPart = Math.random().toString(36).substring(2, 15); // Random part
+
+    return `${timestamp}-${randomPart}`;
+}
 
 // privates
 const deserializeFunctions  = Symbol('deserializeFunctions');
@@ -25,11 +30,12 @@ export class Replica extends PatchDiff {
 
         this.changeRevision = 0;
         this.onApplyEvent = (delta, meta = {}) => {
-            if (meta.snapshot) {
+            if (meta.snapshot || meta.displace) {
                 this[remoteOverride](delta);
             } else {
                 this.changeRevision = meta.changeRevision;
-                this[remoteApply](delta);
+                const applyOptions = meta.deletePatch ? {deletePatch: true} : undefined;
+                this[remoteApply](delta, applyOptions);
             }
 
             if (!this._synced) {
@@ -79,8 +85,8 @@ export class Replica extends PatchDiff {
         return data;
     }
 
-    [remoteApply](data) {
-        super.apply(this[deserializeFunctions](data));
+    [remoteApply](data, options) {
+        super.apply(this[deserializeFunctions](data), undefined, options);
     }
 
     [remoteOverride](data) {
@@ -106,7 +112,7 @@ export class Replica extends PatchDiff {
         }
 
         this.remotePath = remotePath;
-        this.id = ++replicaId;
+        this.id = generateUniqueId();
         this._synced = false;
         this._subscribed = false;
 
@@ -115,13 +121,43 @@ export class Replica extends PatchDiff {
         }
     }
 
+    set connection(connection) {
+
+        if (connection) {
+            if (this._destroyed) {
+                throw Error('replica is destroyed');
+            }
+        }
+
+        if (this._connection) {
+            this._connection.off(`apply:${this.id}`, this.onApplyEvent);
+            this._connection.off('reconnect', this.onSocketReconnected);
+        }
+
+        this._connection = connection;
+    }
+
+    get connection() {
+        return this._connection;
+    }
+
     subscribeRemote(connection = this.options.connection, subscribeSuccessCallback = this.options.subscribeSuccessCallback, subscribeRejectCallback = this.options.subscribeRejectCallback) {
+
+        if (this._destroyed) {
+            throw Error('replica is destroyed');
+        }
 
         if (!(connection && connection instanceof LiveReplicaSocket)) {
             throw Error('undefined connection or not a LiveReplicaSocket');
         }
 
+        if (this._subscribed || this._subscribeInFlight) {
+            this.unsubscribeRemote();
+        }
+
         this._subscribed = false;
+        this._synced = false;
+
         if (connection !== this.connection) {
             this.connection = connection;
             this[bindToSocket]();
@@ -140,16 +176,24 @@ export class Replica extends PatchDiff {
             allowWrite: this.options.allowWrite,
             params: this.options.params
         }, (result) => {
+
+            this._subscribeInFlight = false;
+
             if (result.success) {
+
                 console.info(`live-replica subscribed to remote path=${this.remotePath} writable=${result.writable} rpc=${result.rpc}`);
                 this.options.allowWrite = result.writable;
 
                 this._subscribed = true;
-
                 if (typeof subscribeSuccessCallback === 'function') {
                     subscribeSuccessCallback(result);
                 }
                 super.emit('_subscribed', this.get());
+
+                if (this._destroyed) {
+                    this._subscribed = false;
+                    return;
+                }
 
                 if (this.options.allowWrite) {
                     this.subscribe((data, diff, context) => {
@@ -165,9 +209,16 @@ export class Replica extends PatchDiff {
                 }
             }
         });
+
+        this._subscribeInFlight = true;
     }
 
     async connect(connection, remotePath, params) {
+
+        if (this._destroyed) {
+            throw Error('replica is destroyed');
+        }
+
         if (connection instanceof WebSocket)  {
             connection = new WebSocketClient(connection);
         }
@@ -205,7 +256,12 @@ export class Replica extends PatchDiff {
 
     unsubscribeRemote() {
         if (!this.connection) { return; }
-        if (!this._subscribed) { return; }
+
+        if (!this._subscribed && !this._subscribeInFlight) {
+            console.warn('unsubscribeRemote called on an already unsubscribed replica');
+            return;
+        }
+
         const promise = this.connection.send(`unsubscribe:${this.id}`);
         this._subscribed = false;
         this._synced = false;
@@ -215,17 +271,13 @@ export class Replica extends PatchDiff {
 
     destroy() {
         this.unsubscribeRemote();
-        this.removeAllListeners();
-
-        if (this.connection) {
-            this.connection.off(`apply:${this.id}`, this.onApplyEvent);
-            this.connection.off('reconnect', this.onSocketReconnected);
-            delete this.connection;
-        }
-
         this.destroyProxy();
-
+        if (this.connection) {
+            this.connection = undefined;
+        }
         this.emit('destroyed');
+        this._destroyed = true;
+        this.removeAllListeners();
     }
 
     get isReadOnly() {

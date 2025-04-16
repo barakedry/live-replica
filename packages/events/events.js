@@ -1,8 +1,15 @@
+export const PATH_EVENT_PREFIX = '$path#';
+const PATH_EVENT_PREFIX_LENGTH = PATH_EVENT_PREFIX.length;
+
 export class EventEmitter {
     listeners = {};
     maxListeners = 10;
 
     setMaxListeners(num) { this.maxListeners = num; }
+
+    get listenedPaths() {
+        return Object.keys(this.listeners).filter(e => e.startsWith(PATH_EVENT_PREFIX)).map(eventName => eventName.substring(PATH_EVENT_PREFIX_LENGTH)).reverse();
+    }
 
     on(event, cb) {
         if (!this.listeners[event]) {
@@ -14,6 +21,7 @@ export class EventEmitter {
         }
 
         this.listeners[event].push(cb);
+
 
         return () => this.off(event, cb);
     }

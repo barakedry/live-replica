@@ -158,10 +158,10 @@ describe('Patch Diff', () => {
 
             it('should allow to apply with certain paths treated as overrides', () => {
                 //Arrange
-                const overrides = {
-                    'a.b.override1': true,
-                    'a.b.override2': true
-                };
+                const overrides = [
+                    'a.b.override1',
+                    'a.b.override2'
+                ];
                 const patcher = new PatchDiff({a: {b: {
                     c: {d: 'e'},
                     override1: {f: 'g'},
@@ -272,6 +272,82 @@ describe('Patch Diff', () => {
             expect(patcher.get()).toEqual(expectedObject);
         });
     });
+
+    describe('displace', () => {
+        it('should displace the entire data', () => {
+            //Arrange
+            const patcher = new PatchDiff({hello: {world: {print: 'end'}}});
+            const overrideObject = {hello: {world: {overriddenProperty: 'test'}}};
+
+            //Act
+            patcher.displace(overrideObject);
+
+            //Assert
+            expect(patcher.get()).toEqual(overrideObject);
+        });
+
+        it('should displace inner object', () => {
+            //Arrange
+            const patcher = new PatchDiff({hello: {world: {print: 'end'}}});
+            const displacedObject = {overriddenProperty: 'test'};
+
+            //Act
+            patcher.displace(displacedObject, 'hello.world');
+
+            //Assert
+            expect(patcher.get('hello.world')).toEqual(displacedObject);
+        });
+
+        it('should displace inner object via at', () => {
+            //Arrange
+            const patcher = new PatchDiff({hello: {world: {print: 'end'}}});
+            const displacedObject = {overriddenProperty: 'test'};
+
+            const at = patcher.at('hello.world');
+
+            //Act
+            at.displace(displacedObject);
+
+            //Assert
+            expect(at.get()).toEqual(displacedObject);
+        });
+
+        it('should displace inner object via when nothing exist at path', () => {
+            //Arrange
+            const patcher = new PatchDiff({});
+            const displacedObject = {overriddenProperty: 'test'};
+
+            const at = patcher.at('hello.world');
+
+            //Act
+            at.displace(displacedObject);
+
+            //Assert
+            expect(at.get()).toEqual(displacedObject);
+        });
+
+        it('subscribe should fire only on affected changes', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const spy = jest.fn();
+            patcher.subscribe('a.b', (diff, changeInfo, context) => {
+                console.log('a.b', diff, changeInfo, context);
+                spy(diff, changeInfo, context);
+            });
+
+            const displaced = {displaced: true};
+
+            const ab1 = patcher.at('a.b1');
+            ab1.displace(displaced);
+
+            patcher.displace(displaced, 'a.b');
+
+            //Assert snapshot notification
+            expect(spy).toHaveBeenCalledTimes(2);
+        });
+
+    });
+
     describe('remove', () => {
         it('should remove any data at given path', () => {
             //Arrange
@@ -303,6 +379,20 @@ describe('Patch Diff', () => {
             expect(patcher.get()).toEqual({});
             expect(arrPatcher.get()).toEqual([]);
         });
+
+
+        it('should not change anything if removing non existent key', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const before = patcher.getClone();
+
+            //Act
+            patcher.remove('a.b.e');
+
+            expect(patcher.get()).toEqual(before);
+        });
+
+
     });
     describe('splice', () => {
         it.failing('should apply data changes to arrays', () => {
@@ -374,6 +464,33 @@ describe('Patch Diff', () => {
             });
         });
     });
+
+    describe('getAll', () => {
+        it('should return the underlying object', () => {
+            //Arrange
+            const initObject = {a: 'b', items: {
+                itemKey1: {
+                    itemVal: 'itemValue1'
+                },
+                itemKey2: {
+                    itemVal: 'itemValue2'
+                },
+                itemKey3: {}
+            }};
+
+            const patcher = new PatchDiff(initObject);
+            //Act
+            const result = patcher.getAll('items[:itemKey].itemVal');
+            //Assert
+            expect(result).toStrictEqual([
+                {value: 'itemValue1', params: {itemKey: 'itemKey1'}, isPattern: true},
+                {value: 'itemValue2', params: {itemKey: 'itemKey2'}, isPattern: true},
+                {value: undefined, params: {itemKey: 'itemKey3'}, isPattern: true},
+            ]);
+        });
+
+    });
+
     describe('getClone', () => {
         it('should return a clone of the underlying object', () => {
             //Arrange
@@ -387,6 +504,7 @@ describe('Patch Diff', () => {
             expect(result).toEqual(initObject);
             expect(result).not.toBe(initObject);
         });
+
         it('should return a clone of the underlying object with only whitelisted keys', () => {
             //Arrange
             const initObject = {a: 'b', c: 'd'};
@@ -403,6 +521,7 @@ describe('Patch Diff', () => {
     describe('on', () => {
         it.todo('future');
     });
+
     describe('subscribe', () => {
         it('should notify of all changes on a given path', async () => {
             //Arrange
@@ -468,13 +587,47 @@ describe('Patch Diff', () => {
             }), {});
         });
 
+        it.only('should notify inner subscribers about deletion of parents', async () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: {d: {e: 'f'}}}}});
+            const spy = jest.fn();
+            patcher.at('a.b.c.d').subscribe((diff, changeInfo, context) => {
+                spy(diff, changeInfo, context);
+            });
+
+
+            //patcher.remove( 'a.b');
+            patcher.apply(  {
+                b: '__$$D',
+                b2: {c: {d: {e: 'f'}}}
+            }, 'a');
+
+            //Assert snapshot notification
+            expect(spy).toHaveBeenCalledWith({e: 'f'}, {snapshot: true}, expect.any(Object));
+            expect(spy).toHaveBeenCalledWith( {e: '__$$D'}, expect.objectContaining({
+                "hasAdditions": false,
+                "hasAddedObjects": false,
+                "hasDeletions": true,
+                "hasUpdates": false,
+                "hasDifferences": true,
+                "deletions": {
+                    "e": "f"
+                },
+                "differences": {
+                    "e": "__$$D"
+                },
+                "deletePatch": true,
+                "path": "a.b.c.d",
+            }), expect.any(Object));
+        });
+
         it('should be able to notify multiple changes in a single update', async () => {
             //Arrange
             const initObject = {a: {b: {c: 'd'}, toUpdate: 'f', toDelete: {g: 'h'}}};
             const patcher = new PatchDiff(initObject);
             const spy = jest.fn();
             patcher.subscribe('a', (diff, changeInfo, context) => {
-                console.log('a', diff, changeInfo, context);
+                //console.log('a', diff, changeInfo, context);
                 spy(diff, changeInfo, context);
             });
 
@@ -484,6 +637,7 @@ describe('Patch Diff', () => {
 
             //Assert snapshot notification
             expect(spy).toHaveBeenCalledWith(initObject.a, {snapshot: true}, {});
+
             expect(spy).toHaveBeenCalledWith({
                 b: 'objectToString',
                 toUpdate: 'newValue',
@@ -544,8 +698,8 @@ describe('Patch Diff', () => {
 
             //Assert
 
-            expect(spy).toHaveBeenCalledWith(1, {snapshot: true}, {}, false);
-            expect(spy).toHaveBeenCalledWith('changeToA', {differences: 'changeToA', updates: {newVal: 'changeToA', oldVal: 1}}, {}, false);
+            expect(spy).toHaveBeenCalledWith(1, {snapshot: true}, {}, false, undefined);
+            expect(spy).toHaveBeenCalledWith('changeToA', {differences: 'changeToA', updates: {newVal: 'changeToA', oldVal: 1}}, {}, false, undefined);
             expect(spy).not.toHaveBeenCalledWith('changeToB', {differences: 'changeToB', updates: {newVal: 'changeToB', oldVal: 2}}, {}, false);
         });
 
@@ -561,8 +715,8 @@ describe('Patch Diff', () => {
             patcher.apply('afterUnsub', 'a.b.c');
 
             //Assert
-            expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, expect.any(Object), false);
-            expect(spy).toHaveBeenCalledWith('beforeUnsub', expect.any(Object), expect.any(Object), false);
+            expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, expect.any(Object), false, undefined);
+            expect(spy).toHaveBeenCalledWith('beforeUnsub', expect.any(Object), expect.any(Object), false, undefined);
             expect(spy).not.toHaveBeenCalledWith('afterUnsub', expect.any(Object), expect.any(Object), false);
         });
 
@@ -610,7 +764,142 @@ describe('Patch Diff', () => {
                 it('should notify of all object changes with apply when patch, deletion and override are used', () => {
                     //Arrange
                     const patcher = new PatchDiff({a: {b: {c: 'd', e: 'f', g: { h: 'i', j: 'k' }}}});
-                    const overrides = { 'a.b.c.g': true };
+                    const overrides =['a.b.c.g'];
+                    const spy = jest.fn();
+                    const isAggregated = false;
+                    patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
+                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        spy(diff, changeInfo, context, isAggregated);
+                    });
+                    expect(spy).toHaveBeenCalledWith({ c: 'd', e: 'f', g: { h: 'i', j: 'k' }}, {snapshot: true}, {}, isAggregated);
+
+                    //Act
+                    patcher.apply({
+                        a: {
+                            b: {
+                                e: 'patch',
+                                c: patcher.options.deleteKeyword,
+                                g: 5
+                            }
+                        }
+                    }, '', {overrides});
+
+                    //Assert
+                    expect(patcher.get()).toEqual({a: {b: {e: 'patch', g: 5}}});
+                    expect(spy).toHaveBeenCalledWith({ c: patcher.options.deleteKeyword, e: 'patch', g: 5}, expect.objectContaining({"addedObjects": {}, "additions": {}, "deletions": {"c": "d"}, "differences": {"c": "__$$D", "e": "patch", "g": 5}, "hasAddedObjects": false, "hasAdditions": false, "hasDeletions": true, "hasDifferences": true, "hasUpdates": true, "path": "a.b", "updates": {"e": {"newVal": "patch", "oldVal": "f"}, "g": {"newVal": 5, "oldVal": {"h": "i", "j": "k"}}}}), {}, isAggregated);
+                });
+            });
+
+            describe('set', () => {
+                it('should notify of object change with set on path', async () => {
+                    //Arrange
+                    const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+                    const spy = jest.fn();
+                    const isAggregated = false;
+                    patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
+                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        spy(diff, changeInfo, context, isAggregated);
+                    });
+                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
+
+                    //Act
+                    patcher.set({ e: 'f' }, 'a.b');
+
+                    //Assert
+                    expect(patcher.get()).toEqual({a: {b: {e: 'f'}}});
+                    expect(spy).toHaveBeenCalledWith({ c: '__$$D', e: 'f'}, expect.objectContaining({"addedObjects": {}, "additions": {"e": "f"}, "deletions": {c: 'd'}, "differences": {"c": "__$$D", "e": "f"}, "hasAddedObjects": false, "hasAdditions": true, "hasDeletions": true, "hasDifferences": true, "hasUpdates": false, "path": "a.b", "updates": {}}), {}, isAggregated);
+                });
+
+                it('should notify of object change with apply on self (without path)', () => {
+                    //Arrange
+                    const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+                    const spy = jest.fn();
+                    const isAggregated = false;
+                    patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
+                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        spy(diff, changeInfo, context, isAggregated);
+                    });
+                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
+
+                    //Act
+                    patcher.set({a: {b: {e: 'f'}}});
+
+                    //Assert
+                    expect(patcher.get()).toEqual({a: {b: {e: 'f'}}});
+                    expect(spy).toHaveBeenCalledWith({ c: '__$$D', e: 'f'}, expect.objectContaining({"addedObjects": {}, "additions": {"e": "f"}, "deletions": {c: 'd'}, "differences": {"c": "__$$D", "e": "f"}, "hasAddedObjects": false, "hasAdditions": true, "hasDeletions": true, "hasDifferences": true, "hasUpdates": false, "path": "a.b", "updates": {}}), {}, isAggregated);
+                });
+            });
+
+            describe('remove', () => {
+                it('should notify of object change with remove on path', async () => {
+                    //Arrange
+                    const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+                    const spy = jest.fn();
+                    const isAggregated = false;
+
+                    //Act
+                    patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
+                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        spy(diff, changeInfo, context, isAggregated);
+                    });
+                    patcher.remove('a.b');
+
+                    //Assert
+                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
+                    expect(patcher.get()).toEqual({a: {}});
+                    expect(spy).toHaveBeenCalledWith('__$$D', expect.objectContaining({"deletions": {c: 'd'}, "differences": '__$$D', "hasAddedObjects": false, "hasAdditions": false, "hasDeletions": true, "hasDifferences": true, "hasUpdates": false}), {}, isAggregated);
+                });
+
+                it('should notify of object change with remove on self (without path)', () => {
+                    //Arrange
+                    const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+                    const spy = jest.fn();
+                    const isAggregated = false;
+                    patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
+                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        spy(diff, changeInfo, context, isAggregated);
+                    });
+                    expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
+
+                    //Act
+                    patcher.remove();
+
+                    //Assert
+                    expect(patcher.get()).toEqual({});
+                    //todo: we are not getting any notification for deletion in this case
+                    //expect(spy).toHaveBeenCalledWith(patcher.options.deleteKeyword, expect.objectContaining({"addedObjects": {}, "additions": {}, "deletions": {c: 'd'}, "differences": '__$$D', "hasAddedObjects": false, "hasAdditions": true, "hasDeletions": true, "hasDifferences": true, "hasUpdates": false, "path": "a.b", "updates": {}}), {}, isAggregated);
+                });
+            });
+        });
+        describe('Mutation notifications with path patterns', () => {
+
+            describe('apply', () => {
+                it('should notify of object change with apply on wildcard path subscription', async () => {
+                    //Arrange
+                    const patcher = new PatchDiff({a: {b: {c: {d: 'e'}}}});
+                    const spy = jest.fn();
+                    const isAggregated = false;
+                    patcher.subscribe('a[:unkownKey].c', (diff, changeInfo, context, isAggregated, params) => {
+                        console.log('a[:unkownKey].c.d', diff, changeInfo, context, isAggregated, params);
+                        spy(diff, changeInfo, context, isAggregated, params);
+                    });
+                    expect(spy).toHaveBeenCalledWith({ d: 'e'}, {snapshot: true}, {}, isAggregated, {unkownKey: 'b'});
+
+                    //Act
+                    patcher.apply({ e: 'changed' }, 'a.b.c.d');
+
+                    //Assert
+                    expect(patcher.get()).toEqual({a: {b: {c: {d: {e: 'changed'}}}}});
+                    expect(spy).toHaveBeenCalledWith({ d: { e: 'changed' } }, expect.objectContaining({
+                        "addedObjects": {}, "additions": {"d": {"e": "changed"}}, "deletions": {}, "differences": {"d": {"e": "changed"}}, "hasAddedObjects": false, "hasAdditions": true, "hasDeletions": false, "hasDifferences": true, "hasUpdates": false, "path": "a.b.c", "updates": {}
+                    }), {}, isAggregated, {unkownKey: 'b'});
+                });
+
+
+                it('should notify of all object changes with apply when patch, deletion and override are used', () => {
+                    //Arrange
+                    const patcher = new PatchDiff({a: {b: {c: 'd', e: 'f', g: { h: 'i', j: 'k' }}}});
+                    const overrides = [ 'a.b.c.g' ];
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
@@ -753,6 +1042,20 @@ describe('Patch Diff', () => {
                 expect(spy).toHaveBeenCalledWith('fluff', { differences: 'fluff', updates: { oldVal: 'stuff', newVal: 'fluff' } }, {});
             });
         });
+
+        it(' not fire anything if removing non existent key', () => {
+            //Arrange
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const before = patcher.getClone();
+            const spy = jest.fn();
+            patcher.subscribe('a', (diff) => {
+                spy();
+            }, true);
+            //Act
+            patcher.remove('a.b.e');
+
+            expect(spy).not.toHaveBeenCalled();
+        });
     });
     describe('getWhenExists', () => {
         it('should resolve whenever a value is populated on a given path', () => {
@@ -881,9 +1184,9 @@ describe('Patch Diff', () => {
                 allowParent: 'a',
                 allowParent2: 'b',
                 allowParent3: 'c',
-            }, { snapshot: true }, {}, false);
+            }, { snapshot: true }, {}, false, undefined);
 
-            expect(spy).toBeCalledWith(differences, completeEvent, {}, false);
+            expect(spy).toBeCalledWith(differences, completeEvent, {}, false, undefined);
         });
     });
 

@@ -44,6 +44,7 @@ declare module '@live-replica/live-replica' {
         updates?: object,
         addedObjects?: object,
         differences?: object | Array<object>,
+        changeType?: 'displace' | 'change' | ''
     }
 
     export type Proxy = object;
@@ -56,7 +57,7 @@ declare module '@live-replica/live-replica' {
      * @param changeInfo information about the change
     *  @param context the context passed from mutating methods
      */
-    export type SubscribeCallback = (patchOrSnapshot?: object, changeInfo?: DiffInfo, context?:any, deferred?:boolean) => void;
+    export type SubscribeCallback = (patchOrSnapshot?: object, changeInfo?: DiffInfo, context?:any, deferred?:boolean, params?:{[paramName:string]: any}) => void;
     export type UnsubscribeCallback = () => void;
 
     export type SpliceParams = { index: number, itemsToRemove: number, itemsToAdd?: Array<any> }
@@ -114,6 +115,16 @@ declare module '@live-replica/live-replica' {
          */
         set(value: any, path?: string, options?: MutationOptions) : DifferencesPatch;
 
+
+        /**
+         * Set a value in the managed data object at a path
+         * @param value the value to set (must be an object if path is not provided)
+         * @param path (optional) a path to set the value at
+         * @param options (optional) options for the set
+         * @returns a patch of the differences caused by the set operation
+         */
+        displace(value: any, path?: string, options?: MutationOptions) : void;
+
         /**
          * alias for set()
          * @param value
@@ -146,6 +157,13 @@ declare module '@live-replica/live-replica' {
         get(path?: string, callback?: (data: object) => void);
 
 
+        /**
+         * Get a value from the managed data object at a path
+         * @param pathPattern
+         */
+        getAll(pathPattern:string) : Array<{value: any, params: object, isPattern?:boolean}>
+
+
         //get(callback?: (data: object) => void);
 
         /**
@@ -160,33 +178,33 @@ declare module '@live-replica/live-replica' {
          * Subscribe to changes in the managed data object at a path
          * @param path a path to subscribe to changes at
          * @param callback (optional) a callback to call when the data changes
+         * @param skipInitial (optional) whether to skip the initial callback with the current data (default: false)
          * @returns a function to unsubscribe
          */
-        subscribe(path: string, callback?: SubscribeCallback): UnsubscribeCallback;
+        subscribe(path: string, callback?: SubscribeCallback, skipInitial?:boolean): UnsubscribeCallback;
 
 
         /**
          * Subscribe to changes in the managed data object
          * @param callback (optional) a callback to call when the data changes
+         * @param skipInitial (optional) whether to skip the initial callback with the current data (default: false)
          * @returns a function to unsubscribe
          */
-        subscribe(callback: SubscribeCallback): UnsubscribeCallback;
+        subscribe(callback: SubscribeCallback, skipInitial?:boolean): UnsubscribeCallback;
 
 
         /**
          * Returns a scoped PatchDiff at a relative path (uses this as its prototype object)
          * useful for working at a sub path of the managed data object and passing it around
          * @param subPath a relative path to scope the PatchDiff at
-         * @param cached (optional) whether to return a cached PatchDiff for the sub path (default: true)
          */
-        at(subPath, cached?): PatchDiff;
+        at(subPath): PatchDiff;
 
         /**
          * alias for at()
          * @param subPath a relative path to scope the PatchDiff at
-         * @param cached (optional) whether to return a cached PatchDiff for the sub path (default: true)
          */
-        scope(subPath, cached?): PatchDiff;
+        scope(subPath): PatchDiff;
 
 
         /**

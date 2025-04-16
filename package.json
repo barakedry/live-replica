@@ -2,14 +2,16 @@
   "private": true,
   "name": "@live-replica/live-replica",
   "type": "module",
-  "version": "0.9.18",
+  "version": "0.9.58",
   "description": "real-time objects replica syncing",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "bootstrap": "npx lerna bootstrap",
-    "test": "jest"
+    "bootstrap-install": "npm install && lerna bootstrap --no-ci",
+    "bootstrap-ci": "npm ci && lerna bootstrap",
+    "test": "jest",
+    "pack": "npm version patch && npm pack"
   },
   "repository": "git+https://github.com/barakedry/live-replica",
   "keywords": [
@@ -38,7 +40,8 @@
     "jest": "latest",
     "lit": "latest",
     "typescript": "^5.2.2",
-    "ws": "^8.14.2"
+    "ws": "^8.18.0",
+    "lerna": "6.6.2"
   },
   "dependencies": {
     "@msgpack/msgpack": "latest",

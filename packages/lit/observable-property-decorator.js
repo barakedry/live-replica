@@ -1,4 +1,4 @@
-import {PatchDiff, isProxy, get} from '../client/index.js';
+import {PatchDiff, isProxy, get, getPatchDiff} from '../client/index.js';
 import {LiveReplicaController} from './controller.js';
 
 const isRevoked = (obj) => {
@@ -14,7 +14,7 @@ const isRevoked = (obj) => {
     }
 };
 
-export function observed(options = {}) {
+export function observed(options = {throttleUpdatesDelay: 0}) {
     return function createObservablePropertyDescriptor(target, propertyName) {
 
         const previouslyDefinedDescriptor = Object.getOwnPropertyDescriptor(target, propertyName) ||
@@ -22,8 +22,8 @@ export function observed(options = {}) {
 
         const propertyKey = Symbol(`_${propertyName}`);
         const unwatchKey = Symbol(`unwatch${propertyName}`);
+        const lastSetKey = Symbol(`last_${propertyName}`);
         const reactiveController = Symbol();
-
 
         let revoked = false;
         const descriptor = {
@@ -34,14 +34,15 @@ export function observed(options = {}) {
 
                 return previouslyDefinedDescriptor ? previouslyDefinedDescriptor?.get?.call(this) : this[propertyKey];
             },
-            set: function(value){
+            set: function setObservable(value){
 
                 revoked = false;
 
                 const onChange = options.onChange && typeof this[options.onChange] === 'function' ? this[options.onChange] : () => {};
 
-                if (this[propertyKey] === value) { return; }
+                if (this[propertyKey] === value || this[lastSetKey] === value) { return; }
                 const prevValue = this[propertyKey];
+                this[lastSetKey] = value;
 
                 this[unwatchKey]?.();
 
@@ -64,6 +65,8 @@ export function observed(options = {}) {
                     proxy = patchDiff.getData(options);
                 }
 
+                const patchDiff = getPatchDiff(proxy);
+
                 this[propertyKey] = proxy;
 
                 if (previouslyDefinedDescriptor?.set) {
@@ -76,14 +79,25 @@ export function observed(options = {}) {
                     this[reactiveController] = new LiveReplicaController(this);
                 }
 
-                this[unwatchKey] = this[reactiveController].watch(proxy, undefined, (diff, changeInfo) => {
+                let wasDeleted = false;
+                this[unwatchKey] = this[reactiveController].watch(patchDiff, undefined, (diff, changeInfo, value, selfDelete) => {
+
+                    if (selfDelete) {
+                        proxy = undefined;
+                        this[propertyKey] = undefined;
+                        wasDeleted = true;
+                        previouslyDefinedDescriptor?.set?.call(this, this[propertyKey]);
+                    } else if (wasDeleted && value && (typeof value === 'object')) {
+                        setObservable.call(this, patchDiff);
+                    }
+
                     if (changeInfo.selfDelete) {
                         return false;
                     }
 
                     revoked = isRevoked(this[propertyKey]);
                     return onChange.call(this, diff, changeInfo);
-                });
+                }, options.throttleUpdatesDelay);
             },
             enumerable: false,
             configurable: true,

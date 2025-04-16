@@ -281,11 +281,11 @@ describe('Proxy', () => {
                 //Assert
                 expect(dataProxy).toEqual({foo: {bar: 'qux'}});
                 expect(observerSpy).toHaveBeenCalledTimes(2);
-                expect(observerSpy).toHaveBeenNthCalledWith(1, 'baz', {snapshot: true}, {}, false);
+                expect(observerSpy).toHaveBeenNthCalledWith(1, 'baz', {snapshot: true}, {}, false, undefined);
                 expect(observerSpy).toHaveBeenNthCalledWith(2, "qux", {
                     "differences": "qux",
                     "updates": {"newVal": "qux", "oldVal": "baz"}
-                }, {local: true}, false);
+                }, {local: true}, false, undefined);
             });
         });
 
@@ -349,7 +349,7 @@ describe('Proxy', () => {
 
                 //Act
                 observe(dataProxy, observerSpy);
-                expect(observerSpy).toHaveBeenNthCalledWith(1, {foo: {bar: 'baz'}}, {snapshot: true}, {}, false);
+                expect(observerSpy).toHaveBeenNthCalledWith(1, {foo: {bar: 'baz'}}, {snapshot: true}, {}, false, undefined);
                 replace(dataProxy, {bar: 'qux'});
 
                 //Assert
@@ -367,7 +367,7 @@ describe('Proxy', () => {
                     "updates": {},
                     "addedObjects": {},
                     "additions": {"bar": "qux"}
-                }), {local: true}, false);
+                }), {local: true}, false, undefined);
             });
         });
 

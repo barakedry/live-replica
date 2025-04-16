@@ -5,7 +5,7 @@ import { Utils } from '../../utils/utils.js';
 const defaultTransformer = (data, dataPart) => data;
 function serializeFunctions(data) {
 
-    if (typeof data !== 'object') {
+    if (typeof data !== 'object' || data === null) {
         return data;
     }
 
@@ -38,6 +38,7 @@ export class LiveReplicaServer extends PatchDiff {
         this.proxies = new WeakMap();
 
         this.middlewares = new MiddlewareChain(this);
+        this.unsubMiddlewares = new MiddlewareChain(this);
     }
 
     onConnect(connection) {
@@ -105,12 +106,40 @@ export class LiveReplicaServer extends PatchDiff {
 
         let subscriberChange = false;
         let transformedClientPatch = false;
-        const unsubscribeChanges = target.subscribe((patchData, {snapshot, changeType}) => {
+        // let displacedKeys = new Set();
+        const unsubscribeChanges = target.subscribe((patchData, {snapshot, changeType, deletePatch}) => {
             if (transformedClientPatch || !subscriberChange) {
-                const updateInfo  =  snapshot ? {snapshot} : {snapshot : false};
+                const updateInfo  =  snapshot ? {snapshot} : {snapshot : false, displace: changeType === 'displace'};
+
+                // if (typeof patchData === 'object' && patchData !== null && (changeType === 'displace' || displacedKeys.size)) {
+                //     const keys = Object.keys(patchData);
+                //     if (changeType === 'displace') {
+                //         patchData = {...patchData};
+                //         keys.forEach((key) => {
+                //             if (displacedKeys.has(key)) {
+                //                 // already sent to subscribers previously
+                //                 delete patchData[key];
+                //             } else {
+                //                 displacedKeys.add(key);
+                //             }
+                //
+                //         });
+                //     } else {
+                //         keys.forEach((key) => {
+                //             if (displacedKeys.has(key)) {
+                //                 displacedKeys.delete(key);
+                //             }
+                //         });
+                //     }
+                // }
+
                 if (!snapshot && subscriberChange) {
                     changeRevision++;
                     updateInfo.changeRevision = changeRevision;
+                }
+
+                if (deletePatch) {
+                    updateInfo.deletePatch = deletePatch;
                 }
 
                 patchData = readTransformer(patchData, target);
@@ -130,10 +159,14 @@ export class LiveReplicaServer extends PatchDiff {
 
         if (request.allowWrite) {
 
-            replicaApplyListener = (payload) => {
+            replicaApplyListener = (payload, metadata) => {
                 transformedClientPatch = writeTransformer !== defaultTransformer;
                 subscriberChange = payload.changeRevision === changeRevision;
-                target.apply(writeTransformer(payload.data));
+                if (metadata?.displace) {
+                    target.set(writeTransformer(payload.data));
+                } else {
+                    target.apply(writeTransformer(payload.data));
+                }
             };
 
             connection.on(applyEvent, replicaApplyListener);
@@ -157,16 +190,22 @@ export class LiveReplicaServer extends PatchDiff {
         }
 
         const onUnsubscribe = Utils.once(() => {
-            unsubscribeChanges();
+            this.emit('replica-unsubscribing', request);
+            this.unsubMiddlewares.start(request, (request) => {
+                unsubscribeChanges();
 
-            if (replicaApplyListener) { connection.removeListener(invokeRpcEvent, replicaApplyListener); }
-            if (invokeRpcListener)    { connection.removeListener(invokeRpcEvent, invokeRpcListener); }
+                if (replicaApplyListener) { connection.removeListener(applyEvent, replicaApplyListener); }
+                if (invokeRpcListener)    { connection.removeListener(invokeRpcEvent, invokeRpcListener); }
 
-            connection.removeListener(unsubscribeEvent, onUnsubscribe);
-            connection.removeListener('disconnect', onUnsubscribe);
-            connection.removeListener('close', onUnsubscribe);
+                connection.removeListener(unsubscribeEvent, onUnsubscribe);
+                connection.removeListener('disconnect', onUnsubscribe);
+                connection.removeListener('close', onUnsubscribe);
 
-            this.emit('replica-unsubscribe', request);
+                // old event for backward compatibility
+                this.emit('replica-unsubscribe', request);
+
+                this.emit('replica-unsubscribed', request);
+            });
         });
 
         connection.on(unsubscribeEvent, onUnsubscribe);
@@ -176,6 +215,10 @@ export class LiveReplicaServer extends PatchDiff {
 
     use(fn) {
         this.middlewares.use(fn);
+    }
+
+    addUnsubscriptionMiddleware(fn) {
+        this.unsubMiddlewares.use(fn);
     }
 
     destroy() {
