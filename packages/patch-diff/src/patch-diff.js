@@ -677,6 +677,19 @@ export class PatchDiff extends EventEmitter {
         return at;
     }
 
+    parent() {
+
+        const root = this._root;
+
+        if (root === this) {
+            return undefined;
+        }
+
+        const {path, key} = splitPathAndLastKey(this._path);
+        const parent =  root.at(path).get();
+
+        return parent;
+    }
 
     get root() { return this._root || this; }
 
