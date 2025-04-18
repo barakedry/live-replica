@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "baseUrl": "../..",
+    "paths": {
+      "@live-replica/*": ["packages/*/src"]
+    }
+  },
+  "include": ["src/**/*"],
+  "references": [
+    { "path": "../events" },
+    { "path": "../utils" },
+    { "path": "../proxy" }
+  ]
+} 

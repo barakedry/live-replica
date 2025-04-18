@@ -1,4 +1,8 @@
-function deepAssign(target, patch) {
+type Mutable<T> = {
+    -readonly [P in keyof T]: T[P];
+};
+
+function deepAssign(target: Record<string, any>, patch: Record<string, any>): typeof target {
     const keys = Object.keys(patch);
     for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
@@ -12,7 +16,22 @@ function deepAssign(target, patch) {
     return target;
 }
 
-function create(diffsAsArray, deletePatch = false) {
+interface DiffTrackerResult {
+    hasAdditions: boolean;
+    hasAddedObjects: boolean;
+    hasDeletions: boolean;
+    hasUpdates: boolean;
+    hasDifferences: boolean;
+    additions: Record<string, any>;
+    deletions: Record<string, any>;
+    updates: Record<string, any>;
+    addedObjects: Record<string, any>;
+    differences: Record<string, any>;
+    deletePatch: boolean;
+    addChildTracking(childTracker: DiffTrackerResult, key: string, isNewObject?: boolean): void;
+}
+
+function create(diffsAsArray: boolean, deletePatch = false): DiffTrackerResult {
     return {
         hasAdditions: false,
         hasAddedObjects: false,
@@ -25,8 +44,7 @@ function create(diffsAsArray, deletePatch = false) {
         addedObjects: {},
         differences: diffsAsArray ? [] : {},
         deletePatch,
-        addChildTracking: function addChildTracking(childTracker, key, isNewObject = false) {
-
+        addChildTracking(childTracker: DiffTrackerResult, key: string, isNewObject = false) {
             if (childTracker.hasAdditions) {
                 this.additions[key] = childTracker.additions;
                 this.hasAdditions = true;
@@ -51,7 +69,6 @@ function create(diffsAsArray, deletePatch = false) {
             }
 
             if (childTracker.hasDifferences) {
-
                 if (this.differences.hasOwnProperty(key) && typeof this.differences[key] === 'object') {
                     deepAssign(this.differences[key], childTracker.differences);
                 } else if (!this.differences.hasOwnProperty(key)) {

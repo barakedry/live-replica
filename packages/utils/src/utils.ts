@@ -1,17 +1,17 @@
-export function concatPath(path, suffix) {
+export function concatPath(path: string, suffix: string): string {
     if (path && suffix) {
-        return [path, suffix].join('.');
+        return `${path}.${suffix}`;
     }
 
     return path || suffix;
 }
 
-export function isValid(val) {
+export function isValid(val: any) {
     // val === val for cases val is NaN value
     return val === val;
 }
 
-export function pushKeyToPath(path = '', key = '', isIndex = !isNaN(key)) {
+export function pushKeyToPath(path = '', key = '', isIndex = !isNaN(Number(key))) {
     if (isIndex) {
         return `${path}[${key}]`;
     } else {
@@ -19,8 +19,8 @@ export function pushKeyToPath(path = '', key = '', isIndex = !isNaN(key)) {
     }
 }
 
-export function pathParts(path) {
-    const parts = [];
+export function pathParts(path: string) {
+    const parts: (string | number)[] = [];
     let part = '';
     let i = 0;
     const len = path.length;
@@ -89,8 +89,8 @@ export function pathParts(path) {
     return parts;
 }
 
-export function splitPathAndLastKey(fullPath) {
-    let key, path, index;
+export function splitPathAndLastKey(fullPath: string) {
+    let key: string, path: string, index: number | undefined = undefined;
     const dotIndex = fullPath.lastIndexOf('.');
     const stringBracketIndex = fullPath.lastIndexOf('["');
     const bracketIndex = fullPath.lastIndexOf('[');
@@ -111,10 +111,10 @@ export function splitPathAndLastKey(fullPath) {
         index = Number(key);
     }
 
-    return  {path, key, index};
+    return  { path, key, index };
 }
 
-export function lastPathKey(path) {
+export function lastPathKey(path: string): string {
     const dotIndex = path.lastIndexOf('.');
     const stringBracketIndex = path.lastIndexOf('["');
     const bracketIndex = path.lastIndexOf('[');
@@ -124,11 +124,11 @@ export function lastPathKey(path) {
     } else if (stringBracketIndex > bracketIndex) {
         return path.substring(stringBracketIndex + 2, path.length -2);
     } else {
-        return Number(path.substring(bracketIndex + 1, path.length -1));
+        return Number(path.substring(bracketIndex + 1, path.length -1)).toString();
     }
 }
 
-export function firstKey(path) {
+export function firstKey(path: string): string {
     const dotIndex = path.indexOf('.');
     const bracketIndex = path.indexOf('[');
     const stringBracketIndex = path.indexOf('["');
@@ -148,7 +148,7 @@ export function firstKey(path) {
     }
 }
 
-export function parentPath(path) {
+export function parentPath(path: string) {
     const dotIndex = path.lastIndexOf('.');
     const stringBracketIndex = path.lastIndexOf('["');
     const bracketIndex = path.lastIndexOf('[');
@@ -162,12 +162,12 @@ export function parentPath(path) {
     return path.substring(0, bracketIndex);
 }
 
-export function wrapByPath(value, path) {
-    let levels,
-        wrapper,
-        curr,
-        i,
-        len;
+export function wrapByPath(value: any, path: string) {
+    let levels: (string | number)[],
+        wrapper: Record<string, any>,
+        curr: Record<string, any>,
+        i: number,
+        len: number;
 
     if (!path) {
         return value;
@@ -190,30 +190,35 @@ export function wrapByPath(value, path) {
     return wrapper;
 }
 
-export function hasSamePrototype(obj1, obj2) {
+export function hasSamePrototype(obj1: any, obj2: any) {
     return (typeof obj1 === 'object' && obj1 !== null) && Object.getPrototypeOf(obj1) === Object.getPrototypeOf(obj2);
 }
 
-export function once(fn) {
-    let lastResult, called = false;
-    return function (...args) {
+export function once(fn: (...args: any[]) => any) {
+    let lastResult: any, called = false;
+    return function (...args: any[]) {
         if (called) { return lastResult; }
 
-        lastResult = fn.call(this, ...args);
+        lastResult = fn.call(
+            // @ts-expect-error
+            this,
+            ...args
+        );
+        // @ts-expect-error
         fn = null;
         called = true;
         return lastResult
     }
 }
 
-export function createWrapperWithLastKey(path) {
+export function createWrapperWithLastKey(path: string) {
     const {path: basePath, key, index} = splitPathAndLastKey(path);
-    let lastKey, wrapperInner;
+    let lastKey: string | number, wrapperInner: Record<string, any>;
 
     const wrapper = {};
 
-    if (!isNaN(index)) {
-        lastKey = index;
+    if (!isNaN(index!)) {
+        lastKey = index!;
     } else {
         lastKey = key;
     }
@@ -238,9 +243,9 @@ export function createWrapperWithLastKey(path) {
     return {wrapper, wrapperInner, lastKey}
 }
 
-export function fixNumericParts(path) {
+export function fixNumericParts(path: string) {
     const parts = path.split('.');
-    const result = [];
+    const result: string[] = [];
 
     for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
@@ -261,13 +266,13 @@ export function fixNumericParts(path) {
     return result.join('.');
 }
 
-export function pickWithKeys(obj, keys, allowEmptyObject = false) {
+export function pickWithKeys(obj: Record<string, any>, keys: string[], allowEmptyObject = false) {
     if (!obj || typeof obj !== 'object') {
         return obj;
     }
 
-    const result = {};
-    keys.forEach(key => {
+    const result: Record<string, any> = {};
+    keys.forEach((key) => {
         if (obj.hasOwnProperty(key)) {
             result[key] = obj[key];
         }

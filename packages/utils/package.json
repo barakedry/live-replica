@@ -1,7 +1,16 @@
 {
   "name": "@live-replica/utils",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "prepare": "npm run build",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rimraf dist"
+  },
   "dependencies": {
+    "@live-replica/events": "^0.1.0"
   }
 }

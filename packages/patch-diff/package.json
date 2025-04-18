@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "description": "Emits diff events.",
   "type": "module",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "test": "jest"
+    "prepare": "npm run build",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rimraf dist"
   },
   "repository": {
     "type": "git",
@@ -29,6 +33,9 @@
   },
   "homepage": "https://github.com/barakedry/live-replica/diff-patch",
   "dependencies": {
-    "lodash": "latest"
+    "@live-replica/events": "^0.1.0",
+    "@live-replica/utils": "^0.1.0",
+    "@live-replica/proxy": "^0.1.0",
+    "lodash-es": "latest"
   }
 }
