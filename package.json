@@ -13,11 +13,18 @@
     "test": "jest",
     "pack": "npm version patch && npm pack",
     "prepare": "npm run build",
-    "build": "lerna run clean && tsc --build packages/events/tsconfig.json packages/utils/tsconfig.json packages/proxy/tsconfig.json packages/patch-diff/tsconfig.json",
+    "build": "lerna run clean && lerna run build --stream --sort",
     "build:watch": "tsc --build --watch",
-    "clean": "lerna run clean && rimraf dist",
+    "clean": "lerna run clean && rm -rf dist",
     "type-check": "tsc --noEmit",
-    "type-check:watch": "tsc --noEmit --watch"
+    "type-check:watch": "tsc --noEmit --watch",
+    "dev": "lerna run build:watch --parallel",
+    "lint": "lerna run lint --parallel",
+    "format": "lerna run format --parallel",
+    "version": "lerna version",
+    "publish": "lerna publish from-package",
+    "changed": "lerna changed",
+    "diff": "lerna diff"
   },
   "repository": "git+https://github.com/barakedry/live-replica",
   "keywords": [

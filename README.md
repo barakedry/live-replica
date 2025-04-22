@@ -162,8 +162,8 @@ class MyElement extends LitElement {
 ```
 
 ### ReactiveController
-If you are not using typescript or needs more control over the watch mechanism you can use
-LiveReplicaController which is a [ReactiveController](https://lit.dev/docs/composition/controllers/) that enables you to bind a replica to a LitElement life cycle to update the element on state changes
+If you are not using TypeScript or need more control over the watch mechanism, you can use
+LiveReplicaController which is a [ReactiveController](https://lit.dev/docs/composition/controllers/) that enables you to bind a replica to a LitElement life cycle to update the element on state changes.
 
 ```typescript
 import { LitElement, html } from 'lit-element';

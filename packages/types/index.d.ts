@@ -1,3 +1,7 @@
+import { WebSocket } from 'ws';
+import { EventEmitter } from 'events';
+import { PatchDiff } from '../patch-diff/src/patch-diff';
+
 declare module '@live-replica/live-replica' {
     export type EventListener = (...args: any[]) => void;
 
@@ -152,4 +156,55 @@ declare module '@live-replica/live-replica' {
     }
 
     export function observed(options: ObservedOptions): PropertyDecorator;
+}
+
+export interface LiveReplicaSocket {
+    send(event: string, payload: any, ack?: Function): Promise<any>;
+    on(event: string, fn: Function): void;
+    once(event: string, fn: Function): void;
+    off(event: string, fn: Function): void;
+    baseSocket: WebSocket;
+    connect(baseSocket: WebSocket): void;
+    disconnect(): void;
+    isConnected(): boolean;
+}
+
+export interface ReplicaOptions {
+    connection?: LiveReplicaSocket;
+    allowWrite?: boolean;
+    allowRPC?: boolean;
+    dataObject: Record<string, any>;
+    params?: object;
+    subscribeRemoteOnCreate?: boolean;
+    subscribeSuccessCallback?: Function;
+    subscribeRejectCallback?: Function;
+}
+
+export interface LiveReplicaServer extends PatchDiff {
+    set(data: any, path?: string): void;
+    get(path?: string): any;
+    getWhenExists(path: string): Promise<any>;
+    use(middleware: Function): void;
+    destroy(): void;
+}
+
+export interface LiveReplicaWebSocketsServer extends LiveReplicaServer {
+    handleWebSocket(socket: WebSocket): () => void;
+}
+
+export interface Replica extends EventEmitter {
+    remotePath: string;
+    synced: Promise<any>;
+    data: any;
+    subscribeRemote(connection?: LiveReplicaSocket, subscribeSuccessCallback?: Function, subscribeRejectCallback?: Function): void;
+    unsubscribeRemote(): void;
+    destroy(): void;
+    get(path?: string): any;
+    set(data: any, path?: string): void;
+    apply(patch: any): void;
+    remove(path: string): void;
+    getWhenExists(path: string): Promise<any>;
+    on(event: string, callback: Function): this;
+    once(event: string, callback: Function): this;
+    emit(event: string, ...args: any[]): boolean;
 }

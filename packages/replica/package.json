@@ -2,16 +2,19 @@
   "name": "@live-replica/replica",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "type": "module",
   "scripts": {
     "test": "jest"
   },
-    "dependencies": {
-        "@live-replica/patch-diff": "*",
-        "@live-replica/proxy": "*",
-        "@live-replica/socket": "*"
-    },
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@live-replica/patch-diff": "workspace:*",
+    "@live-replica/socket": "workspace:*",
+    "@live-replica/proxy": "workspace:*",
+    "@live-replica/utils": "workspace:*",
+    "@live-replica/ws-client": "workspace:*"
+  },
   "author": "Barak Edry",
   "license": "Apache-2.0"
 }

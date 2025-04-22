@@ -24,7 +24,11 @@
     { "path": "./packages/events" },
     { "path": "./packages/utils" },
     { "path": "./packages/proxy" },
-    { "path": "./packages/patch-diff" }
+    { "path": "./packages/patch-diff" },
+    { "path": "./packages/socket" },
+    { "path": "./packages/ws-client" },
+    { "path": "./packages/common" },
+    { "path": "./packages/replica" }
   ],
   "exclude": [
     "node_modules",
@@ -33,6 +37,8 @@
     "**/*.spec.ts",
     "**/*.js",
     "jest.config.js",
-    "packages/**/*.js"
-  ]
+    "packages/**/*.js",
+    "packages/**/dist"
+  ],
+  "files": []
 } 

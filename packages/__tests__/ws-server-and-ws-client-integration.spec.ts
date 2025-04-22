@@ -1,11 +1,12 @@
-import {WebSocket, WebSocketServer} from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 import LiveReplicaWebSocketsServer from "../ws-server/ws-server.js";
 import WebSocketClient from "../ws-client/ws-client.js";
 import Replica from "../replica/replica.js";
-import {flushCycle} from "../patch-diff/__tests__/patch-diff.spec.js";
-import {oncePerSubscription} from "../server/src/middlewares.js";
+import { flushCycle } from "../patch-diff/__tests__/patch-diff.spec.js";
+import { oncePerSubscription } from "../server/src/middlewares.js";
+import { LiveReplicaSocket, ReplicaOptions, LiveReplicaWebSocketsServer as LiveReplicaWebSocketsServerType } from '../types';
 
-function createWSServer() {
+function createWSServer(): Promise<WebSocketServer> {
     return new Promise((resolve, reject) => {
         const wss = new WebSocketServer({
             path: '/ws',
@@ -13,12 +14,12 @@ function createWSServer() {
             perMessageDeflate: {
                 threshold: 1024 * 5,
             },
-            port: process.env.PORT || 3000,
+            port: process.env.PORT ? parseInt(process.env.PORT) : 3000,
         }, () => resolve(wss));
     });
 }
 
-function createWebSocket() {
+function createWebSocket(): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
         const url = `http://localhost:3000/ws`;
         const ws = new WebSocket(url);
@@ -34,13 +35,13 @@ function createWebSocket() {
     });
 }
 
+let wsServer: WebSocketServer;
+let connection: WebSocketClient;
+let server: LiveReplicaWebSocketsServerType;
 
-let wsServer;
-let connection;
-let server;
 beforeAll(async () => {
     wsServer = await createWSServer();
-    server = new LiveReplicaWebSocketsServer(wsServer)
+    server = new LiveReplicaWebSocketsServer(wsServer) as LiveReplicaWebSocketsServerType;
     const ws = await createWebSocket();
     connection = new WebSocketClient(ws);
 });
@@ -64,19 +65,20 @@ describe('WS Server and  WS Client integration', () => {
         it.each([
             ['not provided', undefined],
             ['not instance of LiveReplicaSocket', {}]
-        ])('should throw if socket is %s', (_desc, socket) => {
-            const replica = new Replica('root');
+        ])('should throw if socket is %s', (_desc: string, socket: unknown) => {
+            const replica = new Replica('root', { dataObject: {} as Record<string, any> });
 
             //Act & Assert
-            expect(() => replica.subscribeRemote(socket)).toThrow('undefined connection or not a LiveReplicaSocket');
+            expect(() => replica.subscribeRemote(socket as LiveReplicaSocket)).toThrow('undefined connection or not a LiveReplicaSocket');
         });
     });
 
     describe('Sync', () => {
         it('should notify on successful subscription', (done) => {
             //Act
-            const replicaOptions = {
+            const replicaOptions: ReplicaOptions = {
                 connection,
+                dataObject: {} as Record<string, any>,
                 subscribeSuccessCallback: jest.fn(function() {
                     //Assert
                     expect(replicaOptions.subscribeSuccessCallback).toHaveBeenCalledWith({success: true, writable: null, rpc: null});
@@ -88,7 +90,7 @@ describe('WS Server and  WS Client integration', () => {
 
         it('should sync server changes to replica', async () => {
             //Arrange
-            const replica = new Replica('root', { connection });
+            const replica = new Replica('root', { connection, dataObject: {} as Record<string, any> });
 
             //Act
             await replica.synced;
@@ -102,7 +104,7 @@ describe('WS Server and  WS Client integration', () => {
 
         it('should sync replica changes to server', async () => {
             //Arrange
-            const replica = new Replica('root', { connection, allowWrite: true });
+            const replica = new Replica('root', { connection, allowWrite: true, dataObject: {} as Record<string, any> });
 
             //Act
             await replica.synced;
@@ -121,7 +123,7 @@ describe('WS Server and  WS Client integration', () => {
         it('should allow to unsubscribe', async () => {
             //Arrange
             server.set({a: 1, b: {c: 2}}, 'root');
-            const replica = new Replica('root', { connection, allowWrite: true });
+            const replica = new Replica('root', { connection, allowWrite: true, dataObject: {} as Record<string, any> });
             await replica.getWhenExists('a');
             const destroyedCallback = jest.fn();
             replica.on('destroyed', destroyedCallback);
@@ -146,8 +148,9 @@ describe('WS Server and  WS Client integration', () => {
             server.use(middlewareFake);
 
             //Act
-            const replicaOptions = {
+            const replicaOptions: ReplicaOptions = {
                 connection,
+                dataObject: {} as Record<string, any>,
                 subscribeRejectCallback: jest.fn(function() {
                     //Assert
                     expect(replicaOptions.subscribeRejectCallback).toHaveBeenCalledWith('reason: testing reject');
@@ -177,8 +180,8 @@ describe('WS Server and  WS Client integration', () => {
 
             //Act
             //create two replicas, one read only and one read write
-            const readOnlyReplica = new Replica('readonly', { connection });
-            const readWriteReplica = new Replica('readwrite', { connection });
+            const readOnlyReplica = new Replica('readonly', { connection, dataObject: {} as Record<string, any> });
+            const readWriteReplica = new Replica('readwrite', { connection, dataObject: {} as Record<string, any> });
             //wait for both replicas to connect
             await readOnlyReplica.synced;
             await readWriteReplica.synced;
@@ -188,7 +191,6 @@ describe('WS Server and  WS Client integration', () => {
             //wait for the changes to reflect on replica and server
             await readWriteReplica.getWhenExists('c');
             await server.getWhenExists('readwrite.c');
-
 
             //Assert
             expect(readOnlyReplica.get()).toEqual({ a: 1 });
@@ -206,8 +208,8 @@ describe('WS Server and  WS Client integration', () => {
 
                 //Act
                 //new Replicas will connect and create subscription requests on the server
-                const replicaA = new Replica('a', { connection });
-                const replicaB = new Replica('a', { connection });
+                const replicaA = new Replica('a', { connection, dataObject: {} as Record<string, any> });
+                const replicaB = new Replica('a', { connection, dataObject: {} as Record<string, any> });
 
                 //wait for the replicas to connect
                 await replicaA.getWhenExists('b');
@@ -230,10 +232,10 @@ describe('WS Server and  WS Client integration', () => {
     describe('RPC', () => {
         it('should be able to invoke methods on server from the replica', async () => {
             //Arrange
-            const replica = new Replica('root', { connection, allowRPC: true });
+            const replica = new Replica('root', { connection, allowRPC: true, dataObject: {} as Record<string, any> });
             server.set({
                 root: {
-                    myRPC: function myRPC() {
+                    myRPC: function myRPC(): string {
                         return 'hello';
                     }
                 }
@@ -249,10 +251,10 @@ describe('WS Server and  WS Client integration', () => {
 
         it('should be able to invoke async methods on server from the replica', async () => {
             //Arrange
-            const replica = new Replica('root', { connection, allowRPC: true });
+            const replica = new Replica('root', { connection, allowRPC: true, dataObject: {} as Record<string, any> });
             server.set({
                 root: {
-                    myRPC: function myRPC() {
+                    myRPC: function myRPC(): Promise<string> {
                         return new Promise((resolve) => {
                             setTimeout(() => resolve('hello after 1ms'), 1);
                         });
@@ -270,10 +272,10 @@ describe('WS Server and  WS Client integration', () => {
 
         it('should resolve with error for async rejections', async () => {
             //Arrange
-            const replica = new Replica('root', { connection, allowRPC: true });
+            const replica = new Replica('root', { connection, allowRPC: true, dataObject: {} as Record<string, any> });
             server.set({
                 root: {
-                    myRPC: function myRPC() {
+                    myRPC: function myRPC(): Promise<never> {
                         return new Promise((resolve, reject) => {
                             const error = new Error();
                             error.name = 'RPCError';
@@ -289,4 +291,4 @@ describe('WS Server and  WS Client integration', () => {
             await expect(replica.data.myRPC()).rejects.toThrow('testing rpc errors');
         });
     });
-});
+}); 
