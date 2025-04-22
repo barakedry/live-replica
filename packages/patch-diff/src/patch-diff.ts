@@ -20,7 +20,12 @@ import {
   DiffInfo,
   SubscribeCallback,
   UnsubscribeCallback,
-  GetAllResult
+  GetAllResult,
+  IPatchDiff,
+  MutationOptions,
+  MergeOptions,
+  ProxyOptions,
+  KeyList
 } from './types';
 
 import isObject from 'lodash-es/isObject';
@@ -149,20 +154,20 @@ export const SpliceKeyword = '__$$S';
 export const UndefinedKeyword = '__$$U';
 export const ProtoKeyword = '__$$P';
 
-export class PatchDiff extends EventEmitter {
+export class PatchDiff<T = any> extends EventEmitter implements IPatchDiff<T> {
   private options: Required<PatchDiffOptions>;
   private proxies: WeakMap<object, any>;
-  private _data: Record<string, any>;
+  private _data: T;
   private _whitelist?: Set<string>;
   private _path?: string;
   private _wrapper?: Record<string, any>;
   private _wrapperInner?: Record<string, any>;
   private _wrapperKey?: string;
-  private _root?: PatchDiff;
+  private _root?: PatchDiff<T>;
 
   declare setMaxListeners: (n: number) => void;
 
-  constructor(object?: Record<string, any>, options?: PatchDiffOptions) {
+  constructor(object?: T, options?: PatchDiffOptions) {
     super();
 
     this.options = {
@@ -183,76 +188,132 @@ export class PatchDiff extends EventEmitter {
     };
 
     this.proxies = new WeakMap();
-    this._data = object || {};
+    this._data = object || {} as T;
     this.setMaxListeners(this.options.maxListeners);
   }
 
-  at(path: string): PatchDiff {
+  apply(patch: Partial<T>, path?: string, options?: MergeOptions): Partial<T> {
     // Implementation needed
-    return this;
+    return patch;
   }
 
-  get(path?: string): any {
-    // Implementation needed
-    return path ? this._data[path] : this._data;
+  patch(patch: Partial<T>, path?: string, options?: MergeOptions): Partial<T> {
+    return this.apply(patch, path, options);
   }
 
-  private _applyObject(target: Record<string, any>, patch: Record<string, any>, path: string, options: Required<PatchDiffOptions>, level: number): void {
-    // Implementation needed
+  merge(patch: Partial<T>, path?: string, options?: MergeOptions): Partial<T> {
+    return this.apply(patch, path, options);
   }
 
-  apply(patch: Record<string, any>, path?: string, options?: PatchDiffOptions): void {
-    const mergedOptions: Required<PatchDiffOptions> = {
-      ...this.options,
-      ...(options || {})
-    };
+  set<K extends keyof T>(value: T[K], path?: K, options?: MutationOptions): Partial<T> {
+    if (!path) return value as unknown as Partial<T>;
+    return { [path as string]: value } as unknown as Partial<T>;
+  }
 
-    if (!_isObject(patch) && !path && !this._path) {
-      logError('invalid apply, target and patch must be objects');
-      return;
+  displace<K extends keyof T>(value: T[K], path?: K, options?: MutationOptions): void {
+    this.set(value, path, { ...options, changeType: 'displace' });
+  }
+
+  override<K extends keyof T>(value: T[K], path?: K, options?: MutationOptions): Partial<T> {
+    return this.set(value, path, { ...options, overrides: true });
+  }
+
+  remove(path?: string, options?: MutationOptions): Partial<T> {
+    const patch = path ? { [path]: this.options.deleteKeyword } : this.options.deleteKeyword;
+    return this.apply(patch as Partial<T>, undefined, options);
+  }
+
+  splice(spliceParams: SpliceParams, path?: string, options?: MutationOptions): Partial<T> {
+    const patch = path 
+      ? { [path]: { [this.options.spliceKeyword]: spliceParams } }
+      : { [this.options.spliceKeyword]: spliceParams };
+    return this.apply(patch as Partial<T>, undefined, options);
+  }
+
+  get<K extends keyof T>(path?: K): T[K] {
+    if (!path) return this._data as T[K];
+    return (this._data as any)[path as string];
+  }
+
+  getAll(pathPattern: string): Array<GetAllResult> {
+    // Implementation needed
+    return [];
+  }
+
+  getClone<K extends keyof T>(path?: K): T[K] {
+    const value = this.get(path);
+    return _isObject(value) ? { ...value } as T[K] : value;
+  }
+
+  subscribe(pathOrCallback: string | SubscribeCallback<T>, callbackOrSkipInitial?: SubscribeCallback<T> | boolean, skipInitial?: boolean): UnsubscribeCallback {
+    if (typeof pathOrCallback === 'string') {
+      const callback = callbackOrSkipInitial as SubscribeCallback<T>;
+      // Implementation for path-based subscription
+      return () => {};
+    } else {
+      const callback = pathOrCallback;
+      const skipInit = callbackOrSkipInitial as boolean;
+      // Implementation for callback-only subscription
+      return () => {};
     }
+  }
 
-    if (isProxy(patch)) {
-      patch = unwrap(patch);
-    }
+  at(subPath: string): PatchDiff<T> {
+    const newPatchDiff = new PatchDiff<T>(undefined, this.options);
+    newPatchDiff._path = subPath;
+    newPatchDiff._root = this._root || this;
+    return newPatchDiff;
+  }
 
-    let patchToApply: Record<string, any> = patch;
+  scope(subPath: string): IPatchDiff<T> {
+    return this.at(subPath);
+  }
 
-    if (this._whitelist) {
-      if (path) {
-        if (!this._whitelist.has(firstKey(path))) {
-          return;
+  whitelist(keys: KeyList): void {
+    this._whitelist = new Set(keys);
+  }
+
+  getWhenExists<K extends keyof T>(path?: K): Promise<T[K]> {
+    return new Promise((resolve) => {
+      const value = this.get(path);
+      if (value !== undefined) {
+        resolve(value);
+        return;
+      }
+
+      const unsubscribe = this.subscribe((patch) => {
+        const value = path ? (patch as any)[path as string] : patch;
+        if (value !== undefined) {
+          unsubscribe();
+          resolve(value as T[K]);
         }
-      } else {
-        patchToApply = pickWithKeys(patch, Array.from(this._whitelist), false) as Record<string, any>;
-      }
-    }
-
-    let wrappedPatch = wrapByPath(patchToApply, path || '');
-    if (this._wrapper) {
-      this._wrapperInner![this._wrapperKey!] = wrappedPatch;
-      wrappedPatch = this._wrapper;
-    }
-
-    if (mergedOptions.overrides) {
-      const overrides: string[] = [];
-      if (Array.isArray(mergedOptions.overrides)) {
-        mergedOptions.overrides.forEach((path) => {
-          overrides.push(concatPath(this._path || '', path));
-        });
-      } else {
-        throw new Error('LiveReplica PatchDiff: invalid overrides must be an array of paths');
-      }
-
-      mergedOptions.overrides = overrides;
-    }
-
-    this._applyObject(this._data, wrappedPatch, '', mergedOptions, 0);
-
-    if (this._wrapper) {
-      delete this._wrapperInner![this._wrapperKey!];
-    }
+      });
+    });
   }
 
-  // ... Rest of the methods will follow in subsequent edits
+  whenAnything<K extends keyof T>(path?: K): Promise<T[K]> {
+    return new Promise((resolve) => {
+      const unsubscribe = this.subscribe((patch) => {
+        const value = path ? (patch as any)[path as string] : patch;
+        unsubscribe();
+        resolve(value as T[K]);
+      });
+    });
+  }
+
+  getFullPath(subPath?: string): string {
+    return subPath ? concatPath(this._path || '', subPath) : (this._path || '');
+  }
+
+  getData(proxyOptions?: Partial<ProxyOptions>): T {
+    return this._data;
+  }
+
+  get data(): T {
+    return this._data;
+  }
+
+  get root(): PatchDiff<T> {
+    return this._root || this;
+  }
 } 

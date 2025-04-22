@@ -1,7 +1,3 @@
-type Mutable<T> = {
-    -readonly [P in keyof T]: T[P];
-};
-
 function deepAssign(target: Record<string, any>, patch: Record<string, any>): typeof target {
     const keys = Object.keys(patch);
     for (let i = 0; i < keys.length; i++) {
@@ -16,7 +12,7 @@ function deepAssign(target: Record<string, any>, patch: Record<string, any>): ty
     return target;
 }
 
-interface DiffTrackerResult {
+export interface DiffTrackerResult {
     hasAdditions: boolean;
     hasAddedObjects: boolean;
     hasDeletions: boolean;
