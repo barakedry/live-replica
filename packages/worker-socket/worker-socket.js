@@ -77,7 +77,7 @@ export class WorkerSocket extends LiveReplicaSocket {
 
         this.worker.terminate = (...args) => {
             this.disconnect();
-            terminate(...args);
+            setTimeout(() => terminate(...args), 500);
         };
 
         this.worker.addEventListener('error', (e) => {
