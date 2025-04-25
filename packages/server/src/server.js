@@ -2,7 +2,7 @@ import { PatchDiff } from '../../patch-diff/index.js';
 import { MiddlewareChain } from './middleware-chain.js';
 import { Utils } from '../../utils/utils.js';
 
-const defaultTransformer = (data, dataPart) => data;
+const defaultTransformer = (data) => data;
 function serializeFunctions(data) {
 
     if (typeof data !== 'object' || data === null) {
