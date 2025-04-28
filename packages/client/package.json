@@ -6,9 +6,9 @@
   "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc --declaration --emitDeclarationOnly && tsc-transpile-only",
+    "build": "tsc --build",
     "build:watch": "tsc --declaration --emitDeclarationOnly --watch",
-    "clean": "rimraf dist",
+    "clean": "tsc --build --clean",
     "test": "jest",
     "tsc-transpile-only": "node ../../node_modules/typescript/lib/tsc.js --outDir dist --rootDir . --skipLibCheck --moduleResolution node --module ESNext --noEmitOnError false --target ES2020 --esModuleInterop index.ts"
   },

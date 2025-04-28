@@ -1,4 +1,4 @@
-import PatchDiff from '../src/patch-diff';
+import PatchDiff from '@live-replica/patch-diff';
 
 const data = {
     a: {
@@ -143,3 +143,5 @@ for (let i = 0; i < 10; i++) {
     console.timeEnd(`apply ${i}`);
 
 }
+
+test('dummy test', () => { expect(true).toBe(true); });

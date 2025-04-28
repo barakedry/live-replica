@@ -5,7 +5,9 @@
   "main": "./dist/index.js",
   "type": "module",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "tsc --build",
+    "clean": "tsc --build --clean"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {

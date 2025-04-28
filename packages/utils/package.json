@@ -6,9 +6,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "prepare": "npm run build",
-    "build": "tsc",
+    "build": "tsc --build",
     "build:watch": "tsc --watch",
-    "clean": "rimraf dist"
+    "clean": "tsc --build --clean"
   },
   "dependencies": {
     "@live-replica/events": "^0.1.0"

@@ -1,8 +1,8 @@
-import { PatchDiff } from "../patch-diff/index.js";
-import { LiveReplicaSocket } from '../socket/socket.js';
-import { isProxy, getPatchDiff } from '../proxy/proxy.js';
-import { Utils } from '../utils/utils.js';
-import {WebSocketClient} from "../ws-client/ws-client.js";
+import { PatchDiff } from '@live-replica/patch-diff';
+import { LiveReplicaSocket } from '@live-replica/socket';
+import { isProxy, getPatchDiff } from '@live-replica/proxy';
+import { Utils } from '@live-replica/utils';
+import {WebSocketClient} from '@live-replica/ws-client';
 const { concatPath } = Utils;
 
 function generateUniqueId() {

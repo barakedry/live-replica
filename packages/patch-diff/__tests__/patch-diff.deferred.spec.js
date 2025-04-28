@@ -1,5 +1,4 @@
-import PatchDiff from "../src/patch-diff";
-import {flushCycle} from "./patch-diff.spec.js";
+import PatchDiff from '@live-replica/patch-diff';
 
 describe('deferred', () => {
     describe('apply', () => {

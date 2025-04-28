@@ -24,7 +24,9 @@
     "version": "lerna version",
     "publish": "lerna publish from-package",
     "changed": "lerna changed",
-    "diff": "lerna diff"
+    "diff": "lerna diff",
+    "build:all": "tsc --build packages/utils packages/proxy packages/patch-diff packages/replica packages/ws-client packages/client",
+    "clean:all": "tsc --build packages/utils --clean && tsc --build packages/proxy --clean && tsc --build packages/patch-diff --clean && tsc --build packages/replica --clean && tsc --build packages/ws-client --clean && tsc --build packages/client --clean"
   },
   "repository": "git+https://github.com/barakedry/live-replica",
   "keywords": [

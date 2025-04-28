@@ -1,5 +1,5 @@
-import { EventEmitter } from '../events/events.js';
-import { LiveReplicaSocket } from '../socket/socket.js';
+import { EventEmitter } from '@live-replica/events';
+import { LiveReplicaSocket } from '@live-replica/socket';
 
 let acks = 1;
 

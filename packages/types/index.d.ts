@@ -1,6 +1,6 @@
 import { WebSocket } from 'ws';
 import { EventEmitter } from 'events';
-import { PatchDiff } from '../patch-diff/src/patch-diff';
+import { PatchDiff } from '@live-replica/patch-diff';
 
 declare module '@live-replica/live-replica' {
     export type EventListener = (...args: any[]) => void;
@@ -208,3 +208,5 @@ export interface Replica extends EventEmitter {
     once(event: string, callback: Function): this;
     emit(event: string, ...args: any[]): boolean;
 }
+
+declare module '@live-replica/patch-diff';

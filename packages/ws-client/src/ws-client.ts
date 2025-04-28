@@ -172,4 +172,6 @@ export class WebSocketClient extends LiveReplicaSocket {
     isConnected(): boolean {
         return !!this._webSocket && this._webSocket.readyState === WebSocket.OPEN;
     }
-} 
+}
+
+export default WebSocketClient; 

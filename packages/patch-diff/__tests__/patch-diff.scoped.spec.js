@@ -1,4 +1,4 @@
-import PatchDiff from "../src/patch-diff";
+import PatchDiff from '@live-replica/patch-diff';
 
 describe('Scoped usage', () => {
 

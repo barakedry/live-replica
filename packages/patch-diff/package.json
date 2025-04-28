@@ -10,9 +10,9 @@
   },
   "scripts": {
     "prepare": "npm run build",
-    "build": "tsc",
+    "build": "tsc --build",
     "build:watch": "tsc --watch",
-    "clean": "rimraf dist"
+    "clean": "tsc --build --clean"
   },
   "repository": {
     "type": "git",

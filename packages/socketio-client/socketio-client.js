@@ -1,4 +1,4 @@
-import {LiveReplicaSocket} from '../socket/socket.js';
+import {LiveReplicaSocket} from '@live-replica/socket';
 /**
  *  LiveReplicaSocketIoClient
  */

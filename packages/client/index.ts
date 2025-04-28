@@ -18,14 +18,14 @@ declare module '../message-channel-socket/message-channel-socket.js';
 declare module '../socketio-client/socketio-client.js';
 
 // Export everything from each module
-export * from '../patch-diff/index.js';
-export * from '../proxy/proxy.js';
-export * from '../replica/replica.js';
-export * from '../server/src/server.js';
-export * from '../server/src/middlewares.js';
-export * from '../worker-server/worker-server.js';
-export * from '../shared-worker-server/shared-worker-server.js';
-export * from '../worker-socket/worker-socket.js';
-export * from '../message-channel-socket/message-channel-socket.js';
-export * from '../ws-client/ws-client.js';
-export * from '../socketio-client/socketio-client.js'; 
+export * from '@live-replica/patch-diff';
+export * from '@live-replica/proxy';
+export * from '@live-replica/replica';
+export * from '@live-replica/ws-client';
+// The following packages may not have TypeScript entry points, so keep as is or update as needed:
+// export * from '@live-replica/server';
+// export * from '@live-replica/worker-server';
+// export * from '@live-replica/shared-worker-server';
+// export * from '@live-replica/worker-socket';
+// export * from '@live-replica/message-channel-socket';
+// export * from '@live-replica/socketio-client'; 

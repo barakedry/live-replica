@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "jest",
-    "build": "tsc",
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

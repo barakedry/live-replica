@@ -1,6 +1,6 @@
 import {eventName} from "../common/event-name.js";
-import { EventEmitter } from '../events/events.js';
-import { LiveReplicaServer } from '../server/index.js';
+import { EventEmitter } from '@live-replica/events';
+import { LiveReplicaServer } from '@live-replica/server';
 
 class Connection extends EventEmitter {
     constructor(port) {

@@ -1,4 +1,4 @@
-import PatchDiff from '../../patch-diff/src/patch-diff.js';
+import PatchDiff from '@live-replica/patch-diff';
 import {Replica as LiveReplica, get, set, merge, cloneDeep, replace, observe, nextChange, patch} from "../../../index";
 
 beforeEach(() => {

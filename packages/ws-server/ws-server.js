@@ -1,6 +1,6 @@
 import {eventName} from "../common/event-name.js";
-import { EventEmitter} from "../events/events.js";
-import {LiveReplicaServer} from '../server/index.js';
+import { EventEmitter } from '@live-replica/events';
+import {LiveReplicaServer} from '@live-replica/server';
 import {encode, decode} from '../../node_modules/@msgpack/msgpack/dist.es5+esm/index.mjs';
 
 const LIVE_REPLICA_MSG = '$LR';

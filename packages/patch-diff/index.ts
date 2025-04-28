@@ -1,2 +1,2 @@
-export * from "./src/patch-diff";
-export { default } from "./src/patch-diff"; 
+export * from './dist/patch-diff';
+export { default } from './dist/patch-diff'; 

@@ -392,6 +392,12 @@ export class Replica {
     set replicaOptions(value: ReplicaOptions) {
         this._replicaOptions = value;
     }
+
+    static create(data: any, options?: Partial<ReplicaOptions>): any {
+        const replica = new Replica('', options);
+        replica.set(data);
+        return createProxy(replica._patchDiff, options);
+    }
 }
 
 function replicaByProxy(proxy: any): Replica {

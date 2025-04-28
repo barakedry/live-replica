@@ -2,7 +2,7 @@ import _debounce from 'lodash-es/debounce.js';
 import fs from 'node:fs';
 import util from  'node:util';
 import v8 from  'node:v8';
-import { PatchDiff } from '../patch-diff/index.js';
+import { PatchDiff } from '@live-replica/patch-diff';
 
 
 const structuredClone = obj => {

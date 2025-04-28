@@ -1,5 +1,5 @@
-import { EventEmitter } from "../events/events.js";
-import { LiveReplicaSocket } from '../socket/socket.js';
+import { EventEmitter } from '@live-replica/events';
+import { LiveReplicaSocket } from '@live-replica/socket';
 import {encode, decode} from '../../node_modules/@msgpack/msgpack/dist.es5+esm/index.mjs';
 
 const LIVE_REPLICA_MSG = '$LR';
