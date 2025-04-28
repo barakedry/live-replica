@@ -1,9 +1,9 @@
 import { WebSocket, WebSocketServer } from 'ws';
-import LiveReplicaWebSocketsServer from "../ws-server/ws-server.js";
-import WebSocketClient from "../ws-client/ws-client.js";
+import LiveReplicaWebSocketsServer from "../ws-server/ws-server";
+import WebSocketClient from "../ws-client/ws-client";
 import Replica from "../replica/replica.js";
-import { flushCycle } from "../patch-diff/__tests__/patch-diff.spec.js";
-import { oncePerSubscription } from "../server/src/middlewares.js";
+import { flushCycle } from "../patch-diff/__tests__/patch-diff.spec";
+import { oncePerSubscription } from "../server/src/middlewares";
 import { LiveReplicaSocket, ReplicaOptions, LiveReplicaWebSocketsServer as LiveReplicaWebSocketsServerType } from '../types';
 
 function createWSServer(): Promise<WebSocketServer> {

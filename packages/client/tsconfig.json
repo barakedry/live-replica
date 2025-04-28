@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "skipLibCheck": true
+  },
+  "include": ["index.ts"],
+  "references": [
+    { "path": "../patch-diff" },
+    { "path": "../proxy" },
+    { "path": "../replica" },
+    { "path": "../ws-client" }
+  ]
+} 

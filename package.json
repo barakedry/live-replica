@@ -49,6 +49,8 @@
   "homepage": "https://github.com/barakedry/live-replica/",
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "@babel/preset-typescript": "^7.23.0",
     "@types/jest": "^29.5.0",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^20.17.30",

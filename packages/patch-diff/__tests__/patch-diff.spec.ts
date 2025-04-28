@@ -1,4 +1,4 @@
-import PatchDiff from '../src/patch-diff.js';
+import PatchDiff from '../src/patch-diff';
 
 beforeEach(() => {
     jest.resetAllMocks();

@@ -165,7 +165,7 @@ export class PatchDiff<T = any> extends EventEmitter implements IPatchDiff<T> {
   private _wrapperKey?: string;
   private _root?: PatchDiff<T>;
 
-  declare setMaxListeners: (n: number) => void;
+  setMaxListeners!: (n: number) => void;
 
   constructor(object?: T, options?: PatchDiffOptions) {
     super();
@@ -316,4 +316,6 @@ export class PatchDiff<T = any> extends EventEmitter implements IPatchDiff<T> {
   get root(): PatchDiff<T> {
     return this._root || this;
   }
-} 
+}
+
+export default PatchDiff; 

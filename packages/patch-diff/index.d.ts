@@ -1,3 +1,3 @@
 export * from "./src/patch-diff";
 export { default } from "./src/patch-diff";
-//# sourceMappingURL=index.js.map
+//# sourceMappingURL=index.d.ts.map

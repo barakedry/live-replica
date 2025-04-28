@@ -2,17 +2,22 @@
   "name": "@live-replica/client",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "test": "jest"
+    "build": "tsc --declaration --emitDeclarationOnly && tsc-transpile-only",
+    "build:watch": "tsc --declaration --emitDeclarationOnly --watch",
+    "clean": "rimraf dist",
+    "test": "jest",
+    "tsc-transpile-only": "node ../../node_modules/typescript/lib/tsc.js --outDir dist --rootDir . --skipLibCheck --moduleResolution node --module ESNext --noEmitOnError false --target ES2020 --esModuleInterop index.ts"
   },
   "dependencies": {
-      "@live-replica/patch-diff": "*",
-      "@live-replica/proxy": "*",
-      "@live-replica/socket": "*",
-      "@live-replica/worker-server": "*",
-      "@live-replica/worker-socket": "*"
+    "@live-replica/patch-diff": "*",
+    "@live-replica/proxy": "*",
+    "@live-replica/socket": "*",
+    "@live-replica/worker-server": "*",
+    "@live-replica/worker-socket": "*"
   },
   "author": "Barak Edry",
   "license": "Apache-2.0"
