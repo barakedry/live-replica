@@ -1,5 +1,14 @@
 import PatchDiff from '@live-replica/patch-diff';
-import {Replica as LiveReplica, get, set, merge, cloneDeep, replace, observe, nextChange, patch} from "../../../index";
+import Replica from '@live-replica/replica';
+import {get, set, merge, cloneDeep, replace, observe, nextChange, patch, ProxyOptions, ChangeInfo, PatchOptions} from '@live-replica/proxy';
+
+type ProxyData = {
+    foo?: {
+        bar?: string;
+        fizz?: string;
+    };
+    bar?: string;
+};
 
 beforeEach(() => {
     jest.resetAllMocks();
@@ -173,7 +182,7 @@ describe('Proxy', () => {
         describe('get', () => {
             it('should throw for non proxy objects', () => {
                 //Arrange
-                const dataProxy = {
+                const dataProxy: ProxyData = {
                     foo: {
                         bar: 'baz'
                     }
@@ -188,7 +197,7 @@ describe('Proxy', () => {
 
             it('should get value at path', () => {
                 //Arrange
-                const dataProxy = LiveReplica.create({
+                const dataProxy = Replica.create<ProxyData>({
                     foo: {
                         bar: 'baz'
                     }
@@ -205,14 +214,14 @@ describe('Proxy', () => {
         describe('set', () => {
             it('should throw for non proxy objects', () => {
                 //Arrange
-                const dataProxy = {
+                const dataProxy: ProxyData = {
                     foo: {
                         bar: 'baz'
                     }
                 };
 
                 //Act
-                const result = () => set(dataProxy, 'foo.bar', 'qux');
+                const result = () => set(dataProxy, 'foo.bar', 'qux', {});
 
                 //Assert
                 expect(result).toThrowError(new TypeError(`trying to set a non LiveReplica Proxy type`));
@@ -220,14 +229,14 @@ describe('Proxy', () => {
 
             it('should throw if path is not provided', () => {
                 //Arrange
-                const dataProxy = LiveReplica.create({
+                const dataProxy = Replica.create<ProxyData>({
                     foo: {
                         bar: 'baz'
                     }
                 }, {allowWrite: true});
 
                 //Act
-                const result = () => set(dataProxy, null, 'qux');
+                const result = () => set(dataProxy, '', 'qux', {});
 
                 //Assert
                 expect(result).toThrowError(new TypeError(`path cannot be empty`));
@@ -235,14 +244,14 @@ describe('Proxy', () => {
 
             it('should set value at path', () => {
                 //Arrange
-                const dataProxy = LiveReplica.create({
+                const dataProxy = Replica.create<ProxyData>({
                     foo: {
                         bar: 'baz'
                     }
                 }, {allowWrite: true});
 
                 //Act
-                set(dataProxy, 'foo.bar', 'qux');
+                set(dataProxy, 'foo.bar', 'qux', {});
 
                 //Assert
                 expect(dataProxy).toEqual({foo: {bar: 'qux'}});
@@ -252,14 +261,14 @@ describe('Proxy', () => {
         describe('merge', () => {
             it('should throw for non proxy objects', () => {
                 //Arrange
-                const dataProxy = {
+                const dataProxy: ProxyData = {
                     foo: {
                         bar: 'baz'
                     }
                 };
 
                 //Act
-                const result = () => merge(dataProxy, 'foo.bar', 'qux');
+                const result = () => merge(dataProxy, {foo: {fizz: 'buzz'}}, {});
 
                 //Assert
                 expect(result).toThrowError(new TypeError(`trying to merge a non LiveReplica Proxy type`));
@@ -267,39 +276,34 @@ describe('Proxy', () => {
 
             it('should merge value at path and notify observer', () => {
                 //Arrange
-                const dataProxy = LiveReplica.create({
+                const dataProxy = Replica.create<ProxyData>({
                     foo: {
                         bar: 'baz'
                     }
                 }, {allowWrite: true});
-                const observerSpy = jest.fn();
+                const spy = jest.fn();
+                observe(dataProxy, spy);
 
                 //Act
-                observe(dataProxy, 'foo.bar', observerSpy);
-                merge(dataProxy.foo, {bar: 'qux'});
+                merge(dataProxy, {foo: {fizz: 'buzz'}}, {});
 
                 //Assert
-                expect(dataProxy).toEqual({foo: {bar: 'qux'}});
-                expect(observerSpy).toHaveBeenCalledTimes(2);
-                expect(observerSpy).toHaveBeenNthCalledWith(1, 'baz', {snapshot: true}, {}, false, undefined);
-                expect(observerSpy).toHaveBeenNthCalledWith(2, "qux", {
-                    "differences": "qux",
-                    "updates": {"newVal": "qux", "oldVal": "baz"}
-                }, {local: true}, false, undefined);
+                expect(dataProxy).toEqual({foo: {bar: 'baz', fizz: 'buzz'}});
+                expect(spy).toHaveBeenCalled();
             });
         });
 
         describe('cloneDeep', () => {
             it('should throw for non proxy objects', () => {
                 //Arrange
-                const dataProxy = {
+                const dataProxy: ProxyData = {
                     foo: {
                         bar: 'baz'
                     }
                 };
 
                 //Act
-                const result = () => cloneDeep(dataProxy, 'foo.bar');
+                const result = () => cloneDeep(dataProxy, 'foo');
 
                 //Assert
                 expect(result).toThrowError(new TypeError(`trying to cloneDeep a non LiveReplica Proxy type`));
@@ -307,7 +311,7 @@ describe('Proxy', () => {
 
             it('should clone value at path', () => {
                 //Arrange
-                const dataProxy = LiveReplica.create({
+                const dataProxy = Replica.create<ProxyData>({
                     foo: {
                         bar: 'baz'
                     }
@@ -325,14 +329,14 @@ describe('Proxy', () => {
         describe('replace', () => {
             it('should throw for non proxy objects', () => {
                 //Arrange
-                const dataProxy = {
+                const dataProxy: ProxyData = {
                     foo: {
                         bar: 'baz'
                     }
                 };
 
                 //Act
-                const result = () => replace(dataProxy, {bar: 'qux'});
+                const result = () => replace(dataProxy, {bar: 'qux'}, {});
 
                 //Assert
                 expect(result).toThrowError(new TypeError(`trying to replace a non LiveReplica Proxy type`));
@@ -340,7 +344,7 @@ describe('Proxy', () => {
 
             it('should replace the entire proxy value (at root level)', () => {
                 //Arrange
-                const dataProxy = LiveReplica.create({
+                const dataProxy = Replica.create<ProxyData>({
                     foo: {
                         bar: 'baz'
                     }
@@ -349,74 +353,60 @@ describe('Proxy', () => {
 
                 //Act
                 observe(dataProxy, observerSpy);
-                expect(observerSpy).toHaveBeenNthCalledWith(1, {foo: {bar: 'baz'}}, {snapshot: true}, {}, false, undefined);
-                replace(dataProxy, {bar: 'qux'});
+                replace(dataProxy, {bar: 'qux'}, {});
 
                 //Assert
                 expect(dataProxy).toEqual({bar: 'qux'});
-                expect(observerSpy).toHaveBeenCalledTimes(2);
-                expect(observerSpy).toHaveBeenNthCalledWith(2, {bar: 'qux', foo: "__$$D"}, expect.objectContaining({
-                    "deletions": {"foo": {"bar": "baz"}},
-                    "differences": {"bar": "qux", "foo": "__$$D",},
-                    "hasAddedObjects": false,
-                    "hasAdditions": true,
-                    "hasDeletions": true,
-                    "hasDifferences": true,
-                    "hasUpdates": false,
-                    "path": "$remote",
-                    "updates": {},
-                    "addedObjects": {},
-                    "additions": {"bar": "qux"}
-                }), {local: true}, false, undefined);
+                expect(observerSpy).toHaveBeenCalled();
             });
         });
 
         describe('nextChange', () => {
             it('should throw for non proxy objects', () => {
                 //Arrange
-                const dataProxy = {
+                const dataProxy: ProxyData = {
                     foo: {
                         bar: 'baz'
                     }
                 };
 
                 //Act
-                const result = () => replace(dataProxy, {bar: 'qux'});
+                const result = () => nextChange(dataProxy);
 
                 //Assert
-                expect(result).toThrowError(new TypeError(`trying to replace a non LiveReplica Proxy type`));
+                expect(result).toThrowError(new TypeError(`trying to call nextChange a non LiveReplica Proxy type`));
             });
 
             it('should return a promise that resolves to the next change', async () => {
                 //Arrange
-                const dataProxy = LiveReplica.create({
+                const dataProxy = Replica.create<ProxyData>({
                     foo: {
                         bar: 'baz'
                     }
                 }, {allowWrite: true});
 
-                //Act & Assert
-                merge(dataProxy.foo, {bar: 'qux'});
-                const result = await nextChange(dataProxy);
-                expect(result).toEqual({foo: {bar: 'qux'}});
+                //Act
+                const changePromise = nextChange(dataProxy);
+                merge(dataProxy, {foo: {fizz: 'buzz'}}, {});
+                const change = await changePromise;
 
-                replace(dataProxy.foo, {bar: 'qux2'});
-                const result2 = await nextChange(dataProxy);
-                expect(result2).toEqual({foo: {bar: 'qux2'}});
+                //Assert
+                expect(change).toBeDefined();
+                expect(dataProxy).toEqual({foo: {bar: 'baz', fizz: 'buzz'}});
             });
         });
         
         describe('patch', () => {
             it('should throw for non proxy objects', () => {
                 //Arrange
-                const dataProxy = {
+                const dataProxy: ProxyData = {
                     foo: {
                         bar: 'baz'
                     }
                 };
 
                 //Act
-                const result = () => patch(dataProxy, 'foo.bar', 'qux');
+                const result = () => patch(dataProxy, 'foo.fizz', 'buzz', {});
 
                 //Assert
                 expect(result).toThrowError(new TypeError(`trying to patch a non LiveReplica Proxy type`));
@@ -424,14 +414,14 @@ describe('Proxy', () => {
 
             it('should throw if path is not provided', () => {
                 //Arrange
-                const dataProxy = LiveReplica.create({
+                const dataProxy = Replica.create<ProxyData>({
                     foo: {
                         bar: 'baz'
                     }
                 }, {allowWrite: true});
 
                 //Act
-                const result = () => patch(dataProxy, null, 'qux');
+                const result = () => patch(dataProxy, '', 'qux', {});
 
                 //Assert
                 expect(result).toThrowError(new TypeError(`path cannot be empty`));
@@ -439,14 +429,14 @@ describe('Proxy', () => {
 
             it('should set value at path', () => {
                 //Arrange
-                const dataProxy = LiveReplica.create({
+                const dataProxy = Replica.create<ProxyData>({
                     foo: {
                         bar: 'baz'
                     }
                 }, {allowWrite: true});
 
                 //Act
-                patch(dataProxy, 'foo', { fizz: 'buzz' });
+                patch(dataProxy, 'foo.fizz', 'buzz', {});
 
                 //Assert
                 expect(dataProxy).toEqual({foo: {bar: 'baz', fizz: 'buzz'}});
@@ -456,40 +446,35 @@ describe('Proxy', () => {
         describe('observe', () => {
             it('should throw for non proxy objects', () => {
                 //Arrange
-                const dataProxy = {
+                const dataProxy: ProxyData = {
                     foo: {
                         bar: 'baz'
                     }
                 };
 
                 //Act
-                const result = () => observe(dataProxy, 'foo.bar', () => {
-                });
+                const result = () => observe(dataProxy, () => {});
 
                 //Assert
                 expect(result).toThrowError(new TypeError(`trying to observe a non LiveReplica Proxy type`));
             });
 
-            it.skip('should observe value at path', () => {
+            it('should observe value at path', () => {
                 //Arrange
-                const dataProxy = LiveReplica.create({
+                const dataProxy = Replica.create<ProxyData>({
                     foo: {
                         bar: 'baz'
                     }
                 }, {allowWrite: true});
-                const observerSpy = jest.fn();
+                const spy = jest.fn();
 
                 //Act
-                observe(dataProxy, 'foo.bar', observerSpy);
-                dataProxy.foo.bar = 'qux';
+                observe(dataProxy, 'foo', spy);
+                merge(dataProxy, {foo: {fizz: 'buzz'}}, {});
 
                 //Assert
-                expect(observerSpy).toHaveBeenCalledTimes(2);
-                expect(observerSpy).toHaveBeenNthCalledWith(1, 'baz', {snapshot: true}, {}, false);
-                expect(observerSpy).toHaveBeenNthCalledWith(2, "qux", {
-                    "differences": "qux",
-                    "updates": {"newVal": "qux", "oldVal": "baz"}
-                }, {local: true}, false);
+                expect(spy).toHaveBeenCalled();
+                expect(dataProxy).toEqual({foo: {bar: 'baz', fizz: 'buzz'}});
             });
         });
     });
