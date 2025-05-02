@@ -1,17 +1,20 @@
-function deepAssign(target: any, patch: any): any {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DiffTracker = void 0;
+function deepAssign(target, patch) {
     const keys = Object.keys(patch);
     for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
         if (target.hasOwnProperty(key) && typeof target[key] === 'object') {
             deepAssign(target[key], patch[key]);
-        } else {
+        }
+        else {
             target[key] = patch[key];
         }
     }
     return target;
 }
-
-function create(diffsAsArray: boolean, deletePatch: boolean = false) {
+function create(diffsAsArray, deletePatch = false) {
     return {
         hasAdditions: false,
         hasAddedObjects: false,
@@ -24,7 +27,7 @@ function create(diffsAsArray: boolean, deletePatch: boolean = false) {
         addedObjects: {},
         differences: diffsAsArray ? [] : {},
         deletePatch,
-        addChildTracking: function addChildTracking(childTracker: any, key: any, isNewObject: boolean = false) {
+        addChildTracking: function addChildTracking(childTracker, key, isNewObject = false) {
             if (childTracker.hasAdditions) {
                 // @ts-expect-error: dynamic key assignment
                 this.additions[key] = childTracker.additions;
@@ -34,7 +37,8 @@ function create(diffsAsArray: boolean, deletePatch: boolean = false) {
                 // @ts-expect-error: dynamic key assignment
                 this.addedObjects[key] = true;
                 this.hasAddedObjects = true;
-            } else if (childTracker.hasAddedObjects) {
+            }
+            else if (childTracker.hasAddedObjects) {
                 // @ts-expect-error: dynamic key assignment
                 this.addedObjects[key] = childTracker.addedObjects;
                 this.hasAddedObjects = true;
@@ -54,7 +58,8 @@ function create(diffsAsArray: boolean, deletePatch: boolean = false) {
                 if (this.differences.hasOwnProperty(key) && typeof this.differences[key] === 'object') {
                     // @ts-expect-error: dynamic key assignment
                     deepAssign(this.differences[key], childTracker.differences);
-                } else if (!this.differences.hasOwnProperty(key)) {
+                }
+                else if (!this.differences.hasOwnProperty(key)) {
                     // @ts-expect-error: dynamic key assignment
                     this.differences[key] = childTracker.differences;
                 }
@@ -63,5 +68,5 @@ function create(diffsAsArray: boolean, deletePatch: boolean = false) {
         }
     };
 }
-
-export const DiffTracker = { create }; 
+exports.DiffTracker = { create };
+//# sourceMappingURL=diff-tracker.js.map

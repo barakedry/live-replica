@@ -7,7 +7,8 @@
     { "path": "./packages/events" },
     { "path": "./packages/message-channel-socket" },
     { "path": "./packages/utils" },
-    { "path": "./packages/proxy" }
+    { "path": "./packages/proxy" },
+    { "path": "./packages/patch-diff" }
   ],
   "extends": "./tsconfig.base.json"
 }

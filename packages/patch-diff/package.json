@@ -1,13 +1,12 @@
 {
   "name": "@live-replica/patch-diff",
-  "version": "0.1.0",
-  "description": "Emits diff events.",
+  "version": "1.0.0",
+  "description": "Patch diff utilities for live-replica",
+  "main": "dist/patch-diff.js",
+  "types": "dist/patch-diff.d.ts",
   "type": "module",
-  "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
   "scripts": {
+    "build": "tsc -p .",
     "test": "jest"
   },
   "repository": {
