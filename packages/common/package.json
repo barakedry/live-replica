@@ -1,0 +1,9 @@
+{
+  "name": "@live-replica/common",
+  "version": "0.1.0",
+  "main": "dist/event-name.js",
+  "types": "dist/event-name.d.ts",
+  "scripts": {
+    "build": "tsc -p ."
+  }
+} 

@@ -54,16 +54,16 @@ For each package in `packages/`:
 
 - [ ] Rename `.js`/`.jsx` files to `.ts`/`.tsx`.
 - [ ] Convert code to valid TypeScript:
-  - Add type annotations and interfaces.
-  - Replace `require`/`module.exports` with `import`/`export`.
-  - Remove JSDoc type comments in favor of TypeScript types.
+  - [ ] Add type annotations and interfaces.
+  - [ ] Replace `require`/`module.exports` with `import`/`export`.
+  - [ ] Remove JSDoc type comments in favor of TypeScript types.
 - [ ] Remove any corresponding `.d.ts` files.
 - [ ] Update `package.json`:
-  - Set `"types"` field to the output `.d.ts` (auto-generated).
-  - Adjust build scripts to use `tsc`.
+  - [ ] Set `"types"` field to the output `.d.ts` (auto-generated).
+  - [ ] Adjust build scripts to use `tsc`.
 - [ ] Add or update `tsconfig.json`:
-  - Use `composite: true` for project references.
-  - Reference other packages as needed.
+  - [ ] Use `composite: true` for project references.
+  - [ ] Reference other packages as needed.
 - [ ] Update or add type-aware build scripts.
 
 ---

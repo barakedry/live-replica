@@ -49,10 +49,6 @@
   },
   "main": "index.js",
   "types": "./packages/types/index.d.ts",
-  "bundledDependencies": [
-    "@msgpack/msgpack",
-    "lodash-es"
-  ],
   "bundleDependencies": [
     "@msgpack/msgpack",
     "lodash-es"
