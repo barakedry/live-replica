@@ -42,7 +42,7 @@
 ## 1. Preparation
 
 - [ ] Ensure all dependencies are up to date and compatible with TypeScript.
-- [ ] Add TypeScript as a devDependency at the root and in each package as needed.
+- [X] Add TypeScript as a devDependency at the root and in each package as needed.
 - [ ] Add or update `tsconfig.json` in each package (and root if needed) for project references.
 - [ ] Keep existing `.d.ts` files for now, as they may be necessary during the JS to TS migration. Plan to remove them only after the migration is complete and all types are natively defined in TypeScript.
 
