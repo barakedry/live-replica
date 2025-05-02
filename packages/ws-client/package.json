@@ -12,6 +12,6 @@
     "@live-replica/events": "*",
     "@msgpack/msgpack": "^2.8.0"
   },
-  "author": "",
+  "author": "Barak Edry",
   "license": "Apache-2.0"
 }

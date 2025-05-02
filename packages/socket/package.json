@@ -9,7 +9,7 @@
     "test": "jest",
     "build": "tsc -p ."
   },
-  "author": "",
+  "author": "Barak Edry",
   "license": "Apache-2.0",
   "devDependencies": {
     "@types/jest": "^29.5.14"

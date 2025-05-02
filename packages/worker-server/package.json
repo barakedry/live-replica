@@ -11,6 +11,6 @@
       "@live-replica/server": "*",
       "@live-replica/events": "*"
   },
-  "author": "",
+  "author": "Barak Edry",
   "license": "Apache-2.0"
 }

@@ -33,6 +33,7 @@
 
 - Migrate all packages to native TypeScript (`.ts`/`.tsx`), removing all `.js` sources.
 - Eliminate manually-defined `.d.ts` files in favor of native TypeScript types.
+- Do not change any implementation details, only add types.
 - Ensure all packages build and type-check correctly.
 - Maintain or improve test coverage, migrating tests to TypeScript as well.
 - Preserve monorepo structure and package boundaries.
