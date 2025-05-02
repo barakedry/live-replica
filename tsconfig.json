@@ -2,7 +2,8 @@
   "files": [],
   "references": [
     { "path": "./packages/common" },
-    { "path": "./packages/socket" }
+    { "path": "./packages/socket" },
+    { "path": "./packages/socketio-client" }
   ],
   "extends": "./tsconfig.base.json"
-} 
+}

@@ -2,10 +2,12 @@
   "name": "@live-replica/socketio-client",
   "version": "1.0.0",
   "description": "web worker socket for live-replica",
-  "main": "socketio-client.js",
+  "main": "dist/socketio-client.js",
+  "types": "dist/socketio-client.d.ts",
   "type": "module",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "tsc -p ."
   },
   "dependencies": {
       "@live-replica/socket": "*",
