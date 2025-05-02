@@ -2,7 +2,7 @@ import { PatchDiff } from '@live-replica/patch-diff';
 import { MiddlewareChain } from './middleware-chain.js';
 import { Utils } from '@live-replica/utils';
 
-const defaultTransformer = (data, dataPart) => data;
+const defaultTransformer = (data) => data;
 function serializeFunctions(data) {
 
     if (typeof data !== 'object' || data === null) {

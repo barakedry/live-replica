@@ -31,11 +31,11 @@ export interface DiffInfo<T = any> {
   hasDeletions?: boolean;
   hasUpdates?: boolean;
   hasDifferences?: boolean;
-  additions?: Partial<T>;
+  additions?: T extends Array<any> ? Array<T[number]> : Partial<T>;
   deletions?: Partial<T>;
   updates?: Partial<T>;
   addedObjects?: Partial<T>;
-  differences?: Partial<T>;
+  differences?: T extends Array<any> ? Array<T[number]> : Partial<T>;
   changeType?: 'displace' | 'change' | '';
 }
 
@@ -68,6 +68,13 @@ export interface GetAllResult {
 
 export interface ProxyOptions {
   readonly: boolean;
+}
+
+export type ApplyOptions = {
+  emitEvents?: boolean;
+  maxKeysInLevel?: 1000;
+  maxLevels?: 50;
+  maxListeners?: 1000000;
 }
 
 // Define the interface for the PatchDiff class
