@@ -1,7 +1,15 @@
 {
   "name": "@live-replica/utils",
   "version": "1.0.0",
+  "description": "Utility functions for live-replica",
+  "main": "dist/utils.js",
+  "types": "dist/utils.d.ts",
   "type": "module",
+  "scripts": {
+    "build": "tsc -p ."
+  },
+  "author": "",
+  "license": "Apache-2.0",
   "dependencies": {
   }
 }

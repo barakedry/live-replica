@@ -5,7 +5,8 @@
     { "path": "./packages/socket" },
     { "path": "./packages/socketio-client" },
     { "path": "./packages/events" },
-    { "path": "./packages/message-channel-socket" }
+    { "path": "./packages/message-channel-socket" },
+    { "path": "./packages/utils" }
   ],
   "extends": "./tsconfig.base.json"
 }
