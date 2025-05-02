@@ -1,0 +1,14 @@
+{
+  "name": "@live-replica/message-channel-socket",
+  "version": "1.0.0",
+  "description": "MessageChannel socket for live-replica",
+  "main": "dist/message-channel-socket.js",
+  "types": "dist/message-channel-socket.d.ts",
+  "type": "module",
+  "scripts": {
+    "test": "jest",
+    "build": "tsc -p ."
+  },
+  "author": "",
+  "license": "Apache-2.0"
+} 
