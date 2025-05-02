@@ -1,21 +1,4 @@
 declare module '@live-replica/live-replica' {
-    export type EventListener = (...args: any[]) => void;
-
-    export class EventEmitter {
-        setMaxListeners(num: number): void;
-        on(eventName: string, cb: EventListener): void;
-        addEventListener(eventName: string, cb: EventListener): void;
-        addListener(eventName: string, cb: EventListener): void;
-        off(eventName: string, cb: EventListener): void;
-        removeEventListener(eventName: string, cb: EventListener): void;
-        removeListener(eventName: string, cb: EventListener): void;
-        once(eventName: string, cb: EventListener): void;
-        emit(eventName: string, ...args: any[]): void;
-        removeAllListeners(eventName: string): void;
-        listenersOf(eventName: string): EventListener[];
-        listenerCount(eventName: string): number;
-    }
-
     export type KeyList = string[] | Set<string>;
 
     export type DiffInfo<T = any> = {
@@ -65,7 +48,7 @@ declare module '@live-replica/live-replica' {
         maxListeners?: 1000000;
     }
 
-    export class PatchDiff<T = any> extends EventEmitter {
+    export class PatchDiff<T = any> {
         apply(patch: Partial<T>, path?: string, options?: MergeOptions): void;
         patch(patch: Partial<T>, path?: string, options?: MergeOptions): void;
         merge(patch: Partial<T>, path?: string, options?: MergeOptions): void;

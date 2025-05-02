@@ -1,8 +1,14 @@
 {
   "name": "@live-replica/events",
   "version": "1.0.0",
-  "main": "events.js",
+  "description": "event emitter for live-replica",
+  "main": "dist/events.js",
+  "types": "dist/events.d.ts",
   "type": "module",
-  "dependencies": {
-  }
+  "scripts": {
+    "test": "jest",
+    "build": "tsc -p ."
+  },
+  "author": "",
+  "license": "Apache-2.0"
 }

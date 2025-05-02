@@ -3,7 +3,8 @@
   "references": [
     { "path": "./packages/common" },
     { "path": "./packages/socket" },
-    { "path": "./packages/socketio-client" }
+    { "path": "./packages/socketio-client" },
+    { "path": "./packages/events" }
   ],
   "extends": "./tsconfig.base.json"
 }
