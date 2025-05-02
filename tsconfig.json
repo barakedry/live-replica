@@ -1,7 +1,8 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/common" }
+    { "path": "./packages/common" },
+    { "path": "./packages/socket" }
   ],
   "extends": "./tsconfig.base.json"
 } 
