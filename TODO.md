@@ -1,5 +1,34 @@
 # TypeScript Migration Plan
 
+## Additional Context
+
+### Rationale for Migration
+- Migrating to TypeScript will improve type safety, developer experience, and long-term maintainability.
+- The goal is to eliminate all manually-maintained `.d.ts` files in favor of native TypeScript types.
+
+### Repository Structure
+- This repository is a Lerna monorepo with multiple packages under `packages/`.
+- Each package is published independently and may depend on other packages in the monorepo.
+
+### TypeScript Standards/Conventions
+- Use TypeScript strict mode in all packages.
+- Prefer `interface` for object shapes, but `type` is acceptable for unions and primitives.
+- Use project references (`composite: true`) in all package `tsconfig.json` files.
+- File naming: use `.ts` for code, `.tsx` for files containing JSX/TSX.
+
+### Incremental Migration Guidance
+- Migration can be done incrementally, package by package.
+- Mixed JS/TS is allowed during the transition.
+- Keep `.d.ts` files until all relevant code is migrated to TypeScript, then remove them in the cleanup phase.
+
+### Testing and CI
+- All tests should continue to pass throughout the migration.
+- Update CI and build scripts to support TypeScript as migration progresses.
+
+### Communication
+- Contributors should communicate in PRs about any tricky type conversions or breaking changes.
+- Document any major migration decisions or patterns in this file or in the repo documentation.
+
 ## Goals
 
 - Migrate all packages to native TypeScript (`.ts`/`.tsx`), removing all `.js` sources.
