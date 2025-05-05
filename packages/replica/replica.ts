@@ -336,3 +336,5 @@ export async function disconnect<T>(proxy: LiveReplicaProxy<T>): Promise<any> {
     // @ts-expect-error
     return replica.disconnect();
 }
+
+export { Replica };

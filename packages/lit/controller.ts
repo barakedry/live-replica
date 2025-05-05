@@ -1,5 +1,5 @@
 // @ts-nocheck
-import {extractBasePathAndProperty, replicaByData, concatPath} from "./utils.js";
+import {extractBasePathAndProperty, replicaByData, concatPath} from "./utils";
 import { isProxy, getPatchDiff, PatchDiff } from '@live-replica/client';
 
 function throttle(func, wait) {

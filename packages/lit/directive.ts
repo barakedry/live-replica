@@ -2,7 +2,7 @@
 import {directive} from 'lit/directive.js';
 import {AsyncDirective} from 'lit-html/async-directive.js';
 import {noChange} from 'lit';
-import {replicaByData, extractBasePathAndProperty, concatPath} from "./utils.js";
+import {replicaByData, extractBasePathAndProperty, concatPath} from "./utils";
 import { isProxy, getPatchDiff, Replica } from '@live-replica/client';
 
 export class LiveReplicaDirective extends AsyncDirective {
