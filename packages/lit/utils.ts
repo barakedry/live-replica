@@ -1,6 +1,7 @@
-import { isProxy, getPatchDiff, Replica } from '@live-replica/client';
+// @ts-nocheck
+import { isProxy, getPatchDiff, Replica } from '../client';
 
-export function replicaByData(data) {
+export function replicaByData(data: any) {
     if (isProxy(data)) {
         const patcher = getPatchDiff(data);
         // const root = PatcherProxy.getRoot(data);
@@ -13,7 +14,7 @@ export function replicaByData(data) {
     }
 }
 
-export function concatPath(path, suffix) {
+export function concatPath(path: string, suffix: string) {
     if (path && suffix) {
         return [path, suffix].join('.');
     }

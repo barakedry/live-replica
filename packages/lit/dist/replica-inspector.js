@@ -1,8 +1,10 @@
-import {LitElement, html, css} from 'lit';
-import { repeat } from 'lit/directives/repeat.js';
-import {LiveReplicaController} from './controller.js';
-
-const styles = css`
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+// @ts-nocheck
+const lit_1 = require("lit");
+const repeat_js_1 = require("lit/directives/repeat.js");
+const controller_js_1 = require("./controller.js");
+const styles = (0, lit_1.css) `
 
   :host {
     font-size: 13px;
@@ -322,14 +324,11 @@ const styles = css`
   }
 
 `;
-
-
 const inputTypeForValueType = {
     string: 'text',
     number: 'number',
     boolean: 'checkbox'
-}
-
+};
 function getValueFromInputByType(input, type) {
     return {
         string: (i) => i.value,
@@ -337,55 +336,48 @@ function getValueFromInputByType(input, type) {
         number: (i) => Number(i.value)
     }[type](input);
 }
-
-function expandCollapse({currentTarget}) {
+function expandCollapse({ currentTarget }) {
     const propertyElement = currentTarget.parentElement;
     if (propertyElement.hasAttribute('expanded')) {
         propertyElement.removeAttribute('expanded');
-    } else {
-        propertyElement.setAttribute('expanded','');
+    }
+    else {
+        propertyElement.setAttribute('expanded', '');
     }
 }
-
 const defaultValueByType = {
     object: {},
     array: [],
     string: '',
     number: 0,
     boolean: false
-}
-
-class ReplicaInspector extends LitElement {
-
-    expanded = new WeakSet();
-
+};
+class ReplicaInspector extends lit_1.LitElement {
     static get properties() {
         return {
             replica: Object
-        }
+        };
     }
-
     static get styles() {
         return styles;
     }
     constructor() {
         super();
-        this.liveReplica = new LiveReplicaController(this);
-        this.addEventListener('click', async ({path}) => {
-            if (!this.addingTo) { return; }
-
-            for (let i = 0; i  < path; i++) {
+        this.expanded = new WeakSet();
+        this.liveReplica = new controller_js_1.LiveReplicaController(this);
+        this.addEventListener('click', async ({ path }) => {
+            if (!this.addingTo) {
+                return;
+            }
+            for (let i = 0; i < path; i++) {
                 if (path[i].id === 'typesMenu') {
                     return;
                 }
             }
-
             await this.updateComplete;
-
             setTimeout(() => this.closeMenu(), 0);
         }, true);
     }
-
     update(updatedProperties) {
         super.update(updatedProperties);
         if (updatedProperties.has('replica') && this.replica) {
@@ -393,97 +385,79 @@ class ReplicaInspector extends LitElement {
             this.unwatch = this.liveReplica.watch(this.replica);
         }
     }
-
     addProperty(type, isArray) {
-        const {addingTo, isAddingToArray} = this;
-
-        if (!addingTo) { return; }
-
+        const { addingTo, isAddingToArray } = this;
+        if (!addingTo) {
+            return;
+        }
         let key;
         if (isAddingToArray) {
             addingTo.push(defaultValueByType[type]);
-        } else {
-            key = prompt('Key Name?');
-            if (!key) { return; }
-            addingTo[key] = defaultValueByType[type];
-
         }
-
+        else {
+            key = prompt('Key Name?');
+            if (!key) {
+                return;
+            }
+            addingTo[key] = defaultValueByType[type];
+        }
         this.requestUpdate();
     }
-
     closeMenu() {
         delete this.addingTo;
         delete this.isAddingToArray;
         this.requestUpdate();
     }
-
-    openTypesMenu({currentTarget}, obj, isArray) {
+    openTypesMenu({ currentTarget }, obj, isArray) {
         this.menuTop = currentTarget.offsetTop + currentTarget.clientHeight;
         this.menuLeft = currentTarget.offsetLeft;
         this.addingTo = obj;
         this.isAddingToArray = isArray;
         this.requestUpdate();
     }
-
     renderObject(obj) {
-
         if (obj === null) {
             return;
         }
-
         const keys = Object.keys(obj);
         const isArray = Array.isArray(obj);
-
-        return html`
+        return (0, lit_1.html) `
             <ul data-type=${isArray ? 'array' : 'object'}>
-                ${repeat(keys, k => k, key => this.renderProperty(obj, key))}
+                ${(0, repeat_js_1.repeat)(keys, k => k, key => this.renderProperty(obj, key))}
                 <li><button class="add" @click="${(e) => this.openTypesMenu(e, obj, isArray)}">Add ${isArray ? 'Value' : 'Property'}</button></li>
             </ul>
         `;
     }
-
-    stopEditing({currentTarget}) {
+    stopEditing({ currentTarget }) {
         const editingLabel = currentTarget.parentElement;
-
         if (editingLabel.hasAttribute('editing')) {
             editingLabel.removeAttribute('editing');
         }
-
     }
-
-    startEditing({currentTarget}) {
-        const editingLabel =currentTarget.parentElement;
-
+    startEditing({ currentTarget }) {
+        const editingLabel = currentTarget.parentElement;
         if (!editingLabel.hasAttribute('editing')) {
             editingLabel.setAttribute('editing', '');
             editingLabel.querySelector('input').select();
         }
     }
-
     setValue(input, parent, key, type) {
         parent[key] = getValueFromInputByType(input, type);
         this.requestUpdate();
     }
-
     renderPrimitive(value, type, parent, key) {
-
         const inputType = inputTypeForValueType[type] || 'text';
-
-        return html`
+        return (0, lit_1.html) `
             <label>
-                <input type=${inputType} value=${value} @blur="${this.stopEditing}" ?checked=${value} @input=${({currentTarget}) => this.setValue(currentTarget, parent, key, type) }>
+                <input type=${inputType} value=${value} @blur="${this.stopEditing}" ?checked=${value} @input=${({ currentTarget }) => this.setValue(currentTarget, parent, key, type)}>
                 <span class="textValue" data-type=${type} @click=${this.startEditing}>${value}</span>
             </label>
         `;
     }
-
     renderValueByType(value, type, parent, key) {
-
         if (value === null) {
             return 'null';
         }
-
         if (type === 'object') {
             // const maxChar = 50;
             // let stringified = JSON.stringify(value).substr(0, maxChar);
@@ -491,45 +465,43 @@ class ReplicaInspector extends LitElement {
             //     stringified = stringified + '... ' + (Array.isArray(value) ? ']' : '}');
             // }
             const summary = Array.isArray(value) ? '[...]' : '{...}';
-            return html`<span class='summary'>${summary}</span>`
+            return (0, lit_1.html) `<span class='summary'>${summary}</span>`;
         }
-
         if (type === 'function') {
-            return html`<button @click=${async () => {
+            return (0, lit_1.html) `<button @click=${async () => {
                 const values = prompt(`parameters for ${key}() (separated by commas)`);
                 const args = values.split(',').map(v => {
                     try {
                         return JSON.parse(v);
-                    } catch (e) {
+                    }
+                    catch (e) {
                         return v;
                     }
                 });
-
                 try {
                     const result = await value.call(parent, ...args);
                     alert(`${key}() returned: ${result}`);
-                } catch (e) {
+                }
+                catch (e) {
                     alert(`${key}() exception: ${e.message}`);
                 }
-            }}>invoke()</button>`
+            }}>invoke()</button>`;
         }
-
         return this.renderPrimitive(value, type, parent, key);
     }
-
     deleteProperty(parent, key) {
         delete parent[key];
         this.requestUpdate();
     }
-
     async duplicateProperty(parent, value) {
-
         if (Array.isArray(parent)) {
             parent.push(JSON.parse(JSON.stringify(value)));
-        } else {
+        }
+        else {
             const key = prompt('Key Name?');
-            if (!key) { return; }
-
+            if (!key) {
+                return;
+            }
             if (parent.hasOwnProperty(key)) {
                 alert(`${key} Already exists`);
                 return;
@@ -537,39 +509,30 @@ class ReplicaInspector extends LitElement {
             const copy = JSON.parse(JSON.stringify(value));
             parent[key] = copy;
         }
-
-
         await (new Promise(a => setTimeout(a, 0)));
-        this.requestUpdate()
+        this.requestUpdate();
     }
-
     copyToClipboard(value) {
         navigator.clipboard.writeText(JSON.stringify(value, null, 2));
     }
-
-
     renderProperty(parent, key) {
         const value = parent[key];
         const type = typeof value;
         const dataType = (type === 'object' && Array.isArray(value)) || type;
-
         const isExpanded = this.expanded.has(value);
         const toggleExpanded = () => {
-
             if (type !== 'object') {
                 return;
             }
-
             if (this.expanded.has(value)) {
                 this.expanded.delete(value);
-            } else {
+            }
+            else {
                 this.expanded.add(value);
             }
-
             this.requestUpdate();
-        }
-
-        return html`
+        };
+        return (0, lit_1.html) `
             <li class="${type}" data-type="${dataType}" ?expanded=${isExpanded} .value=${value}>
                 <button class='delete' title='Delete' @click="${() => this.deleteProperty(parent, key)}"></button>
                 <button class="expandCollapse" @click=${toggleExpanded}></button>
@@ -582,9 +545,8 @@ class ReplicaInspector extends LitElement {
                 ${type === 'object' && isExpanded ? this.renderObject(value) : ''}
             </li>`;
     }
-
     renderTypesMenu() {
-        return html`
+        return (0, lit_1.html) `
             <ul id="typesMenu" style="top: ${this.menuTop}px; left:${this.menuLeft}px" >
                 <li @click=${() => this.addProperty('object')} >Object</li>
                 <li @click=${() => this.addProperty('array')} >Array</li>
@@ -594,18 +556,16 @@ class ReplicaInspector extends LitElement {
             </ul>
         `;
     }
-
     render() {
-        const {replica} = this;
+        const { replica } = this;
         if (typeof replica !== 'object') {
-            return html`<label>replica property not an object</label>`;
+            return (0, lit_1.html) `<label>replica property not an object</label>`;
         }
-
-        return html`
+        return (0, lit_1.html) `
             ${this.renderObject(replica)}
             ${this.addingTo ? this.renderTypesMenu() : ``}
         `;
     }
 }
-
 customElements.define('replica-inspector', ReplicaInspector);
+//# sourceMappingURL=replica-inspector.js.map

@@ -1,4 +1,5 @@
-import {PatchDiff, isProxy, get, getPatchDiff} from '../client/index.js';
+// @ts-nocheck
+import {PatchDiff, isProxy, get, getPatchDiff} from '../client/index';
 import {LiveReplicaController} from './controller.js';
 
 const isRevoked = (obj) => {

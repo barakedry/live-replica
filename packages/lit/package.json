@@ -4,5 +4,12 @@
   "dependencies": {},
   "peerDependencies": {
     "lit": "^2.0.0-rc.2"
+  },
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
   }
 }
