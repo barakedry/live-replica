@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist"
+  },
+  "references": [
+    { "path": "../common" },
+    { "path": "../events" },
+    { "path": "../server" }
+  ],
+  "include": ["*.ts"]
+} 

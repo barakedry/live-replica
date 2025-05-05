@@ -13,7 +13,7 @@ export class EventEmitter {
 
     // Prototype method declarations for compatibility
     addEventListener!: (event: string, cb: EventListener) => () => void;
-    addListener!: (event: string, cb: EventListener) => () => void;
+    public addListener!: (event: string, cb: EventListener) => () => void;
     removeEventListener!: (event: string, cb: EventListener) => void;
     removeListener!: (event: string, cb: EventListener) => void;
 
