@@ -13,7 +13,7 @@ function createWSServer() {
             perMessageDeflate: {
                 threshold: 1024 * 5,
             },
-            port: process.env.PORT || 3000,
+            port: Number(process.env.PORT) || 3000,
         }, () => resolve(wss));
     });
 }
@@ -24,9 +24,11 @@ function createWebSocket() {
         const ws = new WebSocket(url);
 
         ws.binaryType = 'arraybuffer';
+        // @ts-expect-error
         ws.onerror = async (err) => {
             reject(err);
         };
+        // @ts-expect-error
         ws.onopen = () => {
             console.info(`Websocket opened`);
             resolve(ws);
@@ -202,6 +204,7 @@ describe('WS Server and  WS Client integration', () => {
                 const onFirstSubscribe = jest.fn((req, reject, approve) => approve());
                 const onLastUnsubscribe = jest.fn((lastRequest) => console.log('last request', lastRequest));
                 server.set({a: {b: {c: 1}}});
+                // @ts-expect-error
                 server.use(oncePerSubscription(onFirstSubscribe, onLastUnsubscribe));
 
                 //Act
@@ -241,7 +244,8 @@ describe('WS Server and  WS Client integration', () => {
             await replica.getWhenExists('myRPC');
 
             //Act
-             const result = await replica.data.myRPC();
+            // @ts-expect-error
+            const result = await replica.data.myRPC();
 
             //Assert
             expect(result).toEqual('hello');
@@ -262,6 +266,7 @@ describe('WS Server and  WS Client integration', () => {
             await replica.getWhenExists('myRPC');
 
             //Act
+            // @ts-expect-error
             const result = await replica.data.myRPC();
 
             //Assert
@@ -286,6 +291,7 @@ describe('WS Server and  WS Client integration', () => {
             await replica.getWhenExists('myRPC');
 
             //Act & Assert
+            // @ts-expect-error
             await expect(replica.data.myRPC()).rejects.toThrow('testing rpc errors');
         });
     });

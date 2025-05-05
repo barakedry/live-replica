@@ -225,25 +225,25 @@ export default class Replica extends PatchDiff {
         });
     }
 
-    apply(patch: any, path: any, options: any) {
+    apply(patch: any, path?: any, options?: any) {
         if (this.options.allowWrite) {
             super.apply(patch, path, options ? { ...options, ...LocalMutation } : LocalMutation);
         }
     }
 
-    set(fullDocument: any, path: any, options: any) {
+    set(fullDocument: any, path?: any, options?: any) {
         if (this.options.allowWrite) {
             super.set(fullDocument, path, options ? { ...options, ...LocalMutation } : LocalMutation);
         }
     }
 
-    splice(patch: any, path: any, options: any) {
+    splice(patch: any, path?: any, options?: any) {
         if (this.options.allowWrite) {
             super.splice(patch, path, options ? { ...options, ...LocalMutation } : LocalMutation);
         }
     }
 
-    remove(path: any, options: any) {
+    remove(path: any, options?: any) {
         if (this.options.allowWrite) {
             super.remove(path, options ? { ...options, ...LocalMutation } : LocalMutation);
         }
