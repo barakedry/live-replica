@@ -10,7 +10,7 @@
   "scripts": {
     "bootstrap-install": "npm install && lerna bootstrap --no-ci",
     "bootstrap-ci": "npm ci && lerna bootstrap",
-    "build": "lerna run build --stream --sort",
+    "build": "lerna run build --include-dependencies --stream",
     "test": "jest",
     "pack": "npm version patch && npm pack"
   },
