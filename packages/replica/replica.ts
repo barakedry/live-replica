@@ -1,5 +1,4 @@
-// @ts-expect-error
-import { PatchDiff } from "../patch-diff/index";
+import { PatchDiff } from "@live-replica/patch-diff";
 import { LiveReplicaSocket } from '../socket/socket';
 import { isProxy, getPatchDiff } from '../proxy/proxy';
 import { Utils } from '../utils/utils';
@@ -16,17 +15,17 @@ function generateUniqueId() {
 }
 
 // privates
-const deserializeFunctions  = Symbol('deserializeFunctions');
-const createRPCfunction     = Symbol('createRPCfunction');
-const remoteApply           = Symbol('remoteApply');
-const remoteOverride        = Symbol('remoteOverride');
-const bindToSocket          = Symbol('bindToSocket');
+const deserializeFunctions = Symbol('deserializeFunctions');
+const createRPCfunction = Symbol('createRPCfunction');
+const remoteApply = Symbol('remoteApply');
+const remoteOverride = Symbol('remoteOverride');
+const bindToSocket = Symbol('bindToSocket');
 
-const LocalMutation = {context: {local: true}};
+const LocalMutation = { context: { local: true } };
 // lock localMutation
 Object.freeze(LocalMutation);
 
-export class Replica extends PatchDiff {
+export default class Replica extends PatchDiff {
     changeRevision!: number;
     onApplyEvent: any;
     onSocketReconnected: any;
@@ -51,12 +50,11 @@ export class Replica extends PatchDiff {
                 this[remoteOverride](delta);
             } else {
                 this.changeRevision = meta.changeRevision;
-                const applyOptions = meta.deletePatch ? {deletePatch: true} : undefined;
+                const applyOptions = meta.deletePatch ? { deletePatch: true } : undefined;
                 this[remoteApply](delta, applyOptions);
             }
             if (!this._synced) {
                 this._synced = true;
-                // @ts-expect-error
                 this.emit('_synced', this.get());
             }
         };
@@ -67,7 +65,7 @@ export class Replica extends PatchDiff {
         const self = this;
         return function rpcToRemote(...args: any[]) {
             return new Promise((resolve, reject) => {
-                self.connection.send(`invokeRPC:${self.id}`, {path, args}, (returnValue: any) => {
+                self.connection.send(`invokeRPC:${self.id}`, { path, args }, (returnValue: any) => {
                     if (returnValue?.$error) {
                         const err = new Error(returnValue.$error.message);
                         err.name = returnValue.$error.name;
@@ -110,7 +108,7 @@ export class Replica extends PatchDiff {
     }
 
     // public
-    constructor(remotePath: any, options: any = {dataObject: {}}) {
+    constructor(remotePath: any, options: any = { dataObject: {} }) {
         options = Object.assign({
             subscribeRemoteOnCreate: !!options.connection
         }, options);
@@ -188,17 +186,15 @@ export class Replica extends PatchDiff {
                 if (typeof subscribeSuccessCallback === 'function') {
                     subscribeSuccessCallback(result);
                 }
-                // @ts-expect-error
                 super.emit('_subscribed', this.get());
                 if (this._destroyed) {
                     this._subscribed = false;
                     return;
                 }
                 if (this.options.allowWrite) {
-                    // @ts-expect-error
                     this.subscribe((data: any, diff: any, context: any) => {
                         if (context.local) {
-                            this.connection.send(`apply:${this.id}`, {data, changeRevision: this.changeRevision});
+                            this.connection.send(`apply:${this.id}`, { data, changeRevision: this.changeRevision });
                         }
                     });
                 }
@@ -219,7 +215,7 @@ export class Replica extends PatchDiff {
         if (this._destroyed) {
             throw Error('replica is destroyed');
         }
-        if (connection instanceof WebSocket)  {
+        if (connection instanceof WebSocket) {
             connection = new WebSocketClient(connection);
         }
         return new Promise((resolve, reject) => {
@@ -231,26 +227,27 @@ export class Replica extends PatchDiff {
 
     apply(patch: any, path: any, options: any) {
         if (this.options.allowWrite) {
-            super.apply(patch, path, options ? {...options, ...LocalMutation} : LocalMutation);
+            super.apply(patch, path, options ? { ...options, ...LocalMutation } : LocalMutation);
         }
     }
 
     set(fullDocument: any, path: any, options: any) {
         if (this.options.allowWrite) {
-            super.set(fullDocument, path, options ? {...options, ...LocalMutation} : LocalMutation);
+            super.set(fullDocument, path, options ? { ...options, ...LocalMutation } : LocalMutation);
         }
     }
 
     splice(patch: any, path: any, options: any) {
         if (this.options.allowWrite) {
-            super.splice(patch, path, options ? {...options, ...LocalMutation} : LocalMutation);
+            super.splice(patch, path, options ? { ...options, ...LocalMutation } : LocalMutation);
         }
     }
 
     remove(path: any, options: any) {
         if (this.options.allowWrite) {
-            super.remove(path, options ? {...options, ...LocalMutation} : LocalMutation);
+            super.remove(path, options ? { ...options, ...LocalMutation } : LocalMutation);
         }
+        return undefined;
     }
 
     unsubscribeRemote() {
@@ -269,12 +266,10 @@ export class Replica extends PatchDiff {
 
     destroy() {
         this.unsubscribeRemote();
-        // @ts-expect-error
         this.destroyProxy();
         if (this.connection) {
             this.connection = undefined;
         }
-        // @ts-expect-error
         this.emit('destroyed');
         this._destroyed = true;
         // @ts-expect-error
@@ -287,19 +282,20 @@ export class Replica extends PatchDiff {
 
     get subscribed() {
         if (this._subscribed) {
-            // @ts-expect-error
             return Promise.resolve(this.get());
         }
-        return new Promise((resolve) => super.once('_subscribed', resolve, false));
+        return new Promise((resolve) => super.once('_subscribed', resolve,
+            // @ts-expect-error
+            false));
     }
 
     get synced() {
         if (this._synced) {
-            // @ts-expect-error
             return Promise.resolve(this.get());
         }
-        // @ts-expect-error
-        return new Promise((resolve) => this.once('_synced', resolve, false));
+        return new Promise((resolve) => this.once('_synced', resolve,
+            // @ts-expect-error
+            false));
     }
 }
 
@@ -310,8 +306,7 @@ Replica.prototype.disconnect = Replica.prototype.unsubscribeRemote;
 
 // @ts-expect-error
 Replica.create = function create(initData: any = {}, options: any = {}) {
-    const replica = new Replica('', {dataObject: initData, ...options});
-    // @ts-expect-error
+    const replica = new Replica('', { dataObject: initData, ...options });
     return replica.data;
 };
 

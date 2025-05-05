@@ -1,14 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Replica = void 0;
 exports.connect = connect;
 exports.disconnect = disconnect;
-// @ts-expect-error
-const index_1 = require("../patch-diff/index");
+const patch_diff_1 = require("@live-replica/patch-diff");
 const socket_1 = require("../socket/socket");
 const proxy_1 = require("../proxy/proxy");
 const utils_1 = require("../utils/utils");
-// @ts-expect-error
 const ws_client_1 = require("../ws-client/ws-client");
 const { concatPath } = utils_1.Utils;
 function generateUniqueId() {
@@ -25,7 +22,7 @@ const bindToSocket = Symbol('bindToSocket');
 const LocalMutation = { context: { local: true } };
 // lock localMutation
 Object.freeze(LocalMutation);
-class Replica extends index_1.PatchDiff {
+class Replica extends patch_diff_1.PatchDiff {
     // private
     [bindToSocket]() {
         this.changeRevision = 0;
@@ -40,7 +37,6 @@ class Replica extends index_1.PatchDiff {
             }
             if (!this._synced) {
                 this._synced = true;
-                // @ts-expect-error
                 this.emit('_synced', this.get());
             }
         };
@@ -160,14 +156,12 @@ class Replica extends index_1.PatchDiff {
                 if (typeof subscribeSuccessCallback === 'function') {
                     subscribeSuccessCallback(result);
                 }
-                // @ts-expect-error
                 super.emit('_subscribed', this.get());
                 if (this._destroyed) {
                     this._subscribed = false;
                     return;
                 }
                 if (this.options.allowWrite) {
-                    // @ts-expect-error
                     this.subscribe((data, diff, context) => {
                         if (context.local) {
                             this.connection.send(`apply:${this.id}`, { data, changeRevision: this.changeRevision });
@@ -216,6 +210,7 @@ class Replica extends index_1.PatchDiff {
         if (this.options.allowWrite) {
             super.remove(path, options ? { ...options, ...LocalMutation } : LocalMutation);
         }
+        return undefined;
     }
     unsubscribeRemote() {
         if (!this.connection) {
@@ -232,12 +227,10 @@ class Replica extends index_1.PatchDiff {
     }
     destroy() {
         this.unsubscribeRemote();
-        // @ts-expect-error
         this.destroyProxy();
         if (this.connection) {
             this.connection = undefined;
         }
-        // @ts-expect-error
         this.emit('destroyed');
         this._destroyed = true;
         // @ts-expect-error
@@ -248,21 +241,22 @@ class Replica extends index_1.PatchDiff {
     }
     get subscribed() {
         if (this._subscribed) {
-            // @ts-expect-error
             return Promise.resolve(this.get());
         }
-        return new Promise((resolve) => super.once('_subscribed', resolve, false));
+        return new Promise((resolve) => super.once('_subscribed', resolve, 
+        // @ts-expect-error
+        false));
     }
     get synced() {
         if (this._synced) {
-            // @ts-expect-error
             return Promise.resolve(this.get());
         }
+        return new Promise((resolve) => this.once('_synced', resolve, 
         // @ts-expect-error
-        return new Promise((resolve) => this.once('_synced', resolve, false));
+        false));
     }
 }
-exports.Replica = Replica;
+exports.default = Replica;
 // @ts-expect-error
 Replica.prototype.override = Replica.prototype.set;
 // @ts-expect-error
@@ -270,7 +264,6 @@ Replica.prototype.disconnect = Replica.prototype.unsubscribeRemote;
 // @ts-expect-error
 Replica.create = function create(initData = {}, options = {}) {
     const replica = new Replica('', { dataObject: initData, ...options });
-    // @ts-expect-error
     return replica.data;
 };
 function replicaByProxy(proxy) {

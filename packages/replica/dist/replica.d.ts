@@ -1,11 +1,11 @@
-import { PatchDiff } from "../patch-diff/index";
+import { PatchDiff } from "@live-replica/patch-diff";
 export type LiveReplicaProxy<T = any> = T & object;
 declare const deserializeFunctions: unique symbol;
 declare const createRPCfunction: unique symbol;
 declare const remoteApply: unique symbol;
 declare const remoteOverride: unique symbol;
 declare const bindToSocket: unique symbol;
-export declare class Replica extends PatchDiff {
+export default class Replica extends PatchDiff {
     changeRevision: number;
     onApplyEvent: any;
     onSocketReconnected: any;
@@ -37,7 +37,7 @@ export declare class Replica extends PatchDiff {
     apply(patch: any, path: any, options: any): void;
     set(fullDocument: any, path: any, options: any): void;
     splice(patch: any, path: any, options: any): void;
-    remove(path: any, options: any): void;
+    remove(path: any, options: any): undefined;
     unsubscribeRemote(): any;
     destroy(): void;
     get isReadOnly(): boolean;
