@@ -1,9 +1,9 @@
-import {WebSocket, WebSocketServer} from 'ws';
-import LiveReplicaWebSocketsServer from "../ws-server/ws-server.js";
-import WebSocketClient from "../ws-client/ws-client.js";
-import Replica from "../replica/replica.js";
-import {flushCycle} from "../patch-diff/__tests__/patch-diff.spec.js";
-import {oncePerSubscription} from "../server/src/middlewares.js";
+import { WebSocket, WebSocketServer } from 'ws';
+import LiveReplicaWebSocketsServer from "../ws-server/ws-server";
+import WebSocketClient from "../ws-client/ws-client";
+import Replica from "../replica/replica";
+import { flushCycle } from "../patch-diff/__tests__/patch-diff.spec";
+import { oncePerSubscription } from "../server/src/middlewares";
 
 function createWSServer() {
     return new Promise((resolve, reject) => {
@@ -79,9 +79,9 @@ describe('WS Server and  WS Client integration', () => {
             //Act
             const replicaOptions = {
                 connection,
-                subscribeSuccessCallback: jest.fn(function() {
+                subscribeSuccessCallback: jest.fn(function () {
                     //Assert
-                    expect(replicaOptions.subscribeSuccessCallback).toHaveBeenCalledWith({success: true, writable: null, rpc: null});
+                    expect(replicaOptions.subscribeSuccessCallback).toHaveBeenCalledWith({ success: true, writable: null, rpc: null });
                     done();
                 })
             };
@@ -94,12 +94,12 @@ describe('WS Server and  WS Client integration', () => {
 
             //Act
             await replica.synced;
-            server.set({a: 1, b: {c: 2}}, 'root');
+            server.set({ a: 1, b: { c: 2 } }, 'root');
             await replica.getWhenExists('a')
 
             //Assert
-            expect(replica.get()).toEqual({a: 1, b: { c: 2 }});
-            expect(server.get()).toEqual({ root: {a: 1, b: { c: 2}}});
+            expect(replica.get()).toEqual({ a: 1, b: { c: 2 } });
+            expect(server.get()).toEqual({ root: { a: 1, b: { c: 2 } } });
         });
 
         it('should sync replica changes to server', async () => {
@@ -108,21 +108,21 @@ describe('WS Server and  WS Client integration', () => {
 
             //Act
             await replica.synced;
-            replica.set({c: 1, e: 3});
+            replica.set({ c: 1, e: 3 });
             replica.remove('e');
-            replica.apply({d: 2});
+            replica.apply({ d: 2 });
 
             await server.getWhenExists('root.d');
             await replica.getWhenExists('d');
 
             //Assert
             expect(replica.get()).toEqual({ c: 1, d: 2 });
-            expect(server.get()).toEqual({ root: { c: 1, d: 2 }});
+            expect(server.get()).toEqual({ root: { c: 1, d: 2 } });
         });
 
         it('should allow to unsubscribe', async () => {
             //Arrange
-            server.set({a: 1, b: {c: 2}}, 'root');
+            server.set({ a: 1, b: { c: 2 } }, 'root');
             const replica = new Replica('root', { connection, allowWrite: true });
             await replica.getWhenExists('a');
             const destroyedCallback = jest.fn();
@@ -130,11 +130,11 @@ describe('WS Server and  WS Client integration', () => {
 
             //Act
             await replica.destroy();
-            server.set({a: 2}, 'root');
+            server.set({ a: 2 }, 'root');
             await flushCycle(10);
 
             //Assert
-            expect(replica.get()).toEqual({a: 1, b: { c: 2 }});
+            expect(replica.get()).toEqual({ a: 1, b: { c: 2 } });
             expect(destroyedCallback).toBeCalled();
         });
     });
@@ -143,14 +143,14 @@ describe('WS Server and  WS Client integration', () => {
         it('should be able to reject replica subscriptions', (done) => {
             //Arrange
             const middlewareFake = jest.fn((request, reject, next) => {
-               reject('reason: testing reject');
+                reject('reason: testing reject');
             });
             server.use(middlewareFake);
 
             //Act
             const replicaOptions = {
                 connection,
-                subscribeRejectCallback: jest.fn(function() {
+                subscribeRejectCallback: jest.fn(function () {
                     //Assert
                     expect(replicaOptions.subscribeRejectCallback).toHaveBeenCalledWith('reason: testing reject');
                     done();
@@ -174,7 +174,7 @@ describe('WS Server and  WS Client integration', () => {
                 next();
             });
             server.use(middlewareFake);
-            const initObject = { readonly: { a: 1 }, readwrite: { b: 1}};
+            const initObject = { readonly: { a: 1 }, readwrite: { b: 1 } };
             server.set(initObject);
 
             //Act
@@ -185,8 +185,8 @@ describe('WS Server and  WS Client integration', () => {
             await readOnlyReplica.synced;
             await readWriteReplica.synced;
             //modify the replicas
-            readOnlyReplica.set({key: 'val'}, 'a');
-            readWriteReplica.set({ c: {key: 'val'}, d: 5 });
+            readOnlyReplica.set({ key: 'val' }, 'a');
+            readWriteReplica.set({ c: { key: 'val' }, d: 5 });
             //wait for the changes to reflect on replica and server
             await readWriteReplica.getWhenExists('c');
             await server.getWhenExists('readwrite.c');
@@ -194,8 +194,8 @@ describe('WS Server and  WS Client integration', () => {
 
             //Assert
             expect(readOnlyReplica.get()).toEqual({ a: 1 });
-            expect(readWriteReplica.get()).toEqual({c: { key: 'val' }, d: 5 });
-            expect(server.get()).toEqual({ readonly: { a: 1 }, readwrite: {c: { key: 'val' }, d: 5 }});
+            expect(readWriteReplica.get()).toEqual({ c: { key: 'val' }, d: 5 });
+            expect(server.get()).toEqual({ readonly: { a: 1 }, readwrite: { c: { key: 'val' }, d: 5 } });
         });
 
         describe('OncePerSubscription', () => {
@@ -203,7 +203,7 @@ describe('WS Server and  WS Client integration', () => {
                 //Arrange
                 const onFirstSubscribe = jest.fn((req, reject, approve) => approve());
                 const onLastUnsubscribe = jest.fn((lastRequest) => console.log('last request', lastRequest));
-                server.set({a: {b: {c: 1}}});
+                server.set({ a: { b: { c: 1 } } });
                 // @ts-expect-error
                 server.use(oncePerSubscription(onFirstSubscribe, onLastUnsubscribe));
 
@@ -222,9 +222,9 @@ describe('WS Server and  WS Client integration', () => {
                 await flushCycle(10);
 
                 //Assert - onFirstSubscribe and onLastUnsubscribe should be called exactly once for each path
-                expect(onFirstSubscribe).toBeCalledWith(expect.objectContaining({path: 'a'}), expect.any(Function), expect.any(Function));
+                expect(onFirstSubscribe).toBeCalledWith(expect.objectContaining({ path: 'a' }), expect.any(Function), expect.any(Function));
                 expect(onFirstSubscribe).toBeCalledTimes(1);
-                expect(onLastUnsubscribe).toBeCalledWith(expect.objectContaining({path: 'a'}));
+                expect(onLastUnsubscribe).toBeCalledWith(expect.objectContaining({ path: 'a' }));
                 expect(onLastUnsubscribe).toBeCalledTimes(1);
             });
         });
