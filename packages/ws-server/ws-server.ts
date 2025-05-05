@@ -1,8 +1,7 @@
-import { eventName } from "../common/event-name.js";
-import { EventEmitter } from "../events/events.js";
-import { LiveReplicaServer } from '../server/index.js';
-// @ts-expect-error
-import { encode, decode } from '../../node_modules/@msgpack/msgpack/dist.es5+esm/index.mjs';
+import { eventName } from "../common/event-name";
+import { EventEmitter } from "../events/events";
+import { LiveReplicaServer } from '../server/index';
+import { encode, decode } from '@msgpack/msgpack';
 
 const LIVE_REPLICA_MSG = '$LR';
 const nativeSocketEvents: Record<string, string> = { 'disconnect': 'close' };
@@ -19,7 +18,7 @@ class Connection extends EventEmitter {
 
     this.socket.addEventListener('message', ({ data }: any) => {
       try {
-        const msg = decode(data);
+        const msg: any = decode(data);
         if (msg && msg[LIVE_REPLICA_MSG]) {
           const { event, payload, ack } = msg[LIVE_REPLICA_MSG];
           let ackFunction;

@@ -1,6 +1,9 @@
 {
   "extends": "./tsconfig.base.json",
   "files": [],
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
   "references": [
     { "path": "./packages/common" },
     { "path": "./packages/socket" },

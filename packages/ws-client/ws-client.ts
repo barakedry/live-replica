@@ -1,7 +1,6 @@
 import { EventEmitter } from "../events/events";
 import { LiveReplicaSocket } from '../socket/socket';
-// @ts-expect-error
-import {encode, decode} from '../../node_modules/@msgpack/msgpack/dist.es5+esm/index.mjs';
+import { encode, decode } from '@msgpack/msgpack';
 
 const LIVE_REPLICA_MSG = '$LR';
 const onMessage = Symbol('onWebsocketMessage');
@@ -88,7 +87,7 @@ export class WebSocketClient extends LiveReplicaSocket {
         }
         this._socket = socket;
         this[onMessage] = ({data}: any) => {
-            const msg = decode(data);
+            const msg: any = decode(data);
             if (msg && msg[LIVE_REPLICA_MSG]) {
                 const {event, args} = msg[LIVE_REPLICA_MSG];
                 this._emitter.emit(event, ...(Array.isArray(args) ? args : []));

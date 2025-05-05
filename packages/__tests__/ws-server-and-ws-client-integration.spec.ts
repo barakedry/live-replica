@@ -4,10 +4,17 @@ import WebSocketClient from "../ws-client/ws-client";
 import Replica from "../replica/replica";
 import { flushCycle } from "../patch-diff/__tests__/patch-diff.spec";
 import { oncePerSubscription } from "../server/src/middlewares";
+import type { Server as WSServer, WebSocket as WSWebSocket } from 'ws';
+import type WebSocketClientType from '../ws-client/ws-client';
+import type LiveReplicaWebSocketsServerType from '../ws-server/ws-server';
 
-function createWSServer() {
-    return new Promise((resolve, reject) => {
-        const wss = new WebSocketServer({
+let wsServer: WSServer;
+let connection: InstanceType<typeof WebSocketClientType>;
+let server: LiveReplicaWebSocketsServerType;
+
+function createWSServer(): Promise<WSServer> {
+    return new Promise<WSServer>((resolve, reject) => {
+        const wss: WSServer = new WebSocketServer({
             path: '/ws',
             maxPayload: 1024 * 1024 * 5, // 5mb limit
             perMessageDeflate: {
@@ -18,17 +25,14 @@ function createWSServer() {
     });
 }
 
-function createWebSocket() {
+function createWebSocket(): Promise<WSWebSocket> {
     return new Promise((resolve, reject) => {
         const url = `http://localhost:3000/ws`;
         const ws = new WebSocket(url);
-
         ws.binaryType = 'arraybuffer';
-        // @ts-expect-error
-        ws.onerror = async (err) => {
+        ws.onerror = (err) => {
             reject(err);
         };
-        // @ts-expect-error
         ws.onopen = () => {
             console.info(`Websocket opened`);
             resolve(ws);
@@ -36,10 +40,6 @@ function createWebSocket() {
     });
 }
 
-
-let wsServer;
-let connection;
-let server;
 beforeAll(async () => {
     wsServer = await createWSServer();
     server = new LiveReplicaWebSocketsServer(wsServer)
