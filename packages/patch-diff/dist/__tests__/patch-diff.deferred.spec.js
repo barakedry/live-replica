@@ -64,7 +64,6 @@ describe('deferred', () => {
                         g: 5
                     }
                 }
-                // @ts-expect-error
             }, '', { overrides });
             //Assert
             expect(patcher.get()).toEqual({ a: { b: { e: 'patch', g: 5 } } });

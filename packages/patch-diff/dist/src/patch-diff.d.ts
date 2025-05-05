@@ -68,7 +68,7 @@ export declare class PatchDiff<T = any> extends EventEmitter {
     constructor(object?: T, options?: Partial<ApplyOptions> & {
         [key: string]: any;
     });
-    apply(patch: Partial<T>, path?: string, options?: MergeOptions): void;
+    apply(patch: Partial<T> | any, path?: string, options?: MergeOptions): void;
     displace(value: any, path?: string, options?: MutationOptions): void;
     set(fullDocument?: any, path?: string, options?: MutationOptions): void;
     remove(path?: string, options?: MutationOptions): Partial<T> | undefined;
@@ -85,14 +85,18 @@ export declare class PatchDiff<T = any> extends EventEmitter {
     }>;
     get(path?: string, callback?: (value: any) => void): any;
     getClone(path?: string): any;
-    on(event: string, fn: any, prependPath?: boolean): () => void;
-    off(event: string, fn: any): void;
-    whitelist(keySet: any): void;
-    subscribe(subPath: string, fn?: SubscribeCallback, skipInitial?: boolean): () => void;
-    getWhenExists(path: any): Promise<unknown>;
-    whenAnything(path: any): Promise<unknown>;
-    at(subPath: string): any;
-    parent(): any;
+    on(event: string, fn: EventListener): () => void;
+    off(event: string, fn: EventListener): void;
+    whitelist(keySet: KeyList): void;
+    /**
+     * Note: the signature of this method is a little bit wonky as we allow subPath to not be provided,
+     * pushing the remaining parameters left.
+     */
+    subscribe(subPath: string | SubscribeCallback<T>, fn?: SubscribeCallback<T> | boolean, skipInitial?: boolean): UnsubscribeCallback;
+    getWhenExists(path?: string): Promise<any>;
+    whenAnything(path?: string): Promise<any>;
+    at(subPath: string): PatchDiff<T>;
+    parent(): PatchDiff<T> | undefined;
     get root(): PatchDiff<T>;
     /************************************************************************************
      * The basic merging recursion implementation:
@@ -103,9 +107,9 @@ export declare class PatchDiff<T = any> extends EventEmitter {
      *
      * ._applyAtKey() assigns/remove primitives and calls _.applyObject() for objects
      ************************************************************************************/
-    _applyObject(target: any, patch: any, path: any, options: any, level: any, override: any): any;
-    _applyAtKey(target: any, patch: any, path: any, key: any, levelDiffs: any, options: any, level: any, override: any, isTargetArray: any): any;
-    _deleteAtKey(target: any, path: any, key: any, options: any, existingValue: any, levelDiffs: any, isArray: any): any;
+    _applyObject(target: any, patch: any, path: string, options: any, level: number, override: any): any;
+    _applyAtKey(target: any, patch: any, path: string, key: string, levelDiffs: any, options: any, level: number, override: any, isTargetArray: boolean): any;
+    _deleteAtKey(target: any, path: string, key: string, options: any, existingValue: any, levelDiffs: any, isArray: boolean): any;
     _detectDeletionsAtLevel(target: any, patch: any, levelDiffs: any, path: any, options: any, isTargetArray: any): any;
     _splice(path: string, index: number, itemsToRemove: number, ...itemsToAdd: any[]): {
         index: number;
@@ -116,7 +120,7 @@ export declare class PatchDiff<T = any> extends EventEmitter {
         deleted: never[];
     };
     _getPrototypeOf(object: any): any;
-    _emitInnerDeletions(path: any, deletedObject: any, options: any): {
+    _emitInnerDeletions(path: string, deletedObject: any, options: any): {
         hasAdditions: boolean;
         hasAddedObjects: boolean;
         hasDeletions: boolean;
@@ -131,9 +135,9 @@ export declare class PatchDiff<T = any> extends EventEmitter {
         addChildTracking: (childTracker: any, key: any, isNewObject?: boolean) => void;
     } | undefined;
     get isReadOnly(): boolean;
-    getData({ immediateFlush }?: {}): LiveReplicaProxy<T_1>;
+    getData({}?: {}): PatchDiff<T>;
     destroyProxy(): void;
-    get data(): LiveReplicaProxy<T_1>;
+    get data(): PatchDiff<T>;
 }
 export default PatchDiff;
 //# sourceMappingURL=patch-diff.d.ts.map

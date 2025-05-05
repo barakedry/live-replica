@@ -17,7 +17,6 @@ describe('Patch Diff', () => {
             it('should emit error when max levels exceeded and not apply any further levels', (done) => {
                 //Arrange
                 const patcher = new patch_diff_1.default(null, { maxLevels: 2 });
-                // @ts-expect-error
                 patcher.on('error', (error) => {
                     //Assert
                     expect(error).toEqual(new Error('Stopped patching, Too many levels - 3 out of 2 allowed levels to path "1.2.3"'));
@@ -151,7 +150,6 @@ describe('Patch Diff', () => {
                             c: { appliedToC: 'someValue' },
                             override1: { overrides1: 'someValue' },
                             override2: { overrides1: 'someValue' }
-                            // @ts-expect-error
                         } } }, '', { overrides });
                 //Assert
                 expect(patcher.get()).toEqual({ a: { b: {
@@ -219,7 +217,7 @@ describe('Patch Diff', () => {
                 const patcher = new patch_diff_1.default({ a: 'b' });
                 patcher.whitelist(['a']);
                 //Act & Assert
-                expect(() => patcher.set({ a: 'c' })).toThrowError('LiveReplica PatchDiff: set is not supported with whitelist');
+                expect(() => patcher.set({ a: 'c' })).toThrow('LiveReplica PatchDiff: set is not supported with whitelist');
             });
         });
         it('should be able to set a proxy object', () => {
@@ -445,7 +443,6 @@ describe('Patch Diff', () => {
             patcher.apply(5, 'a.b.c');
             patcher.remove('a.b.c');
             patcher.apply({ e: 'f' }, 'a.b.c');
-            // @ts-expect-error
             patcher.apply({ e: { f: true } }, 'a.b.c', { context });
             patcher.set({ e: { set: 'value' } }, 'a.b.c');
             //Assert snapshot notification
@@ -497,7 +494,6 @@ describe('Patch Diff', () => {
             //Arrange
             const patcher = new patch_diff_1.default({ a: { b: { c: { d: { e: 'f' } } } } });
             const spy = jest.fn();
-            // @ts-expect-error
             patcher.at('a.b.c.d').subscribe((diff, changeInfo, context) => {
                 spy(diff, changeInfo, context);
             });
@@ -656,7 +652,6 @@ describe('Patch Diff', () => {
                                 g: 5
                             }
                         }
-                        // @ts-expect-error
                     }, '', { overrides });
                     //Assert
                     expect(patcher.get()).toEqual({ a: { b: { e: 'patch', g: 5 } } });
@@ -773,7 +768,6 @@ describe('Patch Diff', () => {
                                 g: 5
                             }
                         }
-                        // @ts-expect-error
                     }, '', { overrides });
                     //Assert
                     expect(patcher.get()).toEqual({ a: { b: { e: 'patch', g: 5 } } });

@@ -221,7 +221,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     this.setMaxListeners(this.options.maxListeners);
   }
 
-  apply(patch: Partial<T>, path?: string, options?: MergeOptions) {
+  apply(patch: Partial<T> | any, path?: string, options?: MergeOptions) {
 
     //path = concatPath(this._path, path);
     options = {
@@ -627,14 +627,18 @@ export class PatchDiff<T = any> extends EventEmitter {
     this._whitelist = keySet;
   }
 
-  subscribe(subPath: string, fn: SubscribeCallback<T>, skipInitial: boolean = false): UnsubscribeCallback {
+  /**
+   * Note: the signature of this method is a little bit wonky as we allow subPath to not be provided,
+   * pushing the remaining parameters left.
+   */
+  subscribe(subPath: string | SubscribeCallback<T>, fn?: SubscribeCallback<T> | boolean, skipInitial: boolean = false): UnsubscribeCallback {
     if (typeof subPath === 'function') {
       skipInitial = !!fn;
       fn = subPath;
       subPath = '';
     }
 
-    const cb = fn;
+    const cb = fn as SubscribeCallback<T>;
     let aggregatedPatch: any;
     let aggregatedChangesInfo: any;
     let lastOptions: any;
@@ -731,17 +735,15 @@ export class PatchDiff<T = any> extends EventEmitter {
     };
   }
 
-  // @ts-expect-error
-  getWhenExists(path) {
+  getWhenExists(path?: string): Promise<any> {
     return new Promise(resolve => {
       this.get(path, resolve);
     });
   }
 
-  // @ts-expect-error
-  whenAnything(path) {
+  whenAnything(path?: string): Promise<any> {
     return new Promise(resolve => {
-      const unsub = this.subscribe(path, (data: any) => {
+      const unsub = this.subscribe(path!, (data: any) => {
         if (typeof data === 'object' && Object.keys(data).length !== 0) {
           resolve(data);
           setTimeout(() => unsub(), 0);
@@ -750,8 +752,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     });
   }
 
-
-  at(subPath: string) {
+  at(subPath: string): PatchDiff<T> {
 
     let path = concatPath(this._path || '', subPath || '');
 
@@ -783,8 +784,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     return at;
   }
 
-  parent() {
-
+  parent(): PatchDiff<T> | undefined {
     const root = this._root;
 
     if (root === this) {
@@ -797,8 +797,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     return parent;
   }
 
-  // @ts-expect-error
-  get root() { return this._root || this; }
+  get root(): PatchDiff<T> { return this._root || this; }
 
   /************************************************************************************
    * The basic merging recursion implementation:
@@ -809,8 +808,7 @@ export class PatchDiff<T = any> extends EventEmitter {
    *
    * ._applyAtKey() assigns/remove primitives and calls _.applyObject() for objects
    ************************************************************************************/
-  // @ts-expect-error
-  _applyObject(target, patch, path, options, level, override) {
+  _applyObject(target: any, patch: any, path: string, options: any, level: number, override: any) {
 
     if (!(_isObject(target) && _isObject(patch))) {
       logError('invalid apply, target and patch must be objects');
@@ -873,8 +871,8 @@ export class PatchDiff<T = any> extends EventEmitter {
     return levelDiffs;
   }
 
-  // @ts-expect-error
-  _applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray) {
+
+  _applyAtKey(target: any, patch: any, path: string, key: string, levelDiffs: any, options: any, level: number, override: any, isTargetArray: boolean) {
 
     let childDiffs,
       patchValue,
@@ -954,7 +952,7 @@ export class PatchDiff<T = any> extends EventEmitter {
           (target as any)[srcKey] = patchValue;
           levelDiffs.additions[key] = appliedValue;
           levelDiffs.differences[key] = appliedValue;
-          const leafPath = pushKeyToPath(path, srcKey, isTargetArray);
+          const leafPath = pushKeyToPath(path, srcKey as string, isTargetArray);
           this.emit(PATH_EVENT_PREFIX + (leafPath || ''), { differences: appliedValue, additions: appliedValue }, options);
           if (options.fireGlobalChangeEvents) {
             this.emit('change', { differences: appliedValue, additions: appliedValue }, leafPath, options);
@@ -1008,7 +1006,7 @@ export class PatchDiff<T = any> extends EventEmitter {
         levelDiffs.hasDifferences = true;
         levelDiffs.updates[key] = updates;
         levelDiffs.differences[key] = appliedValue;
-        const leafPath = pushKeyToPath(path, srcKey, isTargetArray);
+        const leafPath = pushKeyToPath(path, srcKey as string, isTargetArray);
         //this.emit(PATH_EVENT_PREFIX + (leafPath || ''),  {differences: appliedValue}, {...options, type: 'update', oldValue: existingValue});
         this.emit(PATH_EVENT_PREFIX + (leafPath || ''), { differences: appliedValue, updates }, options);
         if (options.fireGlobalChangeEvents) {
@@ -1021,8 +1019,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     return levelDiffs;
   }
 
-  // @ts-expect-error
-  _deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray) {
+  _deleteAtKey(target: any, path: string, key: string, options: any, existingValue: any, levelDiffs: any, isArray: boolean) {
     if (isArray) {
       target.splice(index(key, levelDiffs), 1);
       levelDiffs.arrayOffset = (levelDiffs.arrayOffset || 0) - 1;
@@ -1116,13 +1113,12 @@ export class PatchDiff<T = any> extends EventEmitter {
     return diff;
   }
 
-  // @ts-expect-error
-  _getPrototypeOf(object) {
+
+  _getPrototypeOf(object: any): any {
     return Object.getPrototypeOf(object);
   }
 
-  // @ts-expect-error
-  _emitInnerDeletions(path, deletedObject, options) {
+  _emitInnerDeletions(path: string, deletedObject: any, options: any) {
     let levelDiffs,
       childDiffs;
 
@@ -1187,23 +1183,22 @@ export class PatchDiff<T = any> extends EventEmitter {
     return levelDiffs;
   }
 
-  get isReadOnly() {
+  get isReadOnly(): boolean {
     return false;
   }
 
-  // @ts-expect-error
-  getData({ immediateFlush } = {}) {
+  getData({} = {}): PatchDiff<T> {
     return create(this);
   }
 
-  destroyProxy() {
+  destroyProxy(): void {
     if (this.proxies.has(this)) {
       revoke(this.proxies.get(this));
       this.proxies.delete(this);
     }
   }
 
-  get data() {
+  get data(): PatchDiff<T> {
     return this.getData();
   }
 }

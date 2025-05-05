@@ -5,7 +5,7 @@ describe('deferred', () => {
     describe('apply', () => {
         it('should notify of object change with apply on path', async () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd'}}}, { defer: true });
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}} as any, { defer: true });
             const spy = jest.fn();
             const isAggregated = true;
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
@@ -28,7 +28,7 @@ describe('deferred', () => {
 
         it('should notify of object change with apply on self (without path)', async () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd'}}}, { defer: true });
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}} as any, { defer: true });
             const spy = jest.fn();
             const isAggregated = true;
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
@@ -48,7 +48,7 @@ describe('deferred', () => {
 
         it('should notify of all object changes with apply when patch, deletion and override are used', async () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd', e: 'f', g: { h: 'i', j: 'k' }}}}, { defer: true });
+            const patcher = new PatchDiff({a: {b: {c: 'd', e: 'f', g: { h: 'i', j: 'k' }}}} as any, { defer: true });
             const overrides = ['a.b.c.g'];
             const spy = jest.fn();
             const isAggregated = true;
@@ -67,7 +67,6 @@ describe('deferred', () => {
                         g: 5
                     }
                 }
-                // @ts-expect-error
             }, '', {overrides});
 
             //Assert
@@ -80,7 +79,7 @@ describe('deferred', () => {
     describe('set', () => {
         it.failing('should notify of object change with set on path', async () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd'}}}, { defer: true });
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}} as any, { defer: true });
             const spy = jest.fn();
             const isAggregated = true;
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
@@ -102,7 +101,7 @@ describe('deferred', () => {
 
         it('should notify of object change with apply on self (without path)', async () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd'}}}, {defer: true});
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}} as any, {defer: true});
             const spy = jest.fn();
             const isAggregated = true;
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
@@ -124,7 +123,7 @@ describe('deferred', () => {
     describe('remove', () => {
         it.failing('should notify of object change with remove on path', async () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd'}}}, { defer: true });
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}} as any, { defer: true });
             const spy = jest.fn();
             const isAggregated = true;
 
@@ -146,7 +145,7 @@ describe('deferred', () => {
 
         it.failing('should notify of object change with remove on self (without path)', async () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd'}}}, {defer: true});
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}} as any, {defer: true});
             const spy = jest.fn();
             const isAggregated = true;
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {

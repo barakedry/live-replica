@@ -318,12 +318,14 @@ class PatchDiff extends events_1.EventEmitter {
             return [{ value: this.get(pathPattern, undefined), params: {}, isPattern: false }];
         }
         let unnamedKeys = [];
+        // @ts-expect-error
         pathPattern = pathPattern.replaceAll("*", (match) => {
             const keyName = `$key_${unnamedKeys.length}`;
             unnamedKeys.push(keyName);
             return `[:${keyName}]`;
         });
         const partsAndKeys = pathPattern.split(/\[:+|\]\./).map((item, index) => { return index > 0 ? item.split(']')[0] : item; });
+        // @ts-expect-error
         return (getAll(this, partsAndKeys, {}) ?? []).filter(v => !!v);
     }
     get(path, callback) {
@@ -387,7 +389,7 @@ class PatchDiff extends events_1.EventEmitter {
         }
         return undefined;
     }
-    on(event, fn, prependPath = true) {
+    on(event, fn) {
         const result = super.on(event, fn);
         // Track only path events (not patterns, not empty)
         if (typeof event === 'string' && event.startsWith(events_1.PATH_EVENT_PREFIX)) {
@@ -411,7 +413,6 @@ class PatchDiff extends events_1.EventEmitter {
             }
         }
     }
-    // @ts-expect-error
     whitelist(keySet) {
         if (Array.isArray(keySet)) {
             keySet = new Set(keySet);
@@ -455,6 +456,10 @@ class PatchDiff extends events_1.EventEmitter {
         }
         this._whitelist = keySet;
     }
+    /**
+     * Note: the signature of this method is a little bit wonky as we allow subPath to not be provided,
+     * pushing the remaining parameters left.
+     */
     subscribe(subPath, fn, skipInitial = false) {
         if (typeof subPath === 'function') {
             skipInitial = !!fn;
@@ -551,13 +556,11 @@ class PatchDiff extends events_1.EventEmitter {
             handler = (() => { });
         };
     }
-    // @ts-expect-error
     getWhenExists(path) {
         return new Promise(resolve => {
             this.get(path, resolve);
         });
     }
-    // @ts-expect-error
     whenAnything(path) {
         return new Promise(resolve => {
             const unsub = this.subscribe(path, (data) => {
@@ -601,7 +604,6 @@ class PatchDiff extends events_1.EventEmitter {
         const parent = root.at(parentPathVal).get();
         return parent;
     }
-    // @ts-expect-error
     get root() { return this._root || this; }
     /************************************************************************************
      * The basic merging recursion implementation:
@@ -612,7 +614,6 @@ class PatchDiff extends events_1.EventEmitter {
      *
      * ._applyAtKey() assigns/remove primitives and calls _.applyObject() for objects
      ************************************************************************************/
-    // @ts-expect-error
     _applyObject(target, patch, path, options, level, override) {
         if (!((0, isObject_1.default)(target) && (0, isObject_1.default)(patch))) {
             logError('invalid apply, target and patch must be objects');
@@ -662,7 +663,6 @@ class PatchDiff extends events_1.EventEmitter {
         }
         return levelDiffs;
     }
-    // @ts-expect-error
     _applyAtKey(target, patch, path, key, levelDiffs, options, level, override, isTargetArray) {
         let childDiffs, patchValue, existingValue, srcKey, appliedValue, // this value is what goes out to the tracker its not always the same as patchValue
         isExistingValueArray, isPatchValueObject = false;
@@ -767,7 +767,6 @@ class PatchDiff extends events_1.EventEmitter {
         }
         return levelDiffs;
     }
-    // @ts-expect-error
     _deleteAtKey(target, path, key, options, existingValue, levelDiffs, isArray) {
         if (isArray) {
             target.splice(index(key, levelDiffs), 1);
@@ -843,11 +842,9 @@ class PatchDiff extends events_1.EventEmitter {
         const diff = { index, itemsToRemove, itemsToAdd, deleted };
         return diff;
     }
-    // @ts-expect-error
     _getPrototypeOf(object) {
         return Object.getPrototypeOf(object);
     }
-    // @ts-expect-error
     _emitInnerDeletions(path, deletedObject, options) {
         let levelDiffs, childDiffs;
         if (!(0, isObject_1.default)(deletedObject)) {
@@ -909,8 +906,7 @@ class PatchDiff extends events_1.EventEmitter {
     get isReadOnly() {
         return false;
     }
-    // @ts-expect-error
-    getData({ immediateFlush } = {}) {
+    getData({} = {}) {
         return (0, proxy_1.create)(this);
     }
     destroyProxy() {

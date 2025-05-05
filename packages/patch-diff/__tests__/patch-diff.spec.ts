@@ -13,8 +13,7 @@ describe('Patch Diff', () => {
         describe('Bad path', () => {
             it('should emit error when max levels exceeded and not apply any further levels', (done) => {
                 //Arrange
-                const patcher = new PatchDiff(null, {maxLevels: 2});
-                // @ts-expect-error
+                const patcher = new PatchDiff(null as any, {maxLevels: 2});
                 patcher.on('error', (error) => {
                     //Assert
                     expect(error).toEqual(new Error('Stopped patching, Too many levels - 3 out of 2 allowed levels to path "1.2.3"'));
@@ -48,11 +47,11 @@ describe('Patch Diff', () => {
                     const baseObject = {
                         allowParent: 'b'
                     };
-                    const patcher = new PatchDiff(baseObject);
+                    const patcher = new PatchDiff(baseObject as any);
                     patcher.whitelist(['allowParent']);
 
                     //Act
-                    patcher.apply(5, 'c.d');
+                    patcher.apply(5 as any, 'c.d');
                     patcher.apply({ new: 'change' }, 'allowParent');
 
                     //Assert
@@ -66,7 +65,7 @@ describe('Patch Diff', () => {
                     const baseObject = {
                         allowParent: 'a'
                     };
-                    const patcher = new PatchDiff(baseObject);
+                    const patcher = new PatchDiff(baseObject as any);
                     patcher.whitelist(['allowParent', 'allowParent2']);
 
                     //Act
@@ -102,8 +101,8 @@ describe('Patch Diff', () => {
 
                 it('should be able to apply a proxy object', () => {
                     //Arrange
-                    const patcher = new PatchDiff({ a: 'b' });
-                    const proxy = patcher.getData({immediateFlush: true});
+                    const patcher = new PatchDiff({ a: 'b' } as any);
+                    const proxy = patcher.getData({immediateFlush: true}) as any;
                     proxy.b = 'c';
                     const expectedObject = { a: 'b', b: 'c' };
 
@@ -165,14 +164,13 @@ describe('Patch Diff', () => {
                     c: {d: 'e'},
                     override1: {f: 'g'},
                     override2: {h: 'i'}
-                }}});
+                }}} as any);
 
                 //Act
                 patcher.apply({a: {b: {
                     c: { appliedToC: 'someValue'},
                     override1: { overrides1: 'someValue'},
                     override2: { overrides1: 'someValue'}
-                    // @ts-expect-error
                 }}}, '', {overrides});
 
                 //Assert
@@ -208,10 +206,10 @@ describe('Patch Diff', () => {
                     ${'a["3"].hello'}  | ${{a: [1, 'b', false, { hello: 'appliedValue' }]}}
                 `('should update array value at given path $path', ({ path, expectedObject }) => {
                     //Arrange
-                    const patcher = new PatchDiff({a: [1, 'b', false, { hello: 'world' }]});
+                    const patcher = new PatchDiff({a: [1, 'b', false, { hello: 'world' }]} as any);
 
                     //Act
-                    patcher.apply('appliedValue', path);
+                    patcher.apply('appliedValue' as any, path);
 
                     //Assert
                     expect(patcher.get()).toEqual(expectedObject);
@@ -254,14 +252,14 @@ describe('Patch Diff', () => {
                 patcher.whitelist(['a']);
 
                 //Act & Assert
-                expect(() => patcher.set({a: 'c'})).toThrowError('LiveReplica PatchDiff: set is not supported with whitelist');
+                expect(() => patcher.set({a: 'c'})).toThrow('LiveReplica PatchDiff: set is not supported with whitelist');
             });
         });
 
         it('should be able to set a proxy object', () => {
             //Arrange
             const patcher = new PatchDiff({ a: 'b' });
-            const proxy = patcher.getData({immediateFlush: true});
+            const proxy = patcher.getData({immediateFlush: true}) as any;
             proxy.b = 'c';
             const expectedObject = { a: 'b', b: 'c' };
 
@@ -526,7 +524,7 @@ describe('Patch Diff', () => {
     describe('subscribe', () => {
         it('should notify of all changes on a given path', async () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}} as any);
             const spy = jest.fn();
             patcher.subscribe('a.b.c', (diff, changeInfo, context) => {
                 console.log('a.b.c', diff, changeInfo, context);
@@ -536,10 +534,9 @@ describe('Patch Diff', () => {
             const context = {some: 'context'};
 
             //Act
-            patcher.apply(5, 'a.b.c');
+            patcher.apply(5 as any, 'a.b.c');
             patcher.remove( 'a.b.c');
             patcher.apply({ e: 'f' }, 'a.b.c');
-            // @ts-expect-error
             patcher.apply({ e: {f: true} }, 'a.b.c', { context });
             patcher.set({ e: { set: 'value' } }, 'a.b.c');
 
@@ -591,9 +588,8 @@ describe('Patch Diff', () => {
 
         it.only('should notify inner subscribers about deletion of parents', async () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: {d: {e: 'f'}}}}});
+            const patcher = new PatchDiff({a: {b: {c: {d: {e: 'f'}}}}} as any);
             const spy = jest.fn();
-            // @ts-expect-error
             patcher.at('a.b.c.d').subscribe((diff, changeInfo, context) => {
                 spy(diff, changeInfo, context);
             });
@@ -682,7 +678,7 @@ describe('Patch Diff', () => {
 
         it('should notify of all changes on whitelisted paths and exclude the rest', async () => {
             //Arrange
-            const patcher = new PatchDiff({a: 1, b: 2, c: 'd'});
+            const patcher = new PatchDiff({a: 1, b: 2, c: 'd'} as any);
             const spy = jest.fn();
             patcher.whitelist(['a']);
             patcher.subscribe('a', spy);
@@ -778,7 +774,6 @@ describe('Patch Diff', () => {
                                 g: 5
                             }
                         }
-                        // @ts-expect-error
                     }, '', {overrides});
 
                     //Assert
@@ -914,7 +909,6 @@ describe('Patch Diff', () => {
                                 g: 5
                             }
                         }
-                        // @ts-expect-error
                     }, '', {overrides});
 
                     //Assert
@@ -1195,7 +1189,7 @@ describe('Patch Diff', () => {
             const proxy = patcher.data;
 
             //Act
-            proxy.a = 'c';
+            (proxy as any).a = 'c';
 
             //Assert
             expect(patcher.get()).toEqual({a: 'c'});

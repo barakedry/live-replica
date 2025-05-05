@@ -6,10 +6,9 @@ describe('Scoped usage', () => {
         describe('apply', () => {
             it('should notify of object change with apply on path', async () => {
                 //Arrange
-                const scoped = new PatchDiff({a: {b: {c: 'd'}}}).at('a.b');
+                const scoped = new PatchDiff({a: {b: {c: 'd'}}} as any).at('a.b');
                 const spy = jest.fn();
                 const isAggregated = false;
-                // @ts-expect-error
                 scoped.subscribe('c', (diff, changeInfo, context, isAggregated) => {
                     console.log('c', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
@@ -26,10 +25,9 @@ describe('Scoped usage', () => {
 
             it('should notify of object change with apply on self (without path)', () => {
                 //Arrange
-                const scoped = new PatchDiff({a: {b: {c: 'd'}}}).at('a.b');;
+                const scoped = new PatchDiff({a: {b: {c: 'd'}}} as any).at('a.b');
                 const spy = jest.fn();
                 const isAggregated = false;
-                // @ts-expect-error
                 scoped.subscribe('c', (diff, changeInfo, context, isAggregated) => {
                     console.log('scoped a.b', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
@@ -46,12 +44,11 @@ describe('Scoped usage', () => {
 
             it('should notify of all object changes with apply when patch, deletion and override are used', () => {
                 //Arrange
-                const scoped = new PatchDiff({a: {b: {c: 'd', e: 'f', g: { h: 'i', j: 'k' }}}}).at('a.b');
+                const scoped = new PatchDiff({a: {b: {c: 'd', e: 'f', g: { h: 'i', j: 'k' }}}} as any).at('a.b');
                 const overrides = ['a.b.c.g'];
                 const spy = jest.fn();
                 const isAggregated = false;
-                // @ts-expect-error
-                scoped.subscribe( (diff, changeInfo, context, isAggregated) => {
+                scoped.subscribe((diff, changeInfo, context, isAggregated) => {
                     console.log('scoped a.b', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
                 });
@@ -72,7 +69,6 @@ describe('Scoped usage', () => {
                 const scoped = new PatchDiff({a: {b: {c: 'd'}}}).at('a.b');
                 const spy = jest.fn();
                 const isAggregated = false;
-                // @ts-expect-error
                 scoped.subscribe( (diff, changeInfo, context, isAggregated) => {
                     console.log('scoped a.b', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
@@ -92,7 +88,6 @@ describe('Scoped usage', () => {
                 const scoped = new PatchDiff({a: {b: {c: 'd'}}}).at('a');
                 const spy = jest.fn();
                 const isAggregated = false;
-                // @ts-expect-error
                 scoped.subscribe('b', (diff, changeInfo, context, isAggregated) => {
                     console.log('scoped a subscribed b', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
@@ -116,7 +111,6 @@ describe('Scoped usage', () => {
                 const isAggregated = false;
 
                 //Act
-                // @ts-expect-error
                 scoped.subscribe('c', (diff, changeInfo, context, isAggregated) => {
                     console.log('scoped a.b subscribe c', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
@@ -134,7 +128,6 @@ describe('Scoped usage', () => {
                 const scoped = new PatchDiff({a: {b: {c: 'd'}}}).at('a.b');
                 const spy = jest.fn();
                 const isAggregated = false;
-                // @ts-expect-error
                 scoped.subscribe('c', (diff, changeInfo, context, isAggregated) => {
                     console.log('scoped a.b subscribe c', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
@@ -158,11 +151,10 @@ describe('Scoped usage', () => {
         //subscribe on scope and mutate from root
         it('should notify scoped patcher when mutated from root', () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}} as any);
             const spy = jest.fn();
             const isAggregated = false;
             const scoped = patcher.at('a.b');
-            // @ts-expect-error
             scoped.subscribe( (diff, changeInfo, context, isAggregated) => {
                 console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
@@ -180,11 +172,10 @@ describe('Scoped usage', () => {
         //subscribe on root and mutate at scope
         it('should notify root patcher when mutated at scoped patcher', () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}} as any);
             const spy = jest.fn();
             const isAggregated = false;
             const scoped = patcher.at('a.b');
-            // @ts-expect-error
             patcher.subscribe( (diff, changeInfo, context, isAggregated) => {
                 console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
@@ -202,11 +193,10 @@ describe('Scoped usage', () => {
         //subscribe on scope and mutate at root
         it('should not notify scoped patcher when mutated on root', () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}} as any);
             const spy = jest.fn();
             const isAggregated = false;
             const scoped = patcher.at('a.b');
-            // @ts-expect-error
             scoped.subscribe( (diff, changeInfo, context, isAggregated) => {
                 console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
@@ -225,11 +215,10 @@ describe('Scoped usage', () => {
         //subscribe on scope and mutate on scope
         it('should notify scoped patcher when mutated', () => {
             //Arrange
-            const patcher = new PatchDiff({a: {b: {c: 'd'}}});
+            const patcher = new PatchDiff({a: {b: {c: 'd'}}} as any);
             const spy = jest.fn();
             const isAggregated = false;
             const scoped = patcher.at('a.b');
-            // @ts-expect-error
             scoped.subscribe( (diff, changeInfo, context, isAggregated) => {
                 console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
