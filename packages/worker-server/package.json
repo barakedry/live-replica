@@ -5,6 +5,7 @@
   "main": "worker-server.js",
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "test": "jest"
   },
   "dependencies": {
