@@ -1,22 +1,25 @@
-import {eventName} from "../common/event-name.js";
-import { EventEmitter } from '../events/events.js';
-import { LiveReplicaServer } from '../server/index.js';
+import { eventName } from "../common/event-name";
+import { EventEmitter } from '../events/events';
+import { LiveReplicaServer } from '../server/index';
 
 class Connection extends EventEmitter {
-    constructor(port) {
+    port: any;
+    messageFromMaster: any;
+
+    constructor(port: any) {
         super();
 
         this.port = port;
 
-        this.setMaxListeners(50000);
+        this.setMaxListeners(50_000);
 
-        this.messageFromMaster = ({data}) => {
+        this.messageFromMaster = ({ data }: { data: any; }) => {
             if (data.liveReplica) {
                 const {event, payload, ack} = data.liveReplica;
 
                 let ackFunction;
                 if (ack) {
-                    ackFunction = (...args) => {
+                    ackFunction = (...args: any[]) => {
                         this.send(ack, ...args);
                     }
                 }
@@ -26,10 +29,9 @@ class Connection extends EventEmitter {
         };
 
         this.port.onmessage = this.messageFromMaster;
-
     }
 
-    send(event, ...args) {
+    send(event: any, ...args: any[]) {
         event = eventName(event);
         this.port.postMessage({
             liveReplica: {
@@ -40,17 +42,21 @@ class Connection extends EventEmitter {
     }
 
 
-    emit(event, ...args) {
+    emit(event: any, ...args: any[]) {
         event = eventName(event);
-        const callArgs = [event].concat(args);
-        super.emit.apply(this, callArgs);
+        const callArgs = [event].concat(args) as [string, ...any[]];
+        super.emit(...callArgs);
     }
 
-    addEventListener(event, handler) {
+    // @ts-expect-error
+    addEventListener(event: any, handler: any): void {
+        // @ts-expect-error
         super.addEventListener(eventName(event), handler);
     }
 
-    removeListener(event, handler) {
+    // @ts-expect-error
+    removeListener(event: any, handler: any): void {
+        // @ts-expect-error
         super.removeListener(eventName(event), handler);
     }
 
@@ -60,7 +66,10 @@ class Connection extends EventEmitter {
  *  LiveReplicaWorkerSocket
  */
 export class LiveReplicaSharedWorkerServer extends LiveReplicaServer {
-    constructor(port) {
+    private _masterConnection: any;
+
+    constructor(port: any) {
+        // @ts-expect-error
         super();
 
         this._masterConnection = new Connection(port);

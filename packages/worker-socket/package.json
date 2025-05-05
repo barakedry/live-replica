@@ -5,6 +5,7 @@
   "main": "worker-socket.js",
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "test": "jest"
   },
   "dependencies": {

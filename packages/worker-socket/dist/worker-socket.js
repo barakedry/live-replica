@@ -1,40 +1,36 @@
-import { EventEmitter } from '../events/events.js';
-import { LiveReplicaSocket } from '../socket/socket.js';
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.WorkerSocket = void 0;
+const events_1 = require("../events/events");
+const socket_1 = require("../socket/socket");
 let acks = 1;
-export class WorkerSocket extends LiveReplicaSocket {
-
+class WorkerSocket extends socket_1.LiveReplicaSocket {
     constructor() {
+        // @ts-expect-error
         super();
-        this._emitter = new EventEmitter();
+        this._emitter = new events_1.EventEmitter();
         this._emitter.setMaxListeners(50000);
     }
-
     // overrides
-
     _addSocketEventListener(eventName, fn) {
         this._emitter.on(eventName, fn);
     }
     _addSocketEventListenerOnce(eventName, fn) {
         this._emitter.once(eventName, fn);
     }
-
     _removeSocketEventListener(eventName, fn) {
         this._emitter.removeListener(eventName, fn);
     }
-
+    // @ts-expect-error
     _socketSend(event, payload, ack) {
-
         if (!this.worker) {
             throw new Error('worker does not exists');
         }
-
         let ackEvent;
         if (ack) {
             ackEvent = `lr-acks::${++acks}`;
             this.once(ackEvent, ack);
         }
-
         const message = {
             liveReplica: {
                 event,
@@ -42,65 +38,53 @@ export class WorkerSocket extends LiveReplicaSocket {
                 ack: ackEvent,
             }
         };
-
         this.worker.postMessage(message);
     }
-
     get baseSocket() {
         return this.worker;
     }
-
     connect(worker) {
         if (this.worker === worker) {
             return;
         }
-
         if (this.worker && this.onWorkerMessage) {
             this.worker.removeEventListener('message', this.onWorkerMessage);
         }
-
         this.worker = worker;
-        this.onWorkerMessage = ({data}) => {
+        this.onWorkerMessage = ({ data }) => {
             if (data.liveReplica) {
-                const {event, args} = data.liveReplica;
+                const { event, args } = data.liveReplica;
                 this._emitter.emit(event, ...args);
             }
         };
-
         this.worker.addEventListener('message', this.onWorkerMessage);
-
         // monkey patch terminate to detect when the worker is terminated
         const terminate = this.worker.terminate.bind(this.worker);
         if (this.worker.hasOwnProperty('terminate')) {
             this.previuslySetTerminate = this.worker.terminate;
         }
-
         this.worker.terminate = (...args) => {
             this.disconnect();
             setTimeout(() => terminate(...args), 500);
         };
-
         this.worker.addEventListener('error', (e) => {
             console.error("Worker Error:", e.message, e);
         });
     }
-
-
     disconnect() {
-        this.send('disconnect');
+        this.send('disconnect', undefined);
         this.worker.removeEventListener('message', this.onWorkerMessage);
-
         if (this.previuslySetTerminate) {
             this.worker.terminate = this.previuslySetTerminate;
             delete this.previuslySetTerminate;
-        } else {
+        }
+        else {
             delete this.worker.terminate;
         }
-
-        delete this.socket;
+        this.socket = undefined;
     }
-
     isConnected() { return !!this.socket; }
 }
-
-export default WorkerSocket;
+exports.WorkerSocket = WorkerSocket;
+exports.default = WorkerSocket;
+//# sourceMappingURL=worker-socket.js.map
