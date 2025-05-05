@@ -6,8 +6,20 @@ export default {
         "\\.(css|less|scss)$": "identity-obj-proxy"
     },
     transformIgnorePatterns: ["/node_modules/lodash/"],
+    testPathIgnorePatterns: [
+        '/node_modules/',
+        '/dist/',
+        '\\.d\\.ts$'
+    ],
+    testMatch: [
+        '**/__tests__/**/*.spec.ts',
+        '**/__tests__/**/*.spec.js',
+        '**/__tests__/**/*.test.ts',
+        '**/__tests__/**/*.test.js'
+    ],
     transform: {
-        '^.+\\.(js|jsx|ts|tsx|mjs)$': 'babel-jest',
+        '^.+\\.(ts|tsx)$': 'ts-jest',
+        '^.+\\.(js|jsx|mjs)$': 'babel-jest',
     },
     collectCoverage: true,
     coverageThreshold: {
