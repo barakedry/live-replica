@@ -198,8 +198,6 @@ export class PatchDiff<T = any> extends EventEmitter {
   public _wrapperInner?: any;
   public _wrapperKey?: string;
   public _subs?: any;
-  // @ts-expect-error
-  public listenedPaths: string[] = [];
 
   constructor(object?: T, options?: Partial<ApplyOptions> & { [key: string]: any }) {
     super();
