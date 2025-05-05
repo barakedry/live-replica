@@ -13,7 +13,7 @@ import {
   SERIALIZED_FUNCTION
 } from '../../utils/utils';
 import { DiffTracker } from './diff-tracker';
-import { create, isProxy, revoke, unwrap } from '../../proxy/proxy';
+import { create, isProxy, revoke, unwrap } from '../../proxy'
 
 import _isObject from 'lodash-es/isObject';
 import _isString from 'lodash-es/isString';
@@ -65,7 +65,6 @@ function getAll<T = any>(current: PatchDiff<T>, partsAndKeys: PartsAndKeys, pare
   const pathPart = partsAndKeys.shift();
   const keyName = partsAndKeys.shift();
   current = current.at(pathPart!) as PatchDiff<T>;
-  // @ts-expect-error
   const value = current.get();
   if (value === undefined) {
     return [{ params: parentParams, value: undefined, isPattern: true }];
@@ -82,7 +81,6 @@ function getAll<T = any>(current: PatchDiff<T>, partsAndKeys: PartsAndKeys, pare
             multi.push(v);
           });
         } else {
-          // @ts-expect-error
           multi.push({ value: current.get(key), params, isPattern: true });
         }
       });
@@ -223,8 +221,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     this.setMaxListeners(this.options.maxListeners);
   }
 
-  // @ts-expect-error
-  apply(patch, path, options) {
+  apply(patch: any, path?: string, options?: ApplyOptions) {
 
     //path = concatPath(this._path, path);
     options = {
@@ -254,7 +251,7 @@ export class PatchDiff<T = any> extends EventEmitter {
       }
     }
 
-    let wrappedPatch = wrapByPath(patch, path);
+    let wrappedPatch = wrapByPath(patch, path!);
     if (this._wrapper) {
       // @ts-expect-error
       this._wrapperInner[this._wrapperKey] = wrappedPatch
@@ -262,9 +259,11 @@ export class PatchDiff<T = any> extends EventEmitter {
     }
 
     // adjustOverrides - allows to override/set specific paths in the patch
+    // @ts-expect-error
     if (options.overrides) {
       options = { ...options };
       const overrides = {};
+      // @ts-expect-error
       if (Array.isArray(options.overrides)) {
         // @ts-expect-error
         options.overrides.forEach((path) => {
@@ -275,6 +274,7 @@ export class PatchDiff<T = any> extends EventEmitter {
         throw new Error('LiveReplica PatchDiff: invalid overrides must be an array of paths');
       }
 
+      // @ts-expect-error
       options.overrides = overrides;
     }
 
@@ -287,8 +287,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     }
   }
 
-  // @ts-expect-error
-  displace(value, path, options) {
+  displace(value: any, path?: string, options?: MutationOptions) {
     if (this._whitelist) {
       throw new Error('LiveReplica PatchDiff: set is not supported with whitelist');
     }
@@ -326,16 +325,13 @@ export class PatchDiff<T = any> extends EventEmitter {
 
       const parent = rootPatcher.get(parenPath, undefined);
       if (!parent) {
-        // @ts-expect-error
         rootPatcher.displace({ [key]: value }, parenPath); // this will create the parent object
         return;
       }
 
       if (value === this.options.deleteKeyword) {
-        // @ts-expect-error
         delete rootPatcher.get(parenPath)[key];
       } else {
-        // @ts-expect-error
         rootPatcher.get(parenPath)[key] = structuredClone(value);
       }
 
@@ -352,7 +348,6 @@ export class PatchDiff<T = any> extends EventEmitter {
 
     //this.emit(PATH_EVENT_PREFIX, {differences: this._data, hasDifferences: true, changeType: 'displace'}, options);
 
-    // @ts-expect-error
     let differences = rootPatcher.get(fullPath);
     let currPath = fullPath;
     this.emit(PATH_EVENT_PREFIX + currPath, { differences, hasDifferences: true, changeType: 'displace' }, options);
@@ -371,8 +366,7 @@ export class PatchDiff<T = any> extends EventEmitter {
   }
 
 
-  // @ts-expect-error
-  set(fullDocument, path, options) {
+  set(fullDocument?: any, path?: string, options?: MutationOptions) {
 
     options = {
       ...this.options,
@@ -392,7 +386,7 @@ export class PatchDiff<T = any> extends EventEmitter {
       fullDocument = unwrap(fullDocument);
     }
 
-    let wrapped = wrapByPath(fullDocument, path);
+    let wrapped = wrapByPath(fullDocument, path!);
 
     if (this._wrapper) {
       // @ts-expect-error
@@ -410,8 +404,7 @@ export class PatchDiff<T = any> extends EventEmitter {
 
   }
 
-  // @ts-expect-error
-  remove(path, options) {
+  remove(path?: string, options?: MutationOptions) {
 
     options = {
       ...this.options,
@@ -427,11 +420,11 @@ export class PatchDiff<T = any> extends EventEmitter {
       return;
     }
 
-    if (this._whitelist && !this._whitelist.has(firstKey(path))) {
+    if (path && this._whitelist && !this._whitelist.has(firstKey(path))) {
       return;
     }
 
-    let wrapped = wrapByPath(DeleteKeyword, path);
+    let wrapped = wrapByPath(DeleteKeyword, path!);
     if (this._wrapper) {
       // @ts-expect-error
       this._wrapperInner[this._wrapperKey] = wrapped
@@ -449,8 +442,11 @@ export class PatchDiff<T = any> extends EventEmitter {
 
   }
 
-  // @ts-expect-error
-  splice({ index, itemsToRemove, itemsToAdd }, path, options = {}) {
+  splice({ index, itemsToRemove, itemsToAdd }: {
+    index: number;
+    itemsToRemove: number;
+    itemsToAdd?: any[];
+  }, path?: string, options?: MutationOptions) {
     options = {
       ...this.options,
       ...options,
@@ -490,8 +486,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     return (getAll(this, partsAndKeys, {}) || []).filter(v => !!v);
   }
 
-  // @ts-expect-error
-  get(path, callback) {
+  get(path?: string, callback?: (value: any) => void) {
 
     if (typeof path === 'function') {
       callback = path;
@@ -531,7 +526,7 @@ export class PatchDiff<T = any> extends EventEmitter {
         // subscribe for first data
         let unsub: any;
         let once: any;
-        const parent = parentPath(path);
+        const parent = parentPath(path!);
         unsub = this.subscribe(parent || '', (data: any) => {
           if (!once) {
             const value = _get(this._data, fullPath as string);
@@ -548,8 +543,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     return retVal;
   }
 
-  // @ts-expect-error
-  getClone(path) {
+  getClone(path?: string) {
     let obj = this.get(path, undefined);
     if (obj) {
       if (this._whitelist) {
@@ -628,10 +622,9 @@ export class PatchDiff<T = any> extends EventEmitter {
   }
 
 
-  // @ts-expect-error
-  subscribe(subPath, fn, skipInitial = false) {
+  subscribe(subPath: string, fn?: SubscribeCallback, skipInitial = false) {
     if (typeof subPath === 'function') {
-      skipInitial = fn;
+      skipInitial = !!fn;
       fn = subPath;
       subPath = '';
     }
@@ -644,7 +637,7 @@ export class PatchDiff<T = any> extends EventEmitter {
 
     const flush = () => {
       if (!aggregatedPatch) { return; }
-      cb(aggregatedPatch, aggregatedChangesInfo, lastOptions?.context || {}, true, lastOptions?.params);
+      cb?.(aggregatedPatch, aggregatedChangesInfo, lastOptions?.context || {}, true, lastOptions?.params);
       aggregatedPatch = undefined;
       aggregatedChangesInfo = undefined;
       lastOptions = undefined;
@@ -662,7 +655,7 @@ export class PatchDiff<T = any> extends EventEmitter {
         if (aggregatedPatch) {
           flush();
         }
-        cb(patch, changesInfo, options.context || {}, false, options.params);
+        cb?.(patch, changesInfo, options.context || {}, false, options.params);
         return;
       }
       lastOptions = options;
@@ -752,8 +745,8 @@ export class PatchDiff<T = any> extends EventEmitter {
     });
   }
 
-  // @ts-expect-error
-  at(subPath) {
+
+  at(subPath: string) {
 
     let path = concatPath(this._path || '', subPath || '');
 
@@ -770,7 +763,7 @@ export class PatchDiff<T = any> extends EventEmitter {
       }
     }
 
-    let at = Object.create(this);
+    const at = Object.create(this);
     at._root = this.root;
     at._whitelist = null;
     at._subs = {};
@@ -1105,8 +1098,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     return levelDiffs;
   }
 
-  // @ts-expect-error
-  _splice(path, index, itemsToRemove, ...itemsToAdd) {
+  _splice(path: string, index: number, itemsToRemove: number, ...itemsToAdd: any[]) {
     const target = this.get(path, undefined);
     if (!_isArray(target)) {
       logError('invalid splice, target must be an array');

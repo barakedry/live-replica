@@ -6,6 +6,9 @@ export default {
   extensionsToTreatAsEsm: ['.ts'],
   testEnvironment: 'node',
   moduleFileExtensions: ['ts', 'js', 'json'],
+  transformIgnorePatterns: [
+    '/node_modules/(?!(lodash-es)/)'
+  ],
   globals: {
     'ts-jest': {
       useESM: true,

@@ -1,5 +1,5 @@
-import PatchDiff from "../src/patch-diff.js";
-import {flushCycle} from "./patch-diff.spec.js";
+import PatchDiff from "../src/patch-diff";
+import {flushCycle} from "./patch-diff.spec";
 
 describe('deferred', () => {
     describe('apply', () => {
@@ -67,6 +67,7 @@ describe('deferred', () => {
                         g: 5
                     }
                 }
+                // @ts-expect-error
             }, '', {overrides});
 
             //Assert

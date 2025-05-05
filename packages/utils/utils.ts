@@ -143,7 +143,7 @@ export function parentPath(path: string): string {
     return path.substring(0, bracketIndex);
 }
 
-export function wrapByPath(value: any, path: string): any {
+export function wrapByPath(value: any, path?: string): any {
     let levels,
         wrapper,
         curr,

@@ -2,15 +2,14 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
     "composite": true,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "types": ["jest"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "__tests__/**/*.ts"],
   "references": [
     { "path": "../utils" },
-    { "path": "../events" },
-    { "path": "../proxy" }
+    { "path": "../events" }
   ]
 } 

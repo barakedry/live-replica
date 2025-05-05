@@ -1,4 +1,4 @@
-import PatchDiff from '../src/patch-diff.js';
+import PatchDiff from '../src/patch-diff';
 
 const data = {
     a: {
@@ -89,17 +89,23 @@ const deepPatch = {
         }
     }
 };
+// @ts-expect-error
 deepPatch.a.b.c2 = structuredClone(deepPatch);
+// @ts-expect-error
 deepPatch.a.b.c3 = structuredClone(deepPatch);
+// @ts-expect-error
 deepPatch.a.b.c4 = structuredClone(deepPatch);
+// @ts-expect-error
 deepPatch.a.b.c5 = structuredClone(deepPatch);
+// @ts-expect-error
 deepPatch.a.b.c6 = structuredClone(deepPatch);
+// @ts-expect-error
 deepPatch.a.b.c7 = structuredClone(deepPatch);
 
 
 let pd = new PatchDiff(structuredClone(deepPatch));
 //console.log(JSON.stringify(pd.get()));
-pd.subscribe(() => {});
+pd.subscribe('', () => {});
 pd.subscribe('a', () => {});
 pd.subscribe('a', (diff) => {});
 pd.subscribe('a.b', () => {});
@@ -118,7 +124,7 @@ console.warn("======= remove =======");
 
 pd = new PatchDiff(structuredClone(deepPatch));
 //console.log(JSON.stringify(pd.get()));
-pd.subscribe(() => {});
+pd.subscribe('', () => {});
 pd.subscribe('a', () => {});
 pd.subscribe('a', (diff) => {});
 pd.subscribe('a.b', () => {});
