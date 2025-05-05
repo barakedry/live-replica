@@ -1,9 +1,12 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LiveReplicaServer = void 0;
-const patch_diff_1 = require("../../patch-diff");
 const middleware_chain_1 = require("./middleware-chain");
 const utils_1 = require("../../utils/utils");
+const patch_diff_1 = __importDefault(require("../../patch-diff/src/patch-diff"));
 const defaultTransformer = (data) => data;
 function serializeFunctions(data) {
     if (typeof data !== 'object' || data === null) {
@@ -26,7 +29,7 @@ function serializeFunctions(data) {
     }
     return ret;
 }
-class LiveReplicaServer extends patch_diff_1.PatchDiff {
+class LiveReplicaServer extends patch_diff_1.default {
     constructor(options) {
         options = Object.assign({}, options);
         super(options.dataObject || {}, options);

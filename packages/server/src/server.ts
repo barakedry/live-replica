@@ -1,6 +1,7 @@
-import { PatchDiff } from '../../patch-diff';
+
 import { MiddlewareChain } from './middleware-chain';
 import { Utils } from '../../utils/utils';
+import PatchDiff from '../../patch-diff/src/patch-diff';
 
 const defaultTransformer = (data: any) => data;
 function serializeFunctions(data: any): any {

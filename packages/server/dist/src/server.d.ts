@@ -1,5 +1,5 @@
-import { PatchDiff } from '../../patch-diff';
 import { MiddlewareChain } from './middleware-chain';
+import PatchDiff from '../../patch-diff/src/patch-diff';
 export declare class LiveReplicaServer extends PatchDiff {
     proxies: WeakMap<any, any>;
     middlewares: MiddlewareChain;

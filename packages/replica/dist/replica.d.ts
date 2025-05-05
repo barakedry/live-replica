@@ -34,10 +34,10 @@ export default class Replica extends PatchDiff {
         writable: boolean;
         rpc: boolean;
     }>;
-    apply(patch: any, path: any, options: any): void;
-    set(fullDocument: any, path: any, options: any): void;
-    splice(patch: any, path: any, options: any): void;
-    remove(path: any, options: any): undefined;
+    apply(patch: any, path?: any, options?: any): void;
+    set(fullDocument: any, path?: any, options?: any): void;
+    splice(patch: any, path?: any, options?: any): void;
+    remove(path: any, options?: any): undefined;
     unsubscribeRemote(): any;
     destroy(): void;
     get isReadOnly(): boolean;

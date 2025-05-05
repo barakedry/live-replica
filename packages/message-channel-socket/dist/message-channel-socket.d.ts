@@ -15,7 +15,7 @@ export declare class MessageChannelSocket extends LiveReplicaSocket {
     protected _addSocketEventListener(eventName: string, fn: EventListener): void;
     protected _addSocketEventListenerOnce(eventName: string, fn: EventListener): void;
     protected _removeSocketEventListener(eventName: string, fn: EventListener): void;
-    protected _socketSend(event: string, payload: any, ack?: (...args: any[]) => void): void;
+    protected _socketSend(eventName: string, payload: any, ack?: ((...args: any[]) => void) | undefined): Promise<any>;
     get baseSocket(): MessagePort | undefined;
     /**
      * Connects to a MessagePort

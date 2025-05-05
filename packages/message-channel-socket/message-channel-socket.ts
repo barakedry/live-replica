@@ -36,7 +36,7 @@ export class MessageChannelSocket extends LiveReplicaSocket {
         this._emitter.removeEventListener(eventName, fn);
     }
 
-    protected _socketSend(event: string, payload: any, ack?: (...args: any[]) => void): void {
+    protected _socketSend(eventName: string, payload: any, ack?: ((...args: any[]) => void) | undefined): Promise<any> {
         if (!this.port) {
             throw new Error('MessagePort not connected');
         }
@@ -56,6 +56,7 @@ export class MessageChannelSocket extends LiveReplicaSocket {
         };
 
         this.port.postMessage(message);
+        return Promise.resolve();
     }
 
     // @ts-expect-error: baseSocket type mismatch with LiveReplicaSocket
