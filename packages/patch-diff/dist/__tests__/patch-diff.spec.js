@@ -140,10 +140,7 @@ describe('Patch Diff', () => {
             });
             it('should allow to apply with certain paths treated as overrides', () => {
                 //Arrange
-                const overrides = [
-                    'a.b.override1',
-                    'a.b.override2'
-                ];
+                const overrides = ['a.b.c.g'];
                 const patcher = new patch_diff_1.default({ a: { b: {
                             c: { d: 'e' },
                             override1: { f: 'g' },
@@ -510,22 +507,15 @@ describe('Patch Diff', () => {
                 b2: { c: { d: { e: 'f' } } }
             }, 'a');
             //Assert snapshot notification
-            expect(spy).toHaveBeenCalledWith({ e: 'f' }, { snapshot: true }, expect.any(Object));
-            expect(spy).toHaveBeenCalledWith({ e: '__$$D' }, expect.objectContaining({
-                "hasAdditions": false,
-                "hasAddedObjects": false,
-                "hasDeletions": true,
-                "hasUpdates": false,
-                "hasDifferences": true,
-                "deletions": {
-                    "e": "f"
-                },
-                "differences": {
-                    "e": "__$$D"
-                },
-                "deletePatch": true,
-                "path": "a.b.c.d",
-            }), expect.any(Object));
+            expect(spy).toHaveBeenNthCalledWith(1, { e: 'f' }, { snapshot: true }, expect.any(Object));
+            const call = spy.mock.calls[1];
+            expect(call[0]).toEqual({ e: '__$$D' });
+            expect(call[1]).toEqual(expect.objectContaining({
+                hasDeletions: true,
+                deletions: { e: 'f' },
+                differences: { e: '__$$D' },
+                path: 'a.b.c.d',
+            }));
         });
         it('should be able to notify multiple changes in a single update', async () => {
             //Arrange

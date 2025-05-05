@@ -6,6 +6,7 @@
   "type": "module",
   "dependencies": {},
   "scripts": {
+    "build": "tsc",
     "test": "jest"
   },
   "author": "Barak Edry",

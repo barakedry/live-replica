@@ -45,7 +45,7 @@ describe('Scoped usage', () => {
             it('should notify of all object changes with apply when patch, deletion and override are used', () => {
                 //Arrange
                 const scoped = new patch_diff_1.default({ a: { b: { c: 'd', e: 'f', g: { h: 'i', j: 'k' } } } }).at('a.b');
-                const overrides = { 'a.b.c.g': true };
+                const overrides = ['a.b.c.g'];
                 const spy = jest.fn();
                 const isAggregated = false;
                 // @ts-expect-error

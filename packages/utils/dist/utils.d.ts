@@ -10,7 +10,7 @@ export declare function splitPathAndLastKey(fullPath: string): {
 export declare function lastPathKey(path: string): string | number;
 export declare function firstKey(path: string): string;
 export declare function parentPath(path: string): string;
-export declare function wrapByPath(value: any, path: string): any;
+export declare function wrapByPath(value: any, path?: string): any;
 export declare function hasSamePrototype(obj1: any, obj2: any): boolean;
 export declare function once<T extends (...args: any[]) => any>(fn: T): T;
 export declare function createWrapperWithLastKey(path: string): {

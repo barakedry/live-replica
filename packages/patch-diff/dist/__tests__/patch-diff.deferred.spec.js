@@ -47,7 +47,7 @@ describe('deferred', () => {
         it('should notify of all object changes with apply when patch, deletion and override are used', async () => {
             //Arrange
             const patcher = new patch_diff_1.default({ a: { b: { c: 'd', e: 'f', g: { h: 'i', j: 'k' } } } }, { defer: true });
-            const overrides = { 'a.b.c.g': true };
+            const overrides = ['a.b.c.g'];
             const spy = jest.fn();
             const isAggregated = true;
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {

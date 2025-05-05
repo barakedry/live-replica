@@ -69,7 +69,7 @@ export declare class PatchDiff<T = any> extends EventEmitter {
     _wrapperInner?: any;
     _wrapperKey?: string;
     _subs?: any;
-    listenedPaths: string[];
+    _listenedPaths: string[];
     constructor(object?: T, options?: Partial<ApplyOptions> & {
         [key: string]: any;
     });
@@ -90,7 +90,8 @@ export declare class PatchDiff<T = any> extends EventEmitter {
     }[];
     get(path?: string, callback?: (value: any) => void): any;
     getClone(path?: string): any;
-    on(event: any, fn: any, prependPath?: boolean): void;
+    on(event: string, fn: any, prependPath?: boolean): () => void;
+    off(event: string, fn: any): void;
     whitelist(keySet: any): void;
     subscribe(subPath: string, fn?: SubscribeCallback, skipInitial?: boolean): () => void;
     getWhenExists(path: any): Promise<unknown>;

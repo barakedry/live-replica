@@ -111,8 +111,7 @@ exports.ProtoKeyword = '__$$P';
 class PatchDiff extends events_1.EventEmitter {
     constructor(object, options) {
         super();
-        // @ts-expect-error
-        this.listenedPaths = [];
+        this._listenedPaths = [];
         this.options = {
             emitEvents: true,
             undefinedKeyword: exports.UndefinedKeyword,
@@ -169,7 +168,6 @@ class PatchDiff extends events_1.EventEmitter {
             if (Array.isArray(options.overrides)) {
                 // @ts-expect-error
                 options.overrides.forEach((path) => {
-                    // @ts-expect-error
                     overrides[(0, utils_1.concatPath)(this._path, path)] = true;
                 });
             }
@@ -201,8 +199,8 @@ class PatchDiff extends events_1.EventEmitter {
             return;
         }
         const rootPatcher = (this._root || this);
-        // @ts-expect-error
-        const affectedPaths = this.listenedPaths.filter(p => p.startsWith(fullPath) || fullPath.startsWith(p));
+        const safeFullPath = fullPath || '';
+        const affectedPaths = this._listenedPaths.filter(p => p.startsWith(safeFullPath) || safeFullPath.startsWith(p));
         const currentValuesByPath = {};
         affectedPaths.forEach((path) => {
             // if affected by this change
@@ -397,13 +395,29 @@ class PatchDiff extends events_1.EventEmitter {
         }
         return undefined;
     }
-    // @ts-expect-error
     on(event, fn, prependPath = true) {
-        if (!eventsWithoutPrepend.has(event)) {
-            // @ts-expect-error
-            event = (0, utils_1.fixNumericParts)((0, utils_1.concatPath)(this._path || '', event || ''));
+        const result = super.on(event, fn);
+        // Track only path events (not patterns, not empty)
+        if (typeof event === 'string' && event.startsWith(events_1.PATH_EVENT_PREFIX)) {
+            const path = event.substring(events_1.PATH_EVENT_PREFIX.length);
+            if (path && !this._listenedPaths.includes(path)) {
+                this._listenedPaths.push(path);
+            }
         }
-        super.on(event, fn);
+        return result;
+    }
+    off(event, fn) {
+        super.off(event, fn);
+        // Remove from _listenedPaths if no more listeners for this path
+        if (typeof event === 'string' && event.startsWith(events_1.PATH_EVENT_PREFIX)) {
+            const path = event.substring(events_1.PATH_EVENT_PREFIX.length);
+            if (path) {
+                const count = this.listenerCount(event);
+                if (count === 0) {
+                    this._listenedPaths = this._listenedPaths.filter(p => p !== path);
+                }
+            }
+        }
     }
     // @ts-expect-error
     whitelist(keySet) {
@@ -871,6 +885,7 @@ class PatchDiff extends events_1.EventEmitter {
         */
         let keys = (0, keys_1.default)(deletedObject);
         const isArray = (0, isArray_1.default)(deletedObject);
+        const affectedSubscriberPaths = this._listenedPaths.filter(p => p.startsWith(path));
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
             const innerPath = (0, utils_1.pushKeyToPath)(path, key, isArray);

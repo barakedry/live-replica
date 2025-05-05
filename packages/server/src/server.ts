@@ -1,22 +1,17 @@
-import { PatchDiff } from '../../patch-diff/index.js';
-import { MiddlewareChain } from './middleware-chain.js';
-import { Utils } from '../../utils/utils.js';
+import { PatchDiff } from '../../patch-diff';
+import { MiddlewareChain } from './middleware-chain';
+import { Utils } from '../../utils/utils';
 
-const defaultTransformer = (data) => data;
-function serializeFunctions(data) {
-
+const defaultTransformer = (data: any) => data;
+function serializeFunctions(data: any): any {
     if (typeof data !== 'object' || data === null) {
         return data;
     }
-
     const ret = new (Object.getPrototypeOf(data).constructor)();
-
-
     const keys = Object.keys(data);
     for (let i = 0, l = keys.length; i < l; i++) {
         const key = keys[i];
         const value = data[key];
-
         if (typeof value === 'function') {
             ret[key] = Utils.SERIALIZED_FUNCTION;
         } else if (typeof value === 'object' && value !== null) {
@@ -26,26 +21,23 @@ function serializeFunctions(data) {
         }
     }
     return ret;
-
 }
 
 export class LiveReplicaServer extends PatchDiff {
-
-    constructor(options) {
+    proxies: WeakMap<any, any>;
+    middlewares: MiddlewareChain;
+    unsubMiddlewares: MiddlewareChain;
+    constructor(options: any) {
         options = Object.assign({}, options);
         super(options.dataObject || {}, options);
-
         this.proxies = new WeakMap();
-
         this.middlewares = new MiddlewareChain(this);
         this.unsubMiddlewares = new MiddlewareChain(this);
     }
 
-    onConnect(connection) {
-
-        const onsubscribe = (clientRequest, ack) => {
+    onConnect(connection: any) {
+        const onsubscribe = (clientRequest: any, ack: any) => {
             const {id, path, allowRPC, allowWrite, params} = clientRequest;
-
             const subscribeRequest = {
                 id,
                 connection,
@@ -55,111 +47,69 @@ export class LiveReplicaServer extends PatchDiff {
                 allowWrite,
                 params
             };
-
             this.onSubscribeRequest(subscribeRequest);
         };
         connection.on('subscribe', onsubscribe);
-
         return () => connection.removeListener('subscribe', onsubscribe);
     }
 
-    onSubscribeRequest(subscribeRequest) {
+    onSubscribeRequest(subscribeRequest: any) {
         this.emit('subscribe-request', subscribeRequest);
-
         subscribeRequest = Object.assign({
             allowWrite: false,
             allowRPC: false
         }, subscribeRequest);
-
-        let reject = function(rejectReason) {
+        let reject = function(rejectReason: any) {
             subscribeRequest.ack({rejectReason});
         };
-
-        this.middlewares.start(subscribeRequest, reject, (request) => {
+        this.middlewares.start(subscribeRequest, reject, (request: any) => {
             this.emit('subscribe', request);
-
             subscribeRequest.ack({success: true, writable: request.allowWrite, rpc: request.allowRPC});
-
             this.subscribeClient(request);
         });
     }
 
-    subscribeClient(request) {
+    subscribeClient(request: any) {
         const { path, connection, whitelist, readTransformer = defaultTransformer, writeTransformer = defaultTransformer } = request;
         let changeRevision = 0;
-
         let target;
         if (request.target) {
             target = request.target;
         } else {
             target = this.at(path);
-
             if (whitelist) {
                 target.whitelist(Array.isArray(whitelist) ? new Set(whitelist) : whitelist);
             }
         }
-
         const unsubscribeEvent = `unsubscribe:${request.id}`;
         const applyEvent = `apply:${request.id}`;
         const invokeRpcEvent = `invokeRPC:${request.id}`;
-        let invokeRpcListener, replicaApplyListener;
-
+        let invokeRpcListener: any, replicaApplyListener: any;
         let subscriberChange = false;
         let transformedClientPatch = false;
-        // let displacedKeys = new Set();
-        const unsubscribeChanges = target.subscribe((patchData, {snapshot, changeType, deletePatch}) => {
+        const unsubscribeChanges = target.subscribe((patchData: any, {snapshot, changeType, deletePatch}: any) => {
             if (transformedClientPatch || !subscriberChange) {
-                const updateInfo  =  snapshot ? {snapshot} : {snapshot : false, displace: changeType === 'displace'};
-
-                // if (typeof patchData === 'object' && patchData !== null && (changeType === 'displace' || displacedKeys.size)) {
-                //     const keys = Object.keys(patchData);
-                //     if (changeType === 'displace') {
-                //         patchData = {...patchData};
-                //         keys.forEach((key) => {
-                //             if (displacedKeys.has(key)) {
-                //                 // already sent to subscribers previously
-                //                 delete patchData[key];
-                //             } else {
-                //                 displacedKeys.add(key);
-                //             }
-                //
-                //         });
-                //     } else {
-                //         keys.forEach((key) => {
-                //             if (displacedKeys.has(key)) {
-                //                 displacedKeys.delete(key);
-                //             }
-                //         });
-                //     }
-                // }
-
+                const updateInfo: any = snapshot ? {snapshot} : {snapshot : false, displace: changeType === 'displace'};
                 if (!snapshot && subscriberChange) {
                     changeRevision++;
                     updateInfo.changeRevision = changeRevision;
                 }
-
                 if (deletePatch) {
                     updateInfo.deletePatch = deletePatch;
                 }
-
                 patchData = readTransformer(patchData, target);
                 connection.send(applyEvent, serializeFunctions(patchData), updateInfo);
             }
-
             subscriberChange = false;
         });
-
         if (connection.listenerCount(applyEvent)) {
             connection.removeAllListeners(applyEvent);
         }
-
         if (connection.listenerCount(invokeRpcEvent)) {
             connection.removeAllListeners(invokeRpcEvent);
         }
-
         if (request.allowWrite) {
-
-            replicaApplyListener = (payload, metadata) => {
+            replicaApplyListener = (payload: any, metadata: any) => {
                 transformedClientPatch = writeTransformer !== defaultTransformer;
                 subscriberChange = payload.changeRevision === changeRevision;
                 if (metadata?.displace) {
@@ -168,63 +118,52 @@ export class LiveReplicaServer extends PatchDiff {
                     target.apply(writeTransformer(payload.data));
                 }
             };
-
             connection.on(applyEvent, replicaApplyListener);
         }
-
         if (request.allowRPC) {
-            invokeRpcListener = ({path, args}, ack) => {
+            invokeRpcListener = ({path, args}: any, ack: any) => {
                 const method = target.get(path);
-                // check if promise
                 const res = method.call(target, ...args);
                 if (res && typeof res.then === 'function') {
-                    res.then(ack).catch((err) => {
+                    res.then(ack).catch((err: any) => {
                         ack({$error: {message: err.message, name: err.name}});
                     });
                 } else {
                     ack(res);
                 }
             };
-
             connection.on(invokeRpcEvent, invokeRpcListener);
         }
-
         const onUnsubscribe = Utils.once(() => {
             this.emit('replica-unsubscribing', request);
-            this.unsubMiddlewares.start(request, (request) => {
+            this.unsubMiddlewares.start(request, (request: any) => {
                 unsubscribeChanges();
-
                 if (replicaApplyListener) { connection.removeListener(applyEvent, replicaApplyListener); }
                 if (invokeRpcListener)    { connection.removeListener(invokeRpcEvent, invokeRpcListener); }
-
                 connection.removeListener(unsubscribeEvent, onUnsubscribe);
                 connection.removeListener('disconnect', onUnsubscribe);
                 connection.removeListener('close', onUnsubscribe);
-
-                // old event for backward compatibility
                 this.emit('replica-unsubscribe', request);
-
                 this.emit('replica-unsubscribed', request);
             });
         });
-
         connection.on(unsubscribeEvent, onUnsubscribe);
         connection.on('disconnect', onUnsubscribe);
         connection.on('close', onUnsubscribe);
     }
 
-    use(fn) {
+    use(fn: any) {
         this.middlewares.use(fn);
     }
 
-    addUnsubscriptionMiddleware(fn) {
+    addUnsubscriptionMiddleware(fn: any) {
         this.unsubMiddlewares.use(fn);
     }
 
     destroy() {
         this.emit('destroy');
         this.middlewares.clear();
-        this.remove();
+        this.remove(undefined, undefined);
     }
 }
 
