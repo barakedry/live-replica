@@ -7,7 +7,7 @@ export interface BaseSocket {
     disconnect?(): void;
 }
 export declare class LiveReplicaSocket {
-    protected _socket: BaseSocket;
+    private _socket;
     private _instance;
     static instances: number;
     constructor(baseSocket: BaseSocket);
@@ -19,10 +19,10 @@ export declare class LiveReplicaSocket {
      * Overrides
      */
     get baseSocket(): BaseSocket;
-    protected _addSocketEventListener(eventName: string, fn: (...args: any[]) => void): void;
-    protected _addSocketEventListenerOnce(eventName: string, fn: (...args: any[]) => void): void;
-    protected _removeSocketEventListener(eventName: string, fn: (...args: any[]) => void): void;
-    protected _socketSend(eventName: string, payload: any, ack?: (...args: any[]) => void): Promise<any>;
+    private _addSocketEventListener;
+    private _addSocketEventListenerOnce;
+    private _removeSocketEventListener;
+    private _socketSend;
     connect(baseSocket: BaseSocket): void;
     disconnect(): void;
     isConnected(): boolean;

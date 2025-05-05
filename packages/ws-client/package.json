@@ -2,9 +2,10 @@
   "name": "@live-replica/ws-client",
   "version": "1.0.0",
   "description": "websocket client for live-replica",
-  "main": "ws-client.js",
+  "main": "dist/ws-client.js",
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "test": "jest"
   },
   "dependencies": {

@@ -10,7 +10,7 @@ export interface BaseSocket {
 }
 
 export class LiveReplicaSocket {
-    private _socket: BaseSocket;
+    protected _socket: BaseSocket;
     private _instance: number;
     static instances = 0;
 
@@ -43,18 +43,18 @@ export class LiveReplicaSocket {
         return this._socket;
     }
 
-    private _addSocketEventListener(eventName: string, fn: (...args: any[]) => void): void {
+    protected _addSocketEventListener(eventName: string, fn: (...args: any[]) => void): void {
         this._socket.on(eventName, fn);
     }
-    private _addSocketEventListenerOnce(eventName: string, fn: (...args: any[]) => void): void {
+    protected _addSocketEventListenerOnce(eventName: string, fn: (...args: any[]) => void): void {
         this._socket.once(eventName, fn);
     }
 
-    private _removeSocketEventListener(eventName: string, fn: (...args: any[]) => void): void {
+    protected _removeSocketEventListener(eventName: string, fn: (...args: any[]) => void): void {
         this._socket.removeListener(eventName, fn);
     }
 
-    private _socketSend(eventName: string, payload: any, ack?: (...args: any[]) => void): Promise<any> {
+    protected _socketSend(eventName: string, payload: any, ack?: (...args: any[]) => void): Promise<any> {
         return new Promise((resolve) => {
             this._socket.emit(eventName, payload, (...args: any[]) => {
                 ack?.(...args);

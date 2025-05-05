@@ -1,3 +1,3 @@
-import Replica from "./index.js";
+import Replica from "./index";
 export default Replica;
 export * from "./index.js";
