@@ -1,1 +1,0 @@
-{"version":3,"file":"shared-worker-server.d.ts","sourceRoot":"","sources":["../shared-worker-server.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,iBAAiB,EAAE,MAAM,iBAAiB,CAAC;AA8DpD;;GAEG;AACH,qBAAa,6BAA8B,SAAQ,iBAAiB;IAChE,OAAO,CAAC,iBAAiB,CAAM;gBAEnB,IAAI,EAAE,GAAG;CAOxB;AAED,eAAe,6BAA6B,CAAC"}

@@ -1,1 +1,0 @@
-{"version":3,"file":"socketio-client.d.ts","sourceRoot":"","sources":["../socketio-client.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,iBAAiB,EAAE,MAAM,kBAAkB,CAAC;AAErD;;GAEG;AACH,qBAAa,yBAA0B,SAAQ,iBAAiB;IAE5D,WAAW,IAAI,OAAO;CACzB"}
