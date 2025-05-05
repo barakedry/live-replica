@@ -221,7 +221,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     this.setMaxListeners(this.options.maxListeners);
   }
 
-  apply(patch: any, path?: string, options?: ApplyOptions) {
+  apply(patch: Partial<T>, path?: string, options?: MergeOptions) {
 
     //path = concatPath(this._path, path);
     options = {
@@ -259,13 +259,10 @@ export class PatchDiff<T = any> extends EventEmitter {
     }
 
     // adjustOverrides - allows to override/set specific paths in the patch
-    // @ts-expect-error
     if (options.overrides) {
       options = { ...options };
       const overrides: Record<string, true> = {};
-      // @ts-expect-error
       if (Array.isArray(options.overrides)) {
-        // @ts-expect-error
         options.overrides.forEach((path) => {
           overrides[concatPath(this._path!, path)!] = true;
         });
@@ -273,7 +270,6 @@ export class PatchDiff<T = any> extends EventEmitter {
         throw new Error('LiveReplica PatchDiff: invalid overrides must be an array of paths');
       }
 
-      // @ts-expect-error
       options.overrides = overrides;
     }
 
@@ -403,7 +399,7 @@ export class PatchDiff<T = any> extends EventEmitter {
 
   }
 
-  remove(path?: string, options?: MutationOptions) {
+  remove(path?: string, options?: MutationOptions): Partial<T> | undefined {
 
     options = {
       ...this.options,
@@ -457,14 +453,12 @@ export class PatchDiff<T = any> extends EventEmitter {
     this._applyObject(this._data, wrapByPath({ [SpliceKeyword]: { index, itemsToRemove, itemsToAdd } }, path), '', options, 0);
   }
 
-  // @ts-expect-error
-  getFullPath(path) {
+  getFullPath(path: string): string {
     // @ts-expect-error
     return concatPath(this._path, path);
   }
 
-  // @ts-expect-error
-  getAll(pathPattern) {
+  getAll(pathPattern: string): Array<{ value: T[keyof T], params: object, isPattern?: boolean }> {
 
     const isPattern = pathPattern && (pathPattern.includes('*') || pathPattern.includes(':'));
     if (!isPattern) {
@@ -479,14 +473,13 @@ export class PatchDiff<T = any> extends EventEmitter {
       return `[:${keyName}]`;
     });
 
-    // @ts-expect-error
     const partsAndKeys = pathPattern.split(/\[:+|\]\./).map((item, index) => { return index > 0 ? item.split(']')[0] : item });
 
-    return (getAll(this, partsAndKeys, {}) || []).filter(v => !!v);
+    // @ts-expect-error
+    return (getAll(this, partsAndKeys, {}) ?? []).filter(v => !!v);
   }
 
-  get(path?: string, callback?: (value: any) => void) {
-
+  get(path?: string, callback?: (value: any) => void): any {
     if (typeof path === 'function') {
       callback = path;
       path = undefined;
@@ -542,7 +535,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     return retVal;
   }
 
-  getClone(path?: string) {
+  getClone(path?: string): any {
     let obj = this.get(path, undefined);
     if (obj) {
       if (this._whitelist) {
@@ -554,7 +547,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     return undefined;
   }
 
-  on(event: string, fn: any, prependPath = true) {
+  on(event: string, fn: EventListener) {
     const result = super.on(event, fn);
     // Track only path events (not patterns, not empty)
     if (typeof event === 'string' && event.startsWith(PATH_EVENT_PREFIX)) {
@@ -566,7 +559,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     return result;
   }
 
-  off(event: string, fn: any) {
+  off(event: string, fn: EventListener) {
     super.off(event, fn);
     // Remove from _listenedPaths if no more listeners for this path
     if (typeof event === 'string' && event.startsWith(PATH_EVENT_PREFIX)) {
@@ -580,9 +573,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     }
   }
 
-  // @ts-expect-error
-  whitelist(keySet) {
-
+  whitelist(keySet: KeyList): void {
     if (Array.isArray(keySet)) {
       keySet = new Set(keySet);
     }
@@ -636,8 +627,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     this._whitelist = keySet;
   }
 
-
-  subscribe(subPath: string, fn?: SubscribeCallback, skipInitial = false) {
+  subscribe(subPath: string, fn: SubscribeCallback<T>, skipInitial: boolean = false): UnsubscribeCallback {
     if (typeof subPath === 'function') {
       skipInitial = !!fn;
       fn = subPath;
@@ -684,7 +674,7 @@ export class PatchDiff<T = any> extends EventEmitter {
     if (!skipInitial) {
       if (isPattern) {
         this.getAll(subPath).forEach(({ value, params }) => {
-          fn(value, { snapshot: true }, { ...this.options, params });
+          fn(value as any, { snapshot: true }, { ...this.options, params });
         });
       } else {
         fn(this.get(subPath, undefined), { snapshot: true }, this.options);

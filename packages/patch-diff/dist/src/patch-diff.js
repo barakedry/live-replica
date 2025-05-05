@@ -160,13 +160,10 @@ class PatchDiff extends events_1.EventEmitter {
             wrappedPatch = this._wrapper;
         }
         // adjustOverrides - allows to override/set specific paths in the patch
-        // @ts-expect-error
         if (options.overrides) {
             options = { ...options };
             const overrides = {};
-            // @ts-expect-error
             if (Array.isArray(options.overrides)) {
-                // @ts-expect-error
                 options.overrides.forEach((path) => {
                     overrides[(0, utils_1.concatPath)(this._path, path)] = true;
                 });
@@ -174,7 +171,6 @@ class PatchDiff extends events_1.EventEmitter {
             else {
                 throw new Error('LiveReplica PatchDiff: invalid overrides must be an array of paths');
             }
-            // @ts-expect-error
             options.overrides = overrides;
         }
         // @ts-expect-error
@@ -312,27 +308,23 @@ class PatchDiff extends events_1.EventEmitter {
         // @ts-expect-error
         this._applyObject(this._data, (0, utils_1.wrapByPath)({ [exports.SpliceKeyword]: { index, itemsToRemove, itemsToAdd } }, path), '', options, 0);
     }
-    // @ts-expect-error
     getFullPath(path) {
         // @ts-expect-error
         return (0, utils_1.concatPath)(this._path, path);
     }
-    // @ts-expect-error
     getAll(pathPattern) {
         const isPattern = pathPattern && (pathPattern.includes('*') || pathPattern.includes(':'));
         if (!isPattern) {
             return [{ value: this.get(pathPattern, undefined), params: {}, isPattern: false }];
         }
         let unnamedKeys = [];
-        // @ts-expect-error
         pathPattern = pathPattern.replaceAll("*", (match) => {
             const keyName = `$key_${unnamedKeys.length}`;
             unnamedKeys.push(keyName);
             return `[:${keyName}]`;
         });
-        // @ts-expect-error
         const partsAndKeys = pathPattern.split(/\[:+|\]\./).map((item, index) => { return index > 0 ? item.split(']')[0] : item; });
-        return (getAll(this, partsAndKeys, {}) || []).filter(v => !!v);
+        return (getAll(this, partsAndKeys, {}) ?? []).filter(v => !!v);
     }
     get(path, callback) {
         if (typeof path === 'function') {

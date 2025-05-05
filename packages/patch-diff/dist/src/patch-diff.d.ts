@@ -1,9 +1,4 @@
 import { EventEmitter } from '../../events/events';
-type GetAllResult<T> = {
-    params: Record<string, string>;
-    value: T | undefined;
-    isPattern: boolean;
-};
 export declare const DeleteKeyword = "__$$D";
 export declare const SpliceKeyword = "__$$S";
 export declare const UndefinedKeyword = "__$$U";
@@ -73,21 +68,21 @@ export declare class PatchDiff<T = any> extends EventEmitter {
     constructor(object?: T, options?: Partial<ApplyOptions> & {
         [key: string]: any;
     });
-    apply(patch: any, path?: string, options?: ApplyOptions): void;
+    apply(patch: Partial<T>, path?: string, options?: MergeOptions): void;
     displace(value: any, path?: string, options?: MutationOptions): void;
     set(fullDocument?: any, path?: string, options?: MutationOptions): void;
-    remove(path?: string, options?: MutationOptions): void;
+    remove(path?: string, options?: MutationOptions): Partial<T> | undefined;
     splice({ index, itemsToRemove, itemsToAdd }: {
         index: number;
         itemsToRemove: number;
         itemsToAdd?: any[];
     }, path?: string, options?: MutationOptions): void;
-    getFullPath(path: any): string | undefined;
-    getAll(pathPattern: any): GetAllResult<T>[] | {
-        value: any;
-        params: {};
-        isPattern: boolean;
-    }[];
+    getFullPath(path: string): string;
+    getAll(pathPattern: string): Array<{
+        value: T[keyof T];
+        params: object;
+        isPattern?: boolean;
+    }>;
     get(path?: string, callback?: (value: any) => void): any;
     getClone(path?: string): any;
     on(event: string, fn: any, prependPath?: boolean): () => void;

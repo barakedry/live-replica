@@ -36,6 +36,8 @@
   "homepage": "https://github.com/barakedry/live-replica/",
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.23.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.15.3",
     "babel-jest": "^29.7.0",
     "jest": "latest",
     "lerna": "6.6.2",
