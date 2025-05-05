@@ -43,6 +43,7 @@
     "jest": "latest",
     "lerna": "6.6.2",
     "lit": "latest",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "ws": "^8.18.0"
   },
