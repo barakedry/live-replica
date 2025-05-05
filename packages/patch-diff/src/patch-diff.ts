@@ -198,9 +198,11 @@ export class PatchDiff<T = any> extends EventEmitter {
   public _wrapperInner?: any;
   public _wrapperKey?: string;
   public _subs?: any;
+  public _listenedPaths: string[];
 
   constructor(object?: T, options?: Partial<ApplyOptions> & { [key: string]: any }) {
     super();
+    this._listenedPaths = [];
     this.options = {
       emitEvents: true,
       undefinedKeyword: UndefinedKeyword,
@@ -260,13 +262,12 @@ export class PatchDiff<T = any> extends EventEmitter {
     // @ts-expect-error
     if (options.overrides) {
       options = { ...options };
-      const overrides = {};
+      const overrides: Record<string, true> = {};
       // @ts-expect-error
       if (Array.isArray(options.overrides)) {
         // @ts-expect-error
         options.overrides.forEach((path) => {
-          // @ts-expect-error
-          overrides[concatPath(this._path, path)] = true;
+          overrides[concatPath(this._path!, path)!] = true;
         });
       } else {
         throw new Error('LiveReplica PatchDiff: invalid overrides must be an array of paths');
@@ -305,8 +306,8 @@ export class PatchDiff<T = any> extends EventEmitter {
 
     const rootPatcher = (this._root || this);
 
-    // @ts-expect-error
-    const affectedPaths = this.listenedPaths.filter(p => p.startsWith(fullPath) || fullPath.startsWith(p));
+    const safeFullPath = fullPath || '';
+    const affectedPaths: string[] = this._listenedPaths.filter(p => p.startsWith(safeFullPath) || safeFullPath.startsWith(p));
 
     const currentValuesByPath: { [key: string]: any } = {};
     affectedPaths.forEach((path) => {
@@ -553,14 +554,30 @@ export class PatchDiff<T = any> extends EventEmitter {
     return undefined;
   }
 
-  // @ts-expect-error
-  on(event, fn, prependPath = true) {
-    if (!eventsWithoutPrepend.has(event)) {
-      // @ts-expect-error
-      event = fixNumericParts(concatPath(this._path || '', event || ''));
+  on(event: string, fn: any, prependPath = true) {
+    const result = super.on(event, fn);
+    // Track only path events (not patterns, not empty)
+    if (typeof event === 'string' && event.startsWith(PATH_EVENT_PREFIX)) {
+      const path = event.substring(PATH_EVENT_PREFIX.length);
+      if (path && !this._listenedPaths.includes(path)) {
+        this._listenedPaths.push(path);
+      }
     }
+    return result;
+  }
 
-    super.on(event, fn);
+  off(event: string, fn: any) {
+    super.off(event, fn);
+    // Remove from _listenedPaths if no more listeners for this path
+    if (typeof event === 'string' && event.startsWith(PATH_EVENT_PREFIX)) {
+      const path = event.substring(PATH_EVENT_PREFIX.length);
+      if (path) {
+        const count = this.listenerCount(event);
+        if (count === 0) {
+          this._listenedPaths = this._listenedPaths.filter(p => p !== path);
+        }
+      }
+    }
   }
 
   // @ts-expect-error
@@ -1148,6 +1165,7 @@ export class PatchDiff<T = any> extends EventEmitter {
 
     let keys = _keys(deletedObject);
     const isArray = _isArray(deletedObject);
+    const affectedSubscriberPaths: string[] = this._listenedPaths.filter(p => p.startsWith(path));
     for (let i = 0; i < keys.length; i++) {
       let key = keys[i];
       const innerPath = pushKeyToPath(path, key, isArray);
