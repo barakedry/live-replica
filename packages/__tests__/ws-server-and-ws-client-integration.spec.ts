@@ -95,51 +95,47 @@ describe('WS Server and  WS Client integration', () => {
         });
 
         it('should sync server changes to replica', async () => {
-            //Arrange
+            // Arrange
             const replica = new Replica('root', { connection });
-
-            //Act
-            await replica.synced;
+            // Attach the listener before triggering server changes
+            const syncedPromise = replica.synced;
             server.set({ a: 1, b: { c: 2 } }, 'root');
-            await replica.getWhenExists('a')
-
-            //Assert
+            await syncedPromise;
+            await replica.getWhenExists('a');
+            // Assert
             expect(replica.get()).toEqual({ a: 1, b: { c: 2 } });
             expect(server.get()).toEqual({ root: { a: 1, b: { c: 2 } } });
         });
 
         it('should sync replica changes to server', async () => {
-            //Arrange
+            // Arrange
             const replica = new Replica('root', { connection, allowWrite: true });
-
-            //Act
-            await replica.synced;
+            const syncedPromise = replica.synced;
+            await syncedPromise;
             replica.set({ c: 1, e: 3 });
             replica.remove('e');
             replica.apply({ d: 2 });
-
             await server.getWhenExists('root.d');
             await replica.getWhenExists('d');
-
-            //Assert
+            // Assert
             expect(replica.get()).toEqual({ c: 1, d: 2 });
             expect(server.get()).toEqual({ root: { c: 1, d: 2 } });
         });
 
         it('should allow to unsubscribe', async () => {
-            //Arrange
+            // Arrange
             server.set({ a: 1, b: { c: 2 } }, 'root');
             const replica = new Replica('root', { connection, allowWrite: true });
+            const syncedPromise = replica.synced;
+            await syncedPromise;
             await replica.getWhenExists('a');
             const destroyedCallback = jest.fn();
             replica.on('destroyed', destroyedCallback);
-
-            //Act
-            await replica.destroy();
+            // Act
+            replica.destroy();
             server.set({ a: 2 }, 'root');
             await flushCycle(10);
-
-            //Assert
+            // Assert
             expect(replica.get()).toEqual({ a: 1, b: { c: 2 } });
             expect(destroyedCallback).toHaveBeenCalled();
         });
