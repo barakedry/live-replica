@@ -835,9 +835,7 @@ export class PatchDiff<T = any> extends EventEmitter {
       (levelDiffs as any).path = path;
     }
 
-    if (isTargetArray) {
-      levelDiffs = levelDiffs || {};
-    }
+    levelDiffs = levelDiffs ?? {};
 
     if (length > options.maxKeysInLevel) {
       const errorMsg = `Stopped patching, Too many keys in object - ${length} out of ${options.maxKeysInLevel} allowed keys to path "${path}"`;

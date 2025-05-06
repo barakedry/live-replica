@@ -141,7 +141,7 @@ describe('WS Server and  WS Client integration', () => {
 
             //Assert
             expect(replica.get()).toEqual({ a: 1, b: { c: 2 } });
-            expect(destroyedCallback).toBeCalled();
+            expect(destroyedCallback).toHaveBeenCalled();
         });
     });
 
@@ -228,10 +228,10 @@ describe('WS Server and  WS Client integration', () => {
                 await flushCycle(10);
 
                 //Assert - onFirstSubscribe and onLastUnsubscribe should be called exactly once for each path
-                expect(onFirstSubscribe).toBeCalledWith(expect.objectContaining({ path: 'a' }), expect.any(Function), expect.any(Function));
-                expect(onFirstSubscribe).toBeCalledTimes(1);
-                expect(onLastUnsubscribe).toBeCalledWith(expect.objectContaining({ path: 'a' }));
-                expect(onLastUnsubscribe).toBeCalledTimes(1);
+                expect(onFirstSubscribe).toHaveBeenCalledWith(expect.objectContaining({ path: 'a' }), expect.any(Function), expect.any(Function));
+                expect(onFirstSubscribe).toHaveBeenCalledTimes(1);
+                expect(onLastUnsubscribe).toHaveBeenCalledWith(expect.objectContaining({ path: 'a' }));
+                expect(onLastUnsubscribe).toHaveBeenCalledTimes(1);
             });
         });
     });
