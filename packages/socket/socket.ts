@@ -1,6 +1,6 @@
 import { eventName } from "../common/event-name";
 
-export interface BaseSocket {
+export interface BaseSocket extends WebSocket {
     on(event: string, fn: (...args: any[]) => void): void;
     once(event: string, fn: (...args: any[]) => void): void;
     removeListener(event: string, fn: (...args: any[]) => void): void;
@@ -78,7 +78,7 @@ export class LiveReplicaSocket {
         if (this._socket.disconnect) {
             this._socket.disconnect();
         }
-        // @ts-ignore
+        // @ts-expect-error
         delete this._socket;
     }
 

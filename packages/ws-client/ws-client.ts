@@ -1,5 +1,5 @@
 import { EventEmitter } from "../events/events";
-import { LiveReplicaSocket } from '../socket/socket';
+import { BaseSocket, LiveReplicaSocket } from '../socket/socket';
 import { encode, decode } from '@msgpack/msgpack';
 
 const LIVE_REPLICA_MSG = '$LR';
@@ -8,11 +8,11 @@ let acks = Date.now();
 const nativeSocketEvents = {'disconnect': 'close'};
 
 export class WebSocketClient extends LiveReplicaSocket {
-    protected _socket: any;
-    protected _emitter: any;
-    protected [onMessage]: any;
+    protected _socket!: BaseSocket;
+    protected _emitter: EventEmitter;
+    protected [onMessage]!: (event: MessageEvent) => void;
 
-    constructor(socket?: any) {
+    constructor(socket?: BaseSocket) {
         // @ts-expect-error
         super();
         if (socket) {
@@ -78,7 +78,7 @@ export class WebSocketClient extends LiveReplicaSocket {
         this._socket.send(encode(message));
     }
 
-    set socket(socket: any) {
+    set socket(socket: BaseSocket) {
         const isReconnect = !!this._socket;
         this.disconnect();
         if (!socket || !socket.binaryType || socket.binaryType !== 'arraybuffer') {
@@ -100,23 +100,24 @@ export class WebSocketClient extends LiveReplicaSocket {
         }
     }
 
-    get socket(): any {
-        return this._socket;
+    get socket(): BaseSocket {
+        return this._socket!;
     }
 
-    get baseSocket(): any {
-        return this._socket;
+    get baseSocket(): BaseSocket {
+        return this._socket!;
     }
 
     disconnect() {
         if (this._socket && this[onMessage]) {
             this._socket.removeEventListener('message', this[onMessage]);
         }
+        super.disconnect();
+        // @ts-expect-error
         delete this._socket;
-        // todo: check if we need to call super.disconnect() here
     }
 
-    isConnected(): boolean { return this._socket && this._socket.readyState === WebSocket.OPEN; }
+    isConnected(): boolean { return this._socket! && this._socket.readyState === WebSocket.OPEN; }
 }
 
 export default WebSocketClient; 

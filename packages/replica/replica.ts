@@ -216,6 +216,7 @@ export default class Replica extends PatchDiff {
             throw Error('replica is destroyed');
         }
         if (connection instanceof WebSocket) {
+            // @ts-expect-error super constructor expects BaseSocket type
             connection = new WebSocketClient(connection);
         }
         return new Promise((resolve, reject) => {

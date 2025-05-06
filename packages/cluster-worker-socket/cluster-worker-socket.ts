@@ -1,5 +1,5 @@
 import { EventEmitter } from '../events/events';
-import { LiveReplicaSocket } from '../socket/socket';
+import { BaseSocket, LiveReplicaSocket } from '../socket/socket';
 import * as cluster from "node:cluster";
 
 let acks = 1;
@@ -23,9 +23,10 @@ class LiveReplicaClusterWorkerSocket extends LiveReplicaSocket {
         if (!cluster.isWorker) {
             throw new Error('LiveReplicaClusterWorkerSocket can be initiated only on a node.js cluster worker process')
         }
+        // @ts-expect-error super constructor expects BaseSocket type
         super(process);
         this._emitter = new EventEmitter();
-        this._emitter.setMaxListeners(50000);
+        this._emitter.setMaxListeners(50_000);
 
         process.on('message', (msg: any) => {
             if (typeof msg === 'object' && msg.liveReplica) {
@@ -67,7 +68,7 @@ class LiveReplicaClusterWorkerSocket extends LiveReplicaSocket {
     }
 
     get baseSocket() {
-        return process;
+        return process as unknown as BaseSocket;
     }
 
     isConnected() { return true; }
