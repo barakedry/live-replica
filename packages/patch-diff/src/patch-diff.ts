@@ -830,10 +830,10 @@ export class PatchDiff<T = any> extends EventEmitter {
     let length = keys.length;
     let isTargetArray = _isArray(target);
 
-    if (options.emitEvents) {
+    // if (options.emitEvents) {
       levelDiffs = DiffTracker.create(isTargetArray && (target as any).length === 0 && _isArray(patch), options.deletePatch);
       (levelDiffs as any).path = path;
-    }
+    // }
 
     levelDiffs = levelDiffs ?? {};
 
