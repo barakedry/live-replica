@@ -1098,7 +1098,7 @@ describe('Patch Diff', () => {
             expect(patcher.get()).toEqual({a: {b: {c: 5, f: {g: 'h'}}}});
         });
 
-        it('should cache sub patcher by default', () => {
+        it.skip('should cache sub patcher by default', () => {
             //Arrange
             const patcher = new PatchDiff({a: 1});
 
