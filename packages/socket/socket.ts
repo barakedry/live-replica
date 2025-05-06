@@ -75,7 +75,7 @@ export class LiveReplicaSocket {
     }
 
     disconnect(): void {
-        if (this._socket.disconnect) {
+        if (this._socket?.disconnect) {
             this._socket.disconnect();
         }
         // @ts-expect-error
