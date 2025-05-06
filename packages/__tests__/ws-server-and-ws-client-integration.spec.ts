@@ -44,6 +44,7 @@ beforeAll(async () => {
     wsServer = await createWSServer();
     server = new LiveReplicaWebSocketsServer(wsServer)
     const ws = await createWebSocket();
+    // @ts-expect-error WebSocketClient constructor expects BaseSocket type
     connection = new WebSocketClient(ws);
 });
 
@@ -52,11 +53,16 @@ afterEach(() => {
 });
 
 afterAll((done) => {
-    connection.baseSocket.close();
-    connection.disconnect();
+    connection?.baseSocket.close();
+    connection?.disconnect();
 
-    wsServer.close(() => {
-        // console.log('ws server closed');
+    // Close all client connections
+    wsServer.clients.forEach((client) => {
+        client.terminate();
+    });
+
+    wsServer.close((e) => {
+        // console.log('ws server closed', e);
         done();
     });
 });
