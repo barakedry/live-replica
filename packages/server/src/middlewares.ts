@@ -1,3 +1,5 @@
+import LiveReplicaServer from "./server";
+
 export function whitelist(list: any[] | Set<any>) {
     if (Array.isArray(list)) {
         list = new Set(list);
@@ -23,14 +25,15 @@ export function oncePerSubscription(path: string | (() => string) | undefined, f
     }
 
     const subscribersOfPath: Record<string, Set<any>> = {};
-    let server: any;
+    let server: LiveReplicaServer | undefined;
 
     const cleanup = (id: string, path: string) => {
         const subscribers = subscribersOfPath[path];
-        subscribers.delete(id);
-
-        if (subscribers.size === 0) {
-            delete subscribersOfPath[path];
+        if (subscribers) {
+            subscribers.delete(id);
+            if (subscribers.size === 0) {
+                delete subscribersOfPath[path];
+            }
         }
     }
 
@@ -40,7 +43,7 @@ export function oncePerSubscription(path: string | (() => string) | undefined, f
         const subscribers = subscribersOfPath[path];
         cleanup(id, path);
 
-        if (subscribers.size === 0 && lastUnsubscriptionCallback) {
+        if (subscribers?.size === 0 && lastUnsubscriptionCallback) {
             lastUnsubscriptionCallback.call(server, unsubscriberRequest, next);
         } else {
             next(unsubscriberRequest);
@@ -50,7 +53,7 @@ export function oncePerSubscription(path: string | (() => string) | undefined, f
     return async function onSubscribe(this: any, request: any, reject: any, approve: any) {
         if (!server) {
             server = this;
-            server.addUnsubscriptionMiddleware(onUnsubscribe);
+            server!.addUnsubscriptionMiddleware(onUnsubscribe);
         }
 
         const {id, path} = request;
