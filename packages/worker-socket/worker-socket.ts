@@ -24,7 +24,6 @@ export class WorkerSocket extends LiveReplicaSocket {
     _removeSocketEventListener(eventName: string, fn: (...args: any[]) => void) {
         this._emitter.removeListener(eventName, fn);
     }
-    // @ts-expect-error
     _socketSend(event: string, payload: any, ack?: (...args: any[]) => void) {
         if (!this.worker) {
             throw new Error('worker does not exists');

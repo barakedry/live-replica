@@ -570,7 +570,7 @@ describe('Patch Diff', () => {
                 differences: {e: {f: true}},
                 path: "a.b.c"
             }), context);
-            console.log('spy', spy.mock.calls);
+            // console.log('spy', spy.mock.calls);
             expect(spy).toHaveBeenCalledWith({e: {set: 'value', f: patcher.options.deleteKeyword }}, expect.objectContaining({
                 hasAdditions: true,
                 hasAddedObjects: false,

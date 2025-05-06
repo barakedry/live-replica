@@ -19,7 +19,7 @@ export class LiveReplicaSocket {
         this._instance = LiveReplicaSocket.instances++;
     }
 
-    send(event: string, payload: any, ack?: (...args: any[]) => void): Promise<any> {
+    send(event: string, payload: any, ack?: (...args: any[]) => void): Promise<any> | void {
         return this._socketSend(eventName(event), payload, ack);
     }
 
@@ -54,7 +54,7 @@ export class LiveReplicaSocket {
         this._socket.removeListener(eventName, fn);
     }
 
-    protected _socketSend(eventName: string, payload: any, ack?: (...args: any[]) => void): Promise<any> {
+    protected _socketSend(eventName: string, payload: any, ack?: (...args: any[]) => void): Promise<any> | void {
         return new Promise((resolve) => {
             this._socket.emit(eventName, payload, (...args: any[]) => {
                 ack?.(...args);

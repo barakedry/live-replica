@@ -64,7 +64,6 @@ class LiveReplicaClusterWorkerSocket extends LiveReplicaSocket {
         };
 
         process.send!(message);
-        return Promise.resolve();
     }
 
     get baseSocket() {

@@ -59,7 +59,7 @@ export class WebSocketClient extends LiveReplicaSocket {
         }
     }
 
-    protected _socketSend(eventName: string, payload: any, ack?: (...args: any[]) => void): Promise<any> {
+    protected _socketSend(event: string, payload: any, ack?: (...args: any[]) => void) {
         if (!this._socket) {
             throw new Error('socket does not exists');
         }
@@ -76,7 +76,6 @@ export class WebSocketClient extends LiveReplicaSocket {
             }
         };
         this._socket.send(encode(message));
-        return Promise.resolve();
     }
 
     set socket(socket: any) {
