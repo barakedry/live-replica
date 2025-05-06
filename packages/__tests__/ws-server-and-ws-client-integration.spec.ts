@@ -34,7 +34,7 @@ function createWebSocket(): Promise<WSWebSocket> {
             reject(err);
         };
         ws.onopen = () => {
-            console.info(`Websocket opened`);
+            // console.info(`Websocket opened`);
             resolve(ws);
         };
     });
@@ -56,7 +56,7 @@ afterAll((done) => {
     connection.disconnect();
 
     wsServer.close(() => {
-        console.log('ws server closed');
+        // console.log('ws server closed');
         done();
     });
 });
