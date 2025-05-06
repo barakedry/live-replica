@@ -9,7 +9,7 @@ describe('deferred', () => {
             const spy = jest.fn();
             const isAggregated = true;
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                console.log('a.b', diff, changeInfo, context, isAggregated);
+                // console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
             });
             expect(spy).toHaveBeenNthCalledWith(1, { c: 'd'}, {snapshot: true}, {}, false);
@@ -32,7 +32,7 @@ describe('deferred', () => {
             const spy = jest.fn();
             const isAggregated = true;
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                console.log('a.b', diff, changeInfo, context, isAggregated);
+                // console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
             });
             expect(spy).toHaveBeenNthCalledWith(1, { c: 'd'}, {snapshot: true}, {}, false);
@@ -53,7 +53,7 @@ describe('deferred', () => {
             const spy = jest.fn();
             const isAggregated = true;
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                console.log('a.b', diff, changeInfo, context, isAggregated);
+                // console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
             });
             expect(spy).toHaveBeenNthCalledWith(1, { c: 'd', e: 'f', g: { h: 'i', j: 'k' }}, {snapshot: true}, {}, false);
@@ -83,7 +83,7 @@ describe('deferred', () => {
             const spy = jest.fn();
             const isAggregated = true;
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                console.log('a.b', diff, changeInfo, context, isAggregated);
+                // console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
             });
             expect(spy).toHaveBeenNthCalledWith(1, { c: 'd'}, {snapshot: true}, {}, false);
@@ -105,7 +105,7 @@ describe('deferred', () => {
             const spy = jest.fn();
             const isAggregated = true;
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                console.log('a.b', diff, changeInfo, context, isAggregated);
+                // console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
             });
             expect(spy).toHaveBeenNthCalledWith(1, { c: 'd'}, {snapshot: true}, {}, false);
@@ -129,7 +129,7 @@ describe('deferred', () => {
 
             //Act
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                console.log('a.b', diff, changeInfo, context, isAggregated);
+                // console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
             });
             patcher.apply({a: {b: {c: 'e'}}});
@@ -149,7 +149,7 @@ describe('deferred', () => {
             const spy = jest.fn();
             const isAggregated = true;
             patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                console.log('a.b', diff, changeInfo, context, isAggregated);
+                // console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
             });
             expect(spy).toHaveBeenNthCalledWith(1, { c: 'd'}, {snapshot: true}, {}, false);

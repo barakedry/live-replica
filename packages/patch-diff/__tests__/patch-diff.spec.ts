@@ -329,7 +329,7 @@ describe('Patch Diff', () => {
             const patcher = new PatchDiff({a: {b: {c: 'd'}}});
             const spy = jest.fn();
             patcher.subscribe('a.b', (diff, changeInfo, context) => {
-                console.log('a.b', diff, changeInfo, context);
+                // console.log('a.b', diff, changeInfo, context);
                 spy(diff, changeInfo, context);
             });
 
@@ -527,7 +527,7 @@ describe('Patch Diff', () => {
             const patcher = new PatchDiff({a: {b: {c: 'd'}}} as any);
             const spy = jest.fn();
             patcher.subscribe('a.b.c', (diff, changeInfo, context) => {
-                console.log('a.b.c', diff, changeInfo, context);
+                // console.log('a.b.c', diff, changeInfo, context);
                 spy(diff, changeInfo, context);
             });
 
@@ -570,7 +570,7 @@ describe('Patch Diff', () => {
                 differences: {e: {f: true}},
                 path: "a.b.c"
             }), context);
-            // console.log('spy', spy.mock.calls);
+            console.log('spy', spy.mock.calls);
             expect(spy).toHaveBeenCalledWith({e: {set: 'value', f: patcher.options.deleteKeyword }}, expect.objectContaining({
                 hasAdditions: true,
                 hasAddedObjects: false,
@@ -586,7 +586,7 @@ describe('Patch Diff', () => {
             }), {});
         });
 
-        it.only('should notify inner subscribers about deletion of parents', async () => {
+        it('should notify inner subscribers about deletion of parents', async () => {
             //Arrange
             const patcher = new PatchDiff({a: {b: {c: {d: {e: 'f'}}}}} as any);
             const spy = jest.fn();
@@ -619,7 +619,7 @@ describe('Patch Diff', () => {
             const patcher = new PatchDiff(initObject);
             const spy = jest.fn();
             patcher.subscribe('a', (diff, changeInfo, context) => {
-                //console.log('a', diff, changeInfo, context);
+                // console.log('a', diff, changeInfo, context);
                 spy(diff, changeInfo, context);
             });
 
@@ -665,7 +665,7 @@ describe('Patch Diff', () => {
             const patcher = new PatchDiff({a: {b: {c: 'd'}}});
             const spy = jest.fn();
             patcher.subscribe('a.b.c', (diff, changeInfo, context) => {
-                console.log('a.b.c', diff, changeInfo, context);
+                // console.log('a.b.c', diff, changeInfo, context);
                 spy(diff, changeInfo, context);
             });
 
@@ -721,7 +721,7 @@ describe('Patch Diff', () => {
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        // console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
                     expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
@@ -740,7 +740,7 @@ describe('Patch Diff', () => {
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        // console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
                     expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
@@ -760,7 +760,7 @@ describe('Patch Diff', () => {
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        // console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
                     expect(spy).toHaveBeenCalledWith({ c: 'd', e: 'f', g: { h: 'i', j: 'k' }}, {snapshot: true}, {}, isAggregated);
@@ -789,7 +789,7 @@ describe('Patch Diff', () => {
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        // console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
                     expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
@@ -808,7 +808,7 @@ describe('Patch Diff', () => {
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        // console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
                     expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
@@ -831,7 +831,7 @@ describe('Patch Diff', () => {
 
                     //Act
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        // console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
                     patcher.remove('a.b');
@@ -848,7 +848,7 @@ describe('Patch Diff', () => {
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        // console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
                     expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
@@ -872,7 +872,7 @@ describe('Patch Diff', () => {
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a[:unkownKey].c', (diff, changeInfo, context, isAggregated, params) => {
-                        console.log('a[:unkownKey].c.d', diff, changeInfo, context, isAggregated, params);
+                        // console.log('a[:unkownKey].c.d', diff, changeInfo, context, isAggregated, params);
                         spy(diff, changeInfo, context, isAggregated, params);
                     });
                     expect(spy).toHaveBeenCalledWith({ d: 'e'}, {snapshot: true}, {}, isAggregated, {unkownKey: 'b'});
@@ -895,7 +895,7 @@ describe('Patch Diff', () => {
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        // console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
                     expect(spy).toHaveBeenCalledWith({ c: 'd', e: 'f', g: { h: 'i', j: 'k' }}, {snapshot: true}, {}, isAggregated);
@@ -924,7 +924,7 @@ describe('Patch Diff', () => {
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        // console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
                     expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
@@ -943,7 +943,7 @@ describe('Patch Diff', () => {
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        // console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
                     expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
@@ -966,7 +966,7 @@ describe('Patch Diff', () => {
 
                     //Act
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        // console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
                     patcher.remove('a.b');
@@ -983,7 +983,7 @@ describe('Patch Diff', () => {
                     const spy = jest.fn();
                     const isAggregated = false;
                     patcher.subscribe('a.b', (diff, changeInfo, context, isAggregated) => {
-                        console.log('a.b', diff, changeInfo, context, isAggregated);
+                        // console.log('a.b', diff, changeInfo, context, isAggregated);
                         spy(diff, changeInfo, context, isAggregated);
                     });
                     expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
@@ -1005,7 +1005,7 @@ describe('Patch Diff', () => {
                 const patcher = new PatchDiff({ parent: ['a', 'b', { objArrItemProp: true }] });
                 const spy = jest.fn();
                 patcher.subscribe('parent[1]', (diff, changeInfo, context) => {
-                    console.log('array change notification', diff, changeInfo, context);
+                    // console.log('array change notification', diff, changeInfo, context);
                     spy(diff, changeInfo, context);
                 });
 
@@ -1022,7 +1022,7 @@ describe('Patch Diff', () => {
                 const spy = jest.fn();
                 const path = 'parent[2].objArrItemProp[2].secondObjArrItemProp[1]';
                 patcher.subscribe(path, (diff, changeInfo, context) => {
-                    console.log('array change notification', diff, changeInfo, context);
+                    // console.log('array change notification', diff, changeInfo, context);
                     spy(diff, changeInfo, context);
                 });
 
