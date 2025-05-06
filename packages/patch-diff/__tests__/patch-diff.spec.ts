@@ -126,8 +126,8 @@ describe('Patch Diff', () => {
               ${'number'}   | ${'number'}   | ${5}                                              | ${{ string: 'string', number: 5 }}
               ${'boolean'}  | ${'boolean'}  | ${true}                                           | ${{ string: 'string', number: 5, boolean: true }}
               ${'object'}   | ${'object'}   | ${{hello: 'world'}}                               | ${{ string: 'string', number: 5, boolean: true, object: {hello: 'world'}}}
-              ${'nested'}   | ${'object'}   | ${{hello: {world: {print: 'end'}}}}               | ${{ string: 'string', number: 5, boolean: true, object: {hello: {world: {print: 'end'}}}}}
-              ${'nested'}   | ${'object'}   | ${{hello: {world: {additionalProp: 'test'}}}}     | ${{ string: 'string', number: 5, boolean: true, object: {hello: {world: {print: 'end', additionalProp: 'test'}}}}}
+              ${'nested'}   | ${'object'}   | ${{ hello: { world: { print: 'end' } } }}               | ${{ string: 'string', number: 5, boolean: true, object: { hello: { world: { print: 'end' } } } }}}
+              ${'nested'}   | ${'object'}   | ${{ hello: { world: { additionalProp: 'test' } } }}     | ${{ string: 'string', number: 5, boolean: true, object: { hello: { world: { print: 'end', additionalProp: 'test' } } } }}}
               ${'undefined'}| ${'object'}   | ${{hello: {world: '__$$U'}}}                      | ${{ string: 'string', number: 5, boolean: true, object: {hello: {world: undefined}}}}              
               ${'undefined'}| ${'object'}   | ${{hello: undefined }}                            | ${{ string: 'string', number: 5, boolean: true, object: {hello: undefined}}}              
             `('should apply addition of $test property', ({key, value, expectedObject}) => {
@@ -159,7 +159,10 @@ describe('Patch Diff', () => {
 
             it('should allow to apply with certain paths treated as overrides', () => {
                 //Arrange
-                const overrides = ['a.b.c.g'];
+                const overrides = [
+                    'a.b.override1',
+                    'a.b.override2'
+                ];
                 const patcher = new PatchDiff({a: {b: {
                     c: {d: 'e'},
                     override1: {f: 'g'},
