@@ -10,7 +10,7 @@ describe('Scoped usage', () => {
                 const spy = jest.fn();
                 const isAggregated = false;
                 scoped.subscribe('c', (diff, changeInfo, context, isAggregated) => {
-                    console.log('c', diff, changeInfo, context, isAggregated);
+                    // console.log('c', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
                 });
                 expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, {}, isAggregated);
@@ -29,7 +29,7 @@ describe('Scoped usage', () => {
                 const spy = jest.fn();
                 const isAggregated = false;
                 scoped.subscribe('c', (diff, changeInfo, context, isAggregated) => {
-                    console.log('scoped a.b', diff, changeInfo, context, isAggregated);
+                    // console.log('scoped a.b', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
                 });
                 expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, {}, isAggregated);
@@ -49,7 +49,7 @@ describe('Scoped usage', () => {
                 const spy = jest.fn();
                 const isAggregated = false;
                 scoped.subscribe((diff, changeInfo, context, isAggregated) => {
-                    console.log('scoped a.b', diff, changeInfo, context, isAggregated);
+                    // console.log('scoped a.b', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
                 });
                 expect(spy).toHaveBeenCalledWith({ c: 'd', e: 'f', g: { h: 'i', j: 'k' }}, {snapshot: true}, {}, isAggregated);
@@ -70,7 +70,7 @@ describe('Scoped usage', () => {
                 const spy = jest.fn();
                 const isAggregated = false;
                 scoped.subscribe( (diff, changeInfo, context, isAggregated) => {
-                    console.log('scoped a.b', diff, changeInfo, context, isAggregated);
+                    // console.log('scoped a.b', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
                 });
                 expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
@@ -89,7 +89,7 @@ describe('Scoped usage', () => {
                 const spy = jest.fn();
                 const isAggregated = false;
                 scoped.subscribe('b', (diff, changeInfo, context, isAggregated) => {
-                    console.log('scoped a subscribed b', diff, changeInfo, context, isAggregated);
+                    // console.log('scoped a subscribed b', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
                 });
                 expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
@@ -112,7 +112,7 @@ describe('Scoped usage', () => {
 
                 //Act
                 scoped.subscribe('c', (diff, changeInfo, context, isAggregated) => {
-                    console.log('scoped a.b subscribe c', diff, changeInfo, context, isAggregated);
+                    // console.log('scoped a.b subscribe c', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
                 });
                 scoped.remove('c');
@@ -129,7 +129,7 @@ describe('Scoped usage', () => {
                 const spy = jest.fn();
                 const isAggregated = false;
                 scoped.subscribe('c', (diff, changeInfo, context, isAggregated) => {
-                    console.log('scoped a.b subscribe c', diff, changeInfo, context, isAggregated);
+                    // console.log('scoped a.b subscribe c', diff, changeInfo, context, isAggregated);
                     spy(diff, changeInfo, context, isAggregated);
                 });
                 expect(spy).toHaveBeenCalledWith('d', {snapshot: true}, {}, isAggregated);
@@ -156,7 +156,7 @@ describe('Scoped usage', () => {
             const isAggregated = false;
             const scoped = patcher.at('a.b');
             scoped.subscribe( (diff, changeInfo, context, isAggregated) => {
-                console.log('a.b', diff, changeInfo, context, isAggregated);
+                // console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
             });
             expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
@@ -177,7 +177,7 @@ describe('Scoped usage', () => {
             const isAggregated = false;
             const scoped = patcher.at('a.b');
             patcher.subscribe( (diff, changeInfo, context, isAggregated) => {
-                console.log('a.b', diff, changeInfo, context, isAggregated);
+                // console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
             });
             expect(spy).toHaveBeenCalledWith({a: {b: {c: 'd'}}}, {snapshot: true}, {}, isAggregated);
@@ -198,7 +198,7 @@ describe('Scoped usage', () => {
             const isAggregated = false;
             const scoped = patcher.at('a.b');
             scoped.subscribe( (diff, changeInfo, context, isAggregated) => {
-                console.log('a.b', diff, changeInfo, context, isAggregated);
+                // console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
             });
 
@@ -220,7 +220,7 @@ describe('Scoped usage', () => {
             const isAggregated = false;
             const scoped = patcher.at('a.b');
             scoped.subscribe( (diff, changeInfo, context, isAggregated) => {
-                console.log('a.b', diff, changeInfo, context, isAggregated);
+                // console.log('a.b', diff, changeInfo, context, isAggregated);
                 spy(diff, changeInfo, context, isAggregated);
             });
             expect(spy).toHaveBeenCalledWith({ c: 'd'}, {snapshot: true}, {}, isAggregated);
