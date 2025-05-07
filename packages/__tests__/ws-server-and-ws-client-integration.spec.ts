@@ -204,7 +204,12 @@ describe('WS Server and  WS Client integration', () => {
             it('should invoke middleware callbacks once on first subscription', async () => {
                 //Arrange
                 const onFirstSubscribe = jest.fn((req, reject, approve) => approve());
-                const onLastUnsubscribe = jest.fn((lastRequest) => console.log('last request', lastRequest));
+                let lastUnsubscribeResolve: () => void;
+                const lastUnsubscribePromise = new Promise<void>(resolve => { lastUnsubscribeResolve = resolve; });
+                const onLastUnsubscribe = jest.fn((lastRequest) => {
+                    console.log('last request', lastRequest);
+                    lastUnsubscribeResolve();
+                });
                 server.set({ a: { b: { c: 1 } } });
                 // @ts-expect-error
                 server.use(oncePerSubscription(onFirstSubscribe, onLastUnsubscribe));
@@ -221,12 +226,11 @@ describe('WS Server and  WS Client integration', () => {
                 //destroy the replicas and trigger unsubscribe
                 replicaA.destroy();
                 replicaB.destroy();
-                await flushCycle(10);
-
+                await lastUnsubscribePromise;
                 //Assert - onFirstSubscribe and onLastUnsubscribe should be called exactly once for each path
                 expect(onFirstSubscribe).toHaveBeenCalledWith(expect.objectContaining({ path: 'a' }), expect.any(Function), expect.any(Function));
                 expect(onFirstSubscribe).toHaveBeenCalledTimes(1);
-                expect(onLastUnsubscribe).toHaveBeenCalledWith(expect.objectContaining({ path: 'a' }));
+                expect(onLastUnsubscribe).toHaveBeenCalledWith(expect.objectContaining({ path: 'a' }), expect.any(Function));
                 expect(onLastUnsubscribe).toHaveBeenCalledTimes(1);
             });
         });
