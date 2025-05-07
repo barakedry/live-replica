@@ -175,14 +175,26 @@ export class LiveReplicaServer extends PatchDiff {
         if (request.allowRPC) {
             invokeRpcListener = ({path, args}, ack) => {
                 const method = target.get(path);
-                // check if promise
-                const res = method.call(target, ...args);
-                if (res && typeof res.then === 'function') {
-                    res.then(ack).catch((err) => {
-                        ack({$error: {message: err.message, name: err.name}});
-                    });
-                } else {
-                    ack(res);
+
+                if (typeof method !== 'function') {
+                    console.warn(`RPC method not found at path: ${path}`);
+                    ack({$error: {message: `RPC not function found`, name: 'MethodNotFound'}});
+                    return;
+                }
+
+                try {
+                    // check if promise
+                    const res = method.call(target, ...args);
+                    if (res && typeof res.then === 'function') {
+                        res.then(ack).catch((err) => {
+                            ack({$error: {message: err.message, name: err.name}});
+                        });
+                    } else {
+                        ack(res);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    ack({$error: {message: 'Error while executing RPC', name: 'MethodExecutionError'}});
                 }
             };
 
