@@ -302,11 +302,12 @@ export class Replica extends PatchDiff {
         const replica = new Replica('', { dataObject: initData, ...options });
         return replica.data;
     }
+
+    declare override: typeof Replica.prototype.set;
+    declare disconnect: typeof Replica.prototype.unsubscribeRemote;
 }
 
-// @ts-expect-error
 Replica.prototype.override = Replica.prototype.set;
-// @ts-expect-error
 Replica.prototype.disconnect = Replica.prototype.unsubscribeRemote;
 
 function replicaByProxy(proxy: any) {
