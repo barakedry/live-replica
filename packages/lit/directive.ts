@@ -3,7 +3,7 @@ import {directive} from 'lit/directive.js';
 import {AsyncDirective} from 'lit-html/async-directive.js';
 import {noChange} from 'lit';
 import {replicaByData, extractBasePathAndProperty, concatPath} from "./utils";
-import { isProxy, getPatchDiff, Replica } from '@live-replica/client';
+import { isProxy, getPatchDiff, Replica } from '../proxy/proxy';
 
 export class LiveReplicaDirective extends AsyncDirective {
     // When the observable changes, unsubscribe to the old one and

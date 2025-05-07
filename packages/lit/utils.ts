@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { isProxy, getPatchDiff, Replica } from '../client';
+import { isProxy, getPatchDiff, Replica } from '../proxy/proxy';
 
 export function replicaByData(data: any) {
     if (isProxy(data)) {

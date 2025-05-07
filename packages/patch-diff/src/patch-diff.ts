@@ -13,7 +13,7 @@ import {
   SERIALIZED_FUNCTION
 } from '../../utils/utils';
 import { DiffTracker } from './diff-tracker';
-import { create, isProxy, revoke, unwrap } from '../../proxy'
+import { create, isProxy, revoke, unwrap } from '../../proxy/proxy'
 
 import _isObject from 'lodash-es/isObject';
 import _isString from 'lodash-es/isString';

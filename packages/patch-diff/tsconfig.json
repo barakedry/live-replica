@@ -10,6 +10,7 @@
   "include": ["src/**/*.ts", "__tests__/**/*.ts", "index.ts"],
   "references": [
     { "path": "../utils" },
-    { "path": "../events" }
+    { "path": "../events" },
+    { "path": "../proxy" }
   ]
 } 
