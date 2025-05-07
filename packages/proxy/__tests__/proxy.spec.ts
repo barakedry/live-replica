@@ -1,6 +1,7 @@
-// @ts-nocheck
 import PatchDiff from '../../patch-diff/src/patch-diff';
 import { Replica as LiveReplica, get, set, merge, cloneDeep, replace, observe, nextChange, patch } from "../../../index";
+
+// @ts-nocheck
 
 beforeEach(() => {
     jest.resetAllMocks();

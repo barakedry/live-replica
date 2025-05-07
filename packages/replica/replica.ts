@@ -25,7 +25,7 @@ const LocalMutation = { context: { local: true } };
 // lock localMutation
 Object.freeze(LocalMutation);
 
-export default class Replica extends PatchDiff {
+export class Replica extends PatchDiff {
     changeRevision!: number;
     onApplyEvent: any;
     onSocketReconnected: any;
@@ -336,3 +336,5 @@ export async function disconnect<T>(proxy: LiveReplicaProxy<T>): Promise<any> {
     // @ts-expect-error
     return replica.disconnect();
 }
+
+export default Replica;
