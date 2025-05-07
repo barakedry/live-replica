@@ -333,7 +333,6 @@ export async function connect<T>(proxy: LiveReplicaProxy<T>, connection: any, re
 
 export async function disconnect<T>(proxy: LiveReplicaProxy<T>): Promise<any> {
     const replica = replicaByProxy(proxy);
-    // @ts-expect-error
     return replica.disconnect();
 }
 
