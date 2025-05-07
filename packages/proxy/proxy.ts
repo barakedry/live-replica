@@ -10,13 +10,11 @@ import type {
   MergeOptions
 } from '@live-replica/live-replica';
 
-const proxies: WeakMap<object, LiveReplicaProxy<any>> = new WeakMap();
-const patchers: WeakMap<object, PatchDiff<any>> = new WeakMap();
-const revocables: WeakMap<object, { proxy: any; revoke: () => void }> = new WeakMap();
-const softRevoked: WeakSet<object> = new WeakSet();
-const ArrayMutatingMethods = new Set([
-  'push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'copyWithin', 'fill'
-]);
+export const proxies: WeakMap<object, LiveReplicaProxy<any>> = new WeakMap();
+export const patchers: WeakMap<object, PatchDiff<any>> = new WeakMap();
+export const revocables: WeakMap<object, { proxy: any; revoke: () => void }> = new WeakMap();
+export const softRevoked: WeakSet<object> = new WeakSet();
+const ArrayMutatingMethods = new Set<string>(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'copyWithin', 'fill']);
 
 export function hasProxy(value: object): boolean {
   return proxies.has(value);
@@ -56,6 +54,7 @@ export function observe<T = any>(
   let actualCb: SubscribeCallback<T>;
   if (typeof path === 'function') {
     actualCb = path;
+    path = '';
   } else {
     actualPath = path;
     actualCb = cb!;
@@ -73,10 +72,11 @@ export function nextChange<T = any>(proxy: LiveReplicaProxy<T>): Promise<Partial
   if (!isProxy(proxy as object)) {
     throw new TypeError('trying to call nextChange a non LiveReplica Proxy type');
   }
+  // @ts-ignore
   const patcher = patchers.get(proxy as object) as PatchDiff<T>;
-  return new Promise((accept) => {
+  return new Promise<Partial<T>>((accept) => {
     let off: UnsubscribeCallback | null = null;
-    off = patcher.subscribe(async (diff) => {
+    off = patcher.subscribe(async (diff: Partial<T>) => {
       if (!off) {
         setTimeout(() => {
           off!();
@@ -153,7 +153,7 @@ export function revoke(targetOrProxy: object): boolean {
   } catch (e) {
     return false;
   }
-  values.forEach((value) => {
+  values.forEach((value: any) => {
     if (isObject(value)) {
       revoke(value);
     }
@@ -172,11 +172,11 @@ function isObject(value: any): value is object {
 export function create<T = any>(patchDiff: PatchDiff<T>, options: { readonly?: boolean; immediateFlush?: boolean } = {}): LiveReplicaProxy<T> {
   const mutationOptions = options.immediateFlush ? {} : { defer: true };
   const handlers: ProxyHandler<any> = {
-    get(_target, propKey, receiver) {
+    get(_target: any, propKey: string, receiver: any) {
       const target = patchDiff.get();
       if (Array.isArray(target)) {
-        if (typeof target[propKey as any] === 'function') {
-          const methodName = propKey as string;
+        if (typeof target[propKey] === 'function') {
+          const methodName = propKey;
           if (ArrayMutatingMethods.has(methodName)) {
             return function mutateProxiedArray(...args: any[]) {
               const copy = target.slice();
@@ -189,16 +189,16 @@ export function create<T = any>(patchDiff: PatchDiff<T>, options: { readonly?: b
           }
         }
       }
-      const value = target?.[propKey as keyof typeof target];
+      const value = target?.[propKey];
       if (isObject(value)) {
         if (hasProxy(value)) {
           return getProxy(value);
         }
-        return create(patchDiff.at(propKey as string), options);
+        return create(patchDiff.at(propKey), options);
       }
       return value;
     },
-    set(_target, propKey, value) {
+    set(_target: any, propKey: string, value: any) {
       if (isRevoked()) {
         throw new Error('Cannot set property on revoked live-replica proxy');
       }
@@ -207,47 +207,47 @@ export function create<T = any>(patchDiff: PatchDiff<T>, options: { readonly?: b
       if (target[propKey] === value) {
         return true;
       }
-      patchDiff.set(value, propKey as string, mutationOptions);
+      patchDiff.set(value, propKey, mutationOptions);
       return true;
     },
-    deleteProperty(_target, propKey) {
+    deleteProperty(_target: any, propKey: string) {
       if (isRevoked()) {
         throw new Error('Cannot delete property on revoked live-replica proxy');
       }
       const target = patchDiff.get();
       const value = target[propKey];
-      patchDiff.remove(propKey as string, mutationOptions);
+      patchDiff.remove(propKey, mutationOptions);
       if (isObject(value)) {
         revoke(value);
       }
       return true;
     },
-    ownKeys(_target) {
+    ownKeys(_target: any) {
       const target = patchDiff.get();
       return Reflect.ownKeys(target);
     },
-    has(_target, propKey) {
+    has(_target: any, propKey: string) {
       const target = patchDiff.get();
       return isObject(target) && propKey in target;
     },
-    getOwnPropertyDescriptor(_target, propKey) {
+    getOwnPropertyDescriptor(_target: any, propKey: string) {
       const target = patchDiff.get();
       return Reflect.getOwnPropertyDescriptor(target, propKey);
     },
-    getPrototypeOf(_target) {
+    getPrototypeOf(_target: any) {
       const target = patchDiff.get();
       return Reflect.getPrototypeOf(target);
     },
-    setPrototypeOf(_target, _proto) {
+    setPrototypeOf(_target: any, _proto: any) {
       throw new Error('Cannot set prototype on live-replica proxy');
     },
-    defineProperty(_target, _propKey, _propDesc) {
+    defineProperty(_target: any, _propKey: string, _propDesc: any) {
       throw new Error('Cannot define property on live-replica proxy');
     },
-    preventExtensions(_target) {
+    preventExtensions(_target: any) {
       throw new Error('Cannot preventExtensions on live-replica proxy');
     },
-    isExtensible(_target) {
+    isExtensible(_target: any) {
       throw new Error('Cannot isExtensible on live-replica proxy');
     },
   };

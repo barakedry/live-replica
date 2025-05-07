@@ -124,7 +124,6 @@ export default class Replica extends PatchDiff {
         this.id = generateUniqueId();
         this._synced = false;
         this._subscribed = false;
-        this.options = options;
         if (this.options.subscribeRemoteOnCreate) {
             this.subscribeRemote(this.options.connection)
         }
@@ -337,5 +336,3 @@ export async function disconnect<T>(proxy: LiveReplicaProxy<T>): Promise<any> {
     // @ts-expect-error
     return replica.disconnect();
 }
-
-export { Replica };
