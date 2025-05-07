@@ -297,18 +297,17 @@ export class Replica extends PatchDiff {
             // @ts-expect-error
             false));
     }
+
+    static create(initData: any = {}, options: any = {}) {
+        const replica = new Replica('', { dataObject: initData, ...options });
+        return replica.data;
+    }
 }
 
 // @ts-expect-error
 Replica.prototype.override = Replica.prototype.set;
 // @ts-expect-error
 Replica.prototype.disconnect = Replica.prototype.unsubscribeRemote;
-
-// @ts-expect-error
-Replica.create = function create(initData: any = {}, options: any = {}) {
-    const replica = new Replica('', { dataObject: initData, ...options });
-    return replica.data;
-};
 
 function replicaByProxy(proxy: any) {
     if (!isProxy(proxy)) {
