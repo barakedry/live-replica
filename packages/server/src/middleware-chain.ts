@@ -1,7 +1,12 @@
+import LiveReplicaServer from "./server";
+
+type Middleware = (...args: any[]) => void;
+
 export class MiddlewareChain {
-    chain: any[];
-    owner: any;
-    constructor(owner?: any) {
+    chain: Middleware[];
+    owner: LiveReplicaServer | MiddlewareChain;
+
+    constructor(owner?: LiveReplicaServer) {
         this.chain = [];
         this.owner = owner || this;
     }
@@ -9,12 +14,12 @@ export class MiddlewareChain {
     start(...args: any[]) {
         const finishCallback = args.pop();
         if (typeof finishCallback !== 'function') {
-            throw new TypeError(`MiddlewareChain.start() last arguments must be a finish function, instead got ${typeof finishCallback}`);
+            throw new TypeError(`MiddlewareChain.start()'s last argument must be a finish function, instead got ${typeof finishCallback}`);
         }
         this._run(0, finishCallback, args);
     }
 
-    add(middleware: any) {
+    add(middleware: Middleware) {
         if (typeof middleware !== 'function') {
             throw new TypeError(`middleware must be a function, instead got ${typeof middleware}`);
         }
@@ -22,18 +27,18 @@ export class MiddlewareChain {
         this.chain.push(middleware);
     }
 
-    use(middleware: any) {
+    use(middleware: Middleware) {
         this.add(middleware);
     }
 
-    remove(middleware: any) {
+    remove(middleware: Middleware) {
         const index = this.chain.indexOf(middleware);
         if (index !== -1) {
             this.chain.splice(index, 1);
         }
     }
 
-    _run(index: number, finishCallback: any, args: any[]) {
+    _run(index: number, finishCallback: (...args: any[]) => any, args: any[]) {
         const self = this;
         if (index >= this.chain.length) {
             return finishCallback(...args);
@@ -49,7 +54,5 @@ export class MiddlewareChain {
         this.chain = [];
     }
 }
-
-MiddlewareChain.prototype.use = MiddlewareChain.prototype.add;
 
 export default MiddlewareChain;

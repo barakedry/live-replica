@@ -1199,18 +1199,19 @@ export class PatchDiff<T = any> extends EventEmitter {
   get data(): PatchDiff<T> {
     return this.getData();
   }
+
+  declare override: PatchDiff<T>['set'];
+  declare merge: PatchDiff<T>['apply'];
+  declare patch: PatchDiff<T>['apply'];
+  declare scope: PatchDiff<T>['at'];
 }
 
-// @ts-expect-error
 PatchDiff.prototype.override = PatchDiff.prototype.set;
 
-// @ts-expect-error
 PatchDiff.prototype.merge = PatchDiff.prototype.apply;
 
-// @ts-expect-error
 PatchDiff.prototype.patch = PatchDiff.prototype.apply;
 
-// @ts-expect-error
 PatchDiff.prototype.scope = PatchDiff.prototype.at;
 
 export default PatchDiff;
