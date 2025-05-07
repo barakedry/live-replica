@@ -4,6 +4,6 @@
   "main": "dist/event-name.js",
   "types": "dist/event-name.d.ts",
   "scripts": {
-    "build": "tsc -p ."
+    "build": "tsc --build"
   }
 } 

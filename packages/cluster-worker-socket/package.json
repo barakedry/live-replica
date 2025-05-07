@@ -5,7 +5,7 @@
   "main": "cluster-worker-socket.js",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build",
     "test": "jest"
   },
   "dependencies": {

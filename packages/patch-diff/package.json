@@ -6,7 +6,7 @@
   "types": "dist/patch-diff.d.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc -p .",
+    "build": "tsc --build",
     "test": "jest"
   },
   "repository": {

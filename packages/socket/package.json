@@ -7,7 +7,7 @@
   "types": "dist/socket.d.ts",
   "scripts": {
     "test": "jest",
-    "build": "tsc -p ."
+    "build": "tsc --build"
   },
   "author": "Barak Edry",
   "license": "Apache-2.0",
