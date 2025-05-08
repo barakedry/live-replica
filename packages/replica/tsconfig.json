@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist"
+  },
+  "references": [
+    { "path": "../patch-diff" },
+    { "path": "../utils" },
+    { "path": "../proxy" },
+    { "path": "../socket" },
+    { "path": "../ws-client" }
+  ],
+  "include": ["*.ts"]
+} 

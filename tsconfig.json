@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "references": [
+    { "path": "./packages/common" },
+    { "path": "./packages/socket" },
+    { "path": "./packages/socketio-client" },
+    { "path": "./packages/events" },
+    { "path": "./packages/message-channel-socket" },
+    { "path": "./packages/utils" },
+    { "path": "./packages/proxy" },
+    { "path": "./packages/patch-diff" },
+    { "path": "./packages/client" },
+    { "path": "./packages/replica" },
+    { "path": "./packages/server" },
+    { "path": "./packages/worker-server" },
+    { "path": "./packages/worker-socket" },
+    { "path": "./packages/shared-worker-server" },
+    { "path": "./packages/lit" }
+  ]
+}

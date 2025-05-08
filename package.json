@@ -2,7 +2,7 @@
   "private": true,
   "name": "@live-replica/live-replica",
   "type": "module",
-  "version": "0.9.63",
+  "version": "0.9.67",
   "description": "real-time objects replica syncing",
   "directories": {
     "test": "tests"
@@ -10,7 +10,8 @@
   "scripts": {
     "bootstrap-install": "npm install && lerna bootstrap --no-ci",
     "bootstrap-ci": "npm ci && lerna bootstrap",
-    "test": "jest",
+    "build": "lerna run build --stream && tsc --build",
+    "test": "jest --detectOpenHandles",
     "pack": "npm version patch && npm pack"
   },
   "repository": "git+https://github.com/barakedry/live-replica",
@@ -36,20 +37,25 @@
   "homepage": "https://github.com/barakedry/live-replica/",
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.23.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.15.3",
+    "@types/ws": "^8.18.1",
     "babel-jest": "^29.7.0",
     "jest": "latest",
+    "lerna": "6.6.2",
     "lit": "latest",
-    "typescript": "^5.2.2",
-    "ws": "^8.18.0",
-    "lerna": "6.6.2"
+    "ts-jest": "^29.3.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "ws": "^8.18.0"
   },
   "dependencies": {
-    "@msgpack/msgpack": "latest",
+    "@msgpack/msgpack": "^3.1.1",
     "lodash-es": "latest"
   },
-  "main": "index.js",
+  "main": "dist/index.js",
   "types": "./packages/types/index.d.ts",
-  "bundledDependencies": [
+  "bundleDependencies": [
     "@msgpack/msgpack",
     "lodash-es"
   ]

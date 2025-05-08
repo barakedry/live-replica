@@ -1,13 +1,12 @@
 {
   "name": "@live-replica/patch-diff",
-  "version": "0.1.0",
-  "description": "Emits diff events.",
+  "version": "1.0.0",
+  "description": "Patch diff utilities for live-replica",
+  "main": "dist/patch-diff.js",
+  "types": "dist/patch-diff.d.ts",
   "type": "module",
-  "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
   "scripts": {
+    "build": "tsc --build",
     "test": "jest"
   },
   "repository": {
@@ -30,5 +29,14 @@
   "homepage": "https://github.com/barakedry/live-replica/diff-patch",
   "dependencies": {
     "lodash": "latest"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.27.1",
+    "@babel/preset-env": "^7.27.1",
+    "@types/jest": "^29.5.14",
+    "@types/lodash-es": "^4.17.12",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.3.2"
   }
 }

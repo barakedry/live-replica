@@ -5,6 +5,7 @@
   "main": "ws-server.js",
   "type": "module",
   "scripts": {
+    "build": "tsc --build",
     "test": "jest"
   },
   "peerDependencies": {
@@ -15,6 +16,6 @@
     "@live-replica/events": "*",
     "@msgpack/msgpack": "^2.8.0"
   },
-  "author": "",
+  "author": "Barak Edry",
   "license": "Apache-2.0"
 }

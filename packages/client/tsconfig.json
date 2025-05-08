@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist"
+  },
+  "include": ["index.ts"],
+  "exclude": ["dist", "node_modules"],
+  "references": [
+    { "path": "../patch-diff" },
+    { "path": "../proxy" },
+    { "path": "../replica" },
+    { "path": "../server" },
+    { "path": "../ws-client" },
+    { "path": "../message-channel-socket" },
+    { "path": "../worker-socket" },
+    { "path": "../shared-worker-server" },
+    { "path": "../worker-server" },
+    { "path": "../socketio-client" }
+  ]
+} 

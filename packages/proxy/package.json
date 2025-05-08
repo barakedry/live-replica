@@ -1,13 +1,17 @@
 {
   "name": "@live-replica/proxy",
   "version": "1.0.0",
-  "description": "",
-  "main": "proxy.js",
+  "description": "Proxy utilities for live-replica",
+  "main": "dist/proxy.js",
+  "types": "dist/proxy.d.ts",
   "type": "module",
-  "dependencies": {},
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "tsc -b ."
   },
   "author": "Barak Edry",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "ts-jest": "^29.3.2"
+  }
 }

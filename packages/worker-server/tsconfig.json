@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist",
+    "lib": [
+      "es2020",
+      "dom",
+      "webworker"
+    ]
+  },
+  "references": [
+    { "path": "../events" },
+    { "path": "../server" },
+    { "path": "../common" }
+  ],
+  "include": ["*.ts"]
+} 
