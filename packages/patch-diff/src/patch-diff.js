@@ -87,11 +87,11 @@ function createPathMatcher(pattern) {
     const keys = [];
     const replaced = '^' + pattern.replace(regex, (match, capture) => {
             keys.push(capture);
-            return `*`;
+            return `.*`;
         }).replace(/\[/g,'').replace(/\]/g,'')
             .replace(/\:/g,'\.?').replace(/\./g,'\\.')
             .replace('**','([\\w\\.]+)')
-            .replace('*','\\.([A-Za-z0-9\\-_]*)')
+            .replace('*','([A-Za-z0-9\\-_]*)')
         + '$'
 
 
