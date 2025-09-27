@@ -181,4 +181,14 @@ declare module '@live-replica/live-replica' {
     }
 
     export function observed(options: ObservedOptions): PropertyDecorator;
+
+    export type ObservedPropertyInfo = {
+        propertyKey: string | symbol;
+        element: HTMLElement;
+        selector: string;
+        replica: PatchDiff;
+    }
+
+    export const $all_observed_properties: Set<ObservedPropertyInfo>;
+    export const $observed_properties_watcher: Set<(observedProperties:  Set<ObservedPropertyInfo>) => void>;
 }
