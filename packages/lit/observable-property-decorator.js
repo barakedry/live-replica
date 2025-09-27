@@ -98,6 +98,8 @@ export function observed(options = {throttleUpdatesDelay: 0}) {
                     revoked = isRevoked(this[propertyKey]);
                     return onChange.call(this, diff, changeInfo);
                 }, options.throttleUpdatesDelay);
+
+                this[reactiveController]._globalEntry.property = propertyName;
             },
             enumerable: false,
             configurable: true,
