@@ -99,7 +99,7 @@ export function observed(options = {throttleUpdatesDelay: 0}) {
                     return onChange.call(this, diff, changeInfo);
                 }, options.throttleUpdatesDelay);
 
-                this[reactiveController]._globalEntry.property = propertyName;
+                this[reactiveController]._globalEntry.propertyKey = propertyName;
             },
             enumerable: false,
             configurable: true,

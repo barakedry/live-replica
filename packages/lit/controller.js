@@ -46,7 +46,7 @@ export class LiveReplicaController {
             selector += `#${host.id}`;
         }
 
-        this._globalEntry = {element: host, controller: this, selector, property: '', replica: null};
+        this._globalEntry = {element: host, controller: this, selector, propertyKey: '', replica: null};
     }
 
     watch(data, path, cb, renderDelay = 0) {
