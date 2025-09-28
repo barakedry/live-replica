@@ -284,17 +284,22 @@ const styles = css`
     }
 
     li.item {
+        position: relative;
+        
         .types-menu {
             margin: 0;
             padding: 0px;
             list-style: none;
-            display: none;
+            display: block;
             position: absolute;
             background: white;
             border: 1px solid #ccc;
             width: 60px;
+            left: 8rem;
+            top: 0;
 
             li {
+                color: black;
                 margin: 0;
                 padding: 3px 8px;
                 cursor: default;
@@ -423,8 +428,6 @@ class ReplicaInspector extends LitElement {
     }
 
     openTypesMenu({currentTarget}, obj, isArray) {
-        this.menuTop = currentTarget.offsetTop + currentTarget.clientHeight;
-        this.menuLeft = currentTarget.offsetLeft;
         this.addingTo = obj;
         this.isAddingToArray = isArray;
         this.requestUpdate();
@@ -588,8 +591,7 @@ class ReplicaInspector extends LitElement {
                 <button class='delete' title='Delete' @click="${() => this.deleteProperty(parent, key)}"></button>
                 <button class="expandCollapse" @click=${toggleExpanded}></button>
                 <span class="keyValuePair" @click=${toggleExpanded}>
-                    <label class="key">${key}:</label>
-                    ${this.renderValueByType(value, type, parent, key)}                    
+                    <label class="key">${key}</label><span style="user-select: none">: </span>${this.renderValueByType(value, type, parent, key)}                    
                 </span>
                     <!--                <button class="duplicate" @click=${() => this.duplicateProperty(parent, value)}
                     ></button>-->

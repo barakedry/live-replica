@@ -83,7 +83,6 @@ export class LiveReplicaController {
         }
 
         this._globalEntry.replica = replica;
-        emitGlobalWatchers();
 
         const deleteKeyword = replica.options.deleteKeyword;
         let unsubscribe = replica.subscribe(function (patch, diff) {
