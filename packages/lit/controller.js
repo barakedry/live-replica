@@ -4,7 +4,7 @@ import { isProxy, getPatchDiff, PatchDiff } from '@live-replica/client';
 export const $all_observed_properties = new Set();
 export const $observed_properties_watcher = new Set();
 
-function emitGlobalWatchers() {
+export function emitGlobalWatchers() {
     for (const fn of $observed_properties_watcher) {
         fn($all_observed_properties);
     }
