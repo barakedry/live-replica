@@ -39,14 +39,17 @@ export class LiveReplicaController {
 
     constructor(host) {
         this.host = host;
-        host.addController(this);
-        this._unwatchers = new Set();
+
         let selector = host.nodeName.toLowerCase();
         if (host.id) {
             selector += `#${host.id}`;
         }
 
         this._globalEntry = {element: host, controller: this, selector, propertyKey: '', replica: null};
+
+        host.addController(this);
+        this._unwatchers = new Set();
+
     }
 
     watch(data, path, cb, renderDelay = 0) {
