@@ -1,5 +1,5 @@
 import {PatchDiff, isProxy, get, getPatchDiff} from '../client/index.js';
-import {LiveReplicaController} from './controller.js';
+import {LiveReplicaController, emitGlobalWatchers} from './controller.js';
 
 const isRevoked = (obj) => {
     if (!obj || 'object' != typeof obj) {
@@ -77,6 +77,7 @@ export function observed(options = {throttleUpdatesDelay: 0}) {
 
                 if (!this[reactiveController]){
                     this[reactiveController] = new LiveReplicaController(this);
+                    this[reactiveController]._globalEntry.propertyKey = propertyName;
                 }
 
                 let wasDeleted = false;
@@ -98,6 +99,9 @@ export function observed(options = {throttleUpdatesDelay: 0}) {
                     revoked = isRevoked(this[propertyKey]);
                     return onChange.call(this, diff, changeInfo);
                 }, options.throttleUpdatesDelay);
+
+                emitGlobalWatchers();
+
             },
             enumerable: false,
             configurable: true,

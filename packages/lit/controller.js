@@ -1,6 +1,15 @@
 import {extractBasePathAndProperty, replicaByData, concatPath} from "./utils.js";
 import { isProxy, getPatchDiff, PatchDiff } from '@live-replica/client';
 
+export const $all_observed_properties = new Set();
+export const $observed_properties_watcher = new Set();
+
+export function emitGlobalWatchers() {
+    for (const fn of $observed_properties_watcher) {
+        fn($all_observed_properties);
+    }
+}
+
 function throttle(func, wait) {
     let timeout = null;
     let lastArgs = null;
@@ -30,8 +39,17 @@ export class LiveReplicaController {
 
     constructor(host) {
         this.host = host;
+
+        let selector = host.nodeName.toLowerCase();
+        if (host.id) {
+            selector += `#${host.id}`;
+        }
+
+        this._globalEntry = {element: host, controller: this, selector, propertyKey: '', replica: null};
+
         host.addController(this);
         this._unwatchers = new Set();
+
     }
 
     watch(data, path, cb, renderDelay = 0) {
@@ -66,6 +84,8 @@ export class LiveReplicaController {
                 replica = replica.at(path);
             }
         }
+
+        this._globalEntry.replica = replica;
 
         const deleteKeyword = replica.options.deleteKeyword;
         let unsubscribe = replica.subscribe(function (patch, diff) {
@@ -112,12 +132,18 @@ export class LiveReplicaController {
             clearTimeout(deferredDisconnections.get(this));
             deferredDisconnections.delete(this);
         }
+
+        $all_observed_properties.add(this._globalEntry);
+        emitGlobalWatchers();
     }
 
     hostDisconnected() {
         deferredDisconnections.set(this, setTimeout(() => {
             this._unwatchers.forEach(unsubscribe => unsubscribe());
             this._unwatchers.clear();
+            $all_observed_properties.delete(this._globalEntry);
+            delete this._globalEntry;
+            emitGlobalWatchers();
         }, 0));
     }
 }
