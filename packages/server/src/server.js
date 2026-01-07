@@ -64,6 +64,24 @@ export class LiveReplicaServer extends PatchDiff {
     }
 
     onSubscribeRequest(subscribeRequest) {
+
+        const { connection } = subscribeRequest;
+
+        const unsubscribeEvent = `unsubscribe:${subscribeRequest.id}`;
+
+        const onStartUnsubscribe = Utils.once(() => {
+            connection.removeListener(unsubscribeEvent, onStartUnsubscribe);
+            connection.removeListener('disconnect', onStartUnsubscribe);
+            connection.removeListener('close', onStartUnsubscribe);
+            subscribeRequest.unsubscribeTime = Date.now();
+            subscribeRequest.cancelled = Date.now();
+            this.emit('replica-unsubscribing', subscribeRequest);
+        });
+
+        connection.on(unsubscribeEvent, onStartUnsubscribe);
+        connection.on('disconnect', onStartUnsubscribe);
+        connection.on('close', onStartUnsubscribe);
+
         this.emit('subscribe-request', subscribeRequest);
 
         subscribeRequest = Object.assign({
@@ -76,6 +94,15 @@ export class LiveReplicaServer extends PatchDiff {
         };
 
         this.middlewares.start(subscribeRequest, reject, (request) => {
+
+            // subscription cancelled before it was fully processed
+            if (request.unsubscribeTime) {
+                request.cancelledAt = Date.now();
+                this.emit('replica-unsubscribe-cancelled', request);
+                this.emit('replica-unsubscribed', request);
+                return;
+            }
+
             this.emit('subscribe', request);
 
             subscribeRequest.ack({success: true, writable: request.allowWrite, rpc: request.allowRPC});
@@ -202,22 +229,20 @@ export class LiveReplicaServer extends PatchDiff {
         }
 
         const onUnsubscribe = Utils.once(() => {
-            this.emit('replica-unsubscribing', request);
-            this.unsubMiddlewares.start(request, (request) => {
-                unsubscribeChanges();
+            unsubscribeChanges();
 
-                if (replicaApplyListener) { connection.removeListener(applyEvent, replicaApplyListener); }
-                if (invokeRpcListener)    { connection.removeListener(invokeRpcEvent, invokeRpcListener); }
+            if (replicaApplyListener) { connection.removeListener(applyEvent, replicaApplyListener); }
+            if (invokeRpcListener)    { connection.removeListener(invokeRpcEvent, invokeRpcListener); }
 
-                connection.removeListener(unsubscribeEvent, onUnsubscribe);
-                connection.removeListener('disconnect', onUnsubscribe);
-                connection.removeListener('close', onUnsubscribe);
+            connection.removeListener(unsubscribeEvent, onUnsubscribe);
+            connection.removeListener('disconnect', onUnsubscribe);
+            connection.removeListener('close', onUnsubscribe);
 
-                // old event for backward compatibility
-                this.emit('replica-unsubscribe', request);
+            request.unsubscribedAt = Date.now();
 
-                this.emit('replica-unsubscribed', request);
-            });
+            // old event for backward compatibility
+            this.emit('replica-unsubscribe', request);
+            this.emit('replica-unsubscribed', request);
         });
 
         connection.on(unsubscribeEvent, onUnsubscribe);
